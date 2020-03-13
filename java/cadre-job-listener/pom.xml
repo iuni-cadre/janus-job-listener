@@ -72,15 +72,10 @@
       <artifactId>javafaker</artifactId>
       <version>0.13</version>
     </dependency>
-   <dependency>
-      <groupId>org.janusgraph</groupId>
-      <artifactId>janusgraph-core</artifactId>
-      <version>0.4.1</version>
-    </dependency>
     <dependency>
-      <groupId>org.apache.tinkerpop</groupId>
-      <artifactId>gremlin-driver</artifactId>
-      <version>3.4.4</version>
+      <groupId>org.janusgraph</groupId>
+      <artifactId>janusgraph-all</artifactId>
+      <version>0.4.0</version>
     </dependency>
   </dependencies>
 </project>
