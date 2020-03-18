@@ -8,7 +8,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
-import java.util.Iterator;
+import java.util.List;
 
 public class JanusConnection {
     public static void main(String[] args) {
@@ -48,23 +48,36 @@ public class JanusConnection {
             String fieldName = "paperTitle";
             String fieldValue = "big data technologies a survey";
 
-            Iterator<Vertex> nodes = traversal.V().has(vertexLabel, fieldName,
-                    fieldValue);
-
-            int count = 0;
-            while (nodes.hasNext()) {
-                Vertex v = nodes.next();
-                count++;
-                // use apis on Vertex to explore the node, below is the API link
-                // http://tinkerpop.apache.org/javadocs/3.2.3/full/org/apache/tinkerpop/gremlin/structure/Vertex.html#properties-java.lang.String...-
+            List<Vertex> nodes = traversal.V().has(vertexLabel, fieldName, fieldValue).toList();
+            for(Vertex vertex : nodes){
+                System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
+                System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
+                System.out.println("Rank : " + vertex.property("rank").value().toString());
+                System.out.println("paperId : " + vertex.property("paperId").value().toString());
             }
-            System.out.println(count);
+
+//            GraphTraversal<Vertex, Map<Object, Object>> vertexMapGraphTraversal = traversal.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
+//                    .valueMap("year", "paperTitle", "referenceCount", "rank", "citationCount", "createdDate", "paperId",
+//                            "originalTitle", "date", "estimatedCitation", "languageCodes", "urls");
+//
+//            int count = 0;
+//            while (nodes.hasNext()) {
+//                System.out.println("********** count ********** : " + count);
+//                Vertex v = nodes.next();
+//                System.out.println("************ TITLE ************ : " + v.property("paperTitle").value());
+//                count++;
+//                // use apis on Vertex to explore the node, below is the API link
+//                // http://tinkerpop.apache.org/javadocs/3.2.3/full/org/apache/tinkerpop/gremlin/structure/Vertex.html#properties-java.lang.String...-
+//            }
+//            System.out.println("********** count ********** : " + count);
+
 
             // if you modify anything, always commit, for read only query, it is not needed
             // graphTransaction.commit();
 
             // close transaction when finishing using it
             graphTransaction.close();
+
 
         } catch (Exception e) {
             e.printStackTrace();
