@@ -47,11 +47,13 @@ public class JanusConnection {
 
             GraphTraversalSource traversal = graphTransaction.traversal();
 
+//            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
             String vertexLabel = "Paper";
             String fieldName = "paperTitle";
-            String fieldValue = "big data technologies a survey";
+            String fieldValue = "unicorns.*";
 
-            List<Vertex> nodes = traversal.V().has(vertexLabel, fieldName, fieldValue).toList();
+            List<Vertex> nodes = traversal.V().has(vertexLabel, fieldName, RegexPredicate.regex(fieldValue)).has(vertexLabel, "year", 1990).toList();
+            System.out.println("************* COUNT ************ : " + nodes.size());
             for(Vertex vertex : nodes){
                 LOG.info("**********************");
                 System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
