@@ -1,5 +1,7 @@
 package iu.cadre.listeners.job;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
@@ -11,6 +13,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import java.util.List;
 
 public class JanusConnection {
+    protected static final Log LOG = LogFactory.getLog(JanusConnection.class);
     public static void main(String[] args) {
         try {
 //            JanusGraphFactory.
@@ -50,6 +53,7 @@ public class JanusConnection {
 
             List<Vertex> nodes = traversal.V().has(vertexLabel, fieldName, fieldValue).toList();
             for(Vertex vertex : nodes){
+                LOG.info("**********************");
                 System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
                 System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
                 System.out.println("Rank : " + vertex.property("rank").value().toString());
@@ -77,7 +81,7 @@ public class JanusConnection {
 
             // close transaction when finishing using it
             graphTransaction.close();
-
+            graph.close();
 
         } catch (Exception e) {
             e.printStackTrace();
