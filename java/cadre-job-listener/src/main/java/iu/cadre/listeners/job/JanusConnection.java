@@ -2,6 +2,7 @@ package iu.cadre.listeners.job;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
@@ -9,7 +10,9 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class JanusConnection {
@@ -50,15 +53,17 @@ public class JanusConnection {
 //            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
             String vertexLabel = "Paper";
             String fieldName = "paperTitle";
-            String fieldValue = "unicorns.*";
+            String fieldValue = "big data.*";
 
-            List<Vertex> nodes = traversal.V().has(vertexLabel, fieldName, RegexPredicate.regex(fieldValue)).has(vertexLabel, "year", 1990).toList();
-            System.out.println("************* COUNT ************ : " + nodes.size());
-            for(Vertex vertex : nodes){
+            GraphTraversal<Vertex, Vertex> v = traversal.V();
+            Iterator<Vertex> nodes = v.has(vertexLabel, fieldName, RegexPredicate.regex(fieldValue)).has(vertexLabel, "year", 1990);
+//            System.out.println("************* COUNT ************ : " + nodes.size());
+            while (nodes.hasNext()){
+                Vertex vertex = nodes.next();
                 LOG.info("**********************");
                 System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
                 System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
-                System.out.println("Rank : " + vertex.property("rank").value().toString());
+                System.out.println("Year : " + vertex.property("year").value().toString());
                 System.out.println("paperId : " + vertex.property("paperId").value().toString());
             }
 
