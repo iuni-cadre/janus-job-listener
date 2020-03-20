@@ -10,7 +10,7 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import static org.apache.tinkerpop.gremlin.process.traversal.P.*;
+import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 import java.util.Iterator;
 import java.util.List;
@@ -53,10 +53,10 @@ public class JanusConnection {
 //            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
             String vertexLabel = "Paper";
             String fieldName = "paperTitle";
-            String fieldValue = "big data.*";
+            String fieldValue = "unicorn";
 
             GraphTraversal<Vertex, Vertex> v = traversal.V();
-            Iterator<Vertex> nodes = v.has(vertexLabel, fieldName, RegexPredicate.regex(fieldValue)).has(vertexLabel, "year", 1990);
+            Iterator<Vertex> nodes = v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990);
 //            System.out.println("************* COUNT ************ : " + nodes.size());
             while (nodes.hasNext()){
                 Vertex vertex = nodes.next();
