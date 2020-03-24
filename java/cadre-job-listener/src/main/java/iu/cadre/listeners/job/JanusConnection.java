@@ -2,6 +2,7 @@ package iu.cadre.listeners.job;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -50,22 +51,26 @@ public class JanusConnection {
 
             GraphTraversalSource traversal = graphTransaction.traversal();
 
+
 //            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
             String vertexLabel = "Paper";
             String fieldName = "paperTitle";
             String fieldValue = "unicorn";
 
             GraphTraversal<Vertex, Vertex> v = traversal.V();
-            Iterator<Vertex> nodes = v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990);
-//            System.out.println("************* COUNT ************ : " + nodes.size());
-            while (nodes.hasNext()){
-                Vertex vertex = nodes.next();
-                LOG.info("**********************");
-                System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
-                System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
-                System.out.println("Year : " + vertex.property("year").value().toString());
-                System.out.println("paperId : " + vertex.property("paperId").value().toString());
-            }
+
+            GraphTraversalSource sg = (GraphTraversalSource)v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990).inE().subgraph("unicorn").cap("unicorn").next();//            System.out.println("************* COUNT ************ : " + nodes.size());
+            sg.io("/home/ubuntu/unicorn_chathuri.graphml").with(IO.writer, IO.graphml).write();
+//            int count = 0;
+//            while (nodes.hasNext()){
+//                count++;
+//                Vertex vertex = nodes.next();
+//                System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
+//                System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
+//                System.out.println("Year : " + vertex.property("year").value().toString());
+//                System.out.println("paperId : " + vertex.property("paperId").value().toString());
+//            }
+//            System.out.println("******** COUNT : **********" + count);
 
 //            GraphTraversal<Vertex, Map<Object, Object>> vertexMapGraphTraversal = traversal.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
 //                    .valueMap("year", "paperTitle", "referenceCount", "rank", "citationCount", "createdDate", "paperId",
