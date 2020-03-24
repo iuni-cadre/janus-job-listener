@@ -5,12 +5,16 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal.Symbols.subgraph;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 import java.util.Iterator;
@@ -59,8 +63,13 @@ public class JanusConnection {
 
             GraphTraversal<Vertex, Vertex> v = traversal.V();
 
-            GraphTraversalSource sg = (GraphTraversalSource)v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990).inE().subgraph("unicorn").cap("unicorn").next();//            System.out.println("************* COUNT ************ : " + nodes.size());
-            sg.io("/home/ubuntu/unicorn_chathuri.graphml").with(IO.writer, IO.graphml).write();
+            GraphTraversal<Vertex, Object> graphTraversal = traversal.withSideEffect("sg", () -> subgraph).V(v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990)).inE().subgraph("unicorn").cap("unicorn");
+            Graph sg = (Graph)graphTraversal.next();
+            GraphTraversalSource sg_traversal = sg.traversal();
+            sg_traversal.io("/home/ubuntu/unicorn_chathuri.graphml").with(IO.writer, IO.graphml).write();
+
+//            v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)).has(vertexLabel, "year", 1990).inE().subgraph("unicorn").cap("unicorn");//            System.out.println("************* COUNT ************ : " + nodes.size());
+//            sg.io("/home/ubuntu/unicorn_chathuri.graphml").with(IO.writer, IO.graphml).write();
 //            int count = 0;
 //            while (nodes.hasNext()){
 //                count++;
