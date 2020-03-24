@@ -13,6 +13,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 
 import java.util.Iterator;
 import java.util.List;
@@ -56,13 +57,17 @@ public class JanusConnection {
 //            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
             String vertexLabel = "Paper";
             String fieldName = "paperTitle";
-            String fieldValue = "unicorn";
+            String fieldValue = "unicorns";
 
             GraphTraversal<Vertex, Vertex> v = traversal.V();
 
+            int count = traversal.V().and(has("Paper", "paperTitle", textContainsFuzzy("unicorns")), has("year", 1990)).toList().size();
+            System.out.println("************ COUNT ******** : " + count);
+
 //            v.and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).inE().subgraph('unicorn').cap('unicorn').next()
-            GraphTraversalSource sg = (GraphTraversalSource)v.and(v.has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)), v.has(vertexLabel, "year", 1990)).inE().subgraph("unicorn").cap("unicorn").next();//            System.out.println("************* COUNT ************ : " + nodes.size());
-            sg.io("/home/ubuntu/unicorn_chathuri.graphml").with(IO.writer, IO.graphml).write();
+            TinkerGraph tg = (TinkerGraph)traversal.V().and(has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)), has(vertexLabel, "year", 1990)).inE("AuthorOf").subgraph("org_auth2").cap("org_auth2").next();
+            GraphTraversalSource sg = tg.traversal();
+            sg.io("/home/ubuntu/unicorn_chathuri_2.xml").write().iterate();
 //            int count = 0;
 //            while (nodes.hasNext()){
 //                count++;
