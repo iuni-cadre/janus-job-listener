@@ -2,7 +2,6 @@ package iu.cadre.listeners.job;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tinkerpop.gremlin.process.traversal.IO;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,9 +13,6 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
-
-import java.util.Iterator;
-import java.util.List;
 
 public class JanusConnection {
     protected static final Log LOG = LogFactory.getLog(JanusConnection.class);
