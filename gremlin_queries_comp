@@ -1,0 +1,144 @@
+--Search for paper by exact title match.
+sg = g.V().has('Paper', 'paperTitle', 'full case study report upplandsbondens sweden').inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+--Search for Journal by exact title match
+sg = g.V().has('JournalRev', 'normalizedName', 'the open acoustics journal').inE().subgraph('sg').cap('sg').next()
+
+-------------------------------------------------------------------------------
+---------------------------------------------------------------------------------
+--Select all papers for a given year -- Limit to ten results
+sg = g.V().has('Paper', 'year', '1900').limit(10).inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+--Select all papers between two years
+sg = g.V().has('Paper', 'year', between(1945f, 1946f)).limit(10).inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+
+--Select all papers from journal from year?
+sg = g.V().has('JournalRev','normalizedName', 'the open acoustics journal').inE('PublishedInRev').subgraph('sg').outV().has('Paper', 'year', '2001').cap('sg').next()
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+--Filter on multiple conditions
+
+--Papers with 'unicorn' in title and published in 1990
+sg = g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+
+--Papers with 'unicorn' in title and published between 1990 and 1995
+sg = g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('Paper', 'year', between(1990f, 1995f))).inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+--Papers authored by Jennifer Putzi and containing the word 'Woman'
+sg = g.V().has('Author', 'normalizedName', 'jennifer putzi').outE('AuthorOf').subgraph('sg').inV().has('Paper', 'paperTitle', textContainsFuzzy('woman')).cap('sg').next()
+
+
+--Authors that have published articles including 'library' in title, published in Journals called 'Informetrics' -- Doesn't work because Journal-normalizedName not indexed. 
+g.V().has('JournalRev','normalizedName', textContainsFuzzy('informetrics')).in('PublishedInRev').subgraph('sg').outV.has('Paper', 'paperTitle', textContainsFuzzy('library')).inE('AuthorOf').subgraph('sg').cap('sg').next()
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+--Search by Paper title. Return fields from Paper. Change 'valueMap' options to change output
+
+sg = g.V().has('Paper','paperTitle', textContainsFuzzy('unicorns')).inE().subgraph('paper').cap('paper').values()
+('year', 'paperTitle', 'referenceCount', 'rank', 'citationCount', 'createdDate', 'paperId', 'originalTitle', 'date', 'estimatedCitation', 'languageCodes', 'urls')
+
+--Search by Paper year. Return fields from Paper. Change 'valueMap' options to change output
+sg = g.V().has('Paper','year', '2000').valueMap('year', 'paperTitle', 'referenceCount', 'rank', 'citationCount', 'createdDate', 'paperId', 'originalTitle', 'date', 'estimatedCitation', 'languageCodes', 'urls')).subgraph('j_paper').cap('j_paper').next()
+
+--Search by Paper year and title. Return fields from Paper. Change 'valueMap' options to change output
+sg = g.V().and(has('Paper','year', '2000'), has('Paper', 'paperTitle', textContainsFuzzy('unicorns')).valueMap('year', 'paperTitle', 'referenceCount', 'rank', 'citationCount', 'createdDate', 'paperId', 'originalTitle', 'date', 'estimatedCitation', 'languageCodes', 'urls')).out().subgraph('j_paper').cap('j_paper').next()
+
+
+------------------------------------
+--Search by Paper title and Return Paper->Author graph
+sg = g.V().has('Paper','paperTitle',textContainsFuzzy('unicorns')).inE('AuthorOf').subgraph('paper_auth').cap('paper_auth').next()
+
+
+--Search by Author Name and Return Author->Paper graph 
+sg = g.V().has('Author', 'normalizedName', textContainsFuzzy('jennifer putzi')).outE('AuthorOf').subgraph('auth_paper').cap('auth_paper').next()
+
+
+---------------------------------
+--Search by Paper title and Return Paper->Journal graph
+
+sg = g.V().has('Paper','paperTitle',textContainsFuzzy('unicorns')).outE('PublishedInRev').subgraph('paper_jour').cap('paper_jour').next()
+
+--Search by Journal and Return Journal->Paper graph
+sg = g.V().has('JournalRev','normalizedName', textContainsFuzzy('The open acoustics journal')).outE('PublishedInRev').subgraph('jour_paper').cap('jour_paper').next()
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+--Paper to Paper References
+
+--Degree 1
+
+sg = g.V().has('Paper', 'paperTitle', 'chapitre 18 myologie').inE('References').subgraph('sg1').cap('sg1').next()
+
+--Degree 2
+
+sg = g.V().has('Paper', 'paperTitle', 'chapitre 18 myologie').inE('References').subgraph('sg2').outV().inE('References').subgraph('sg2').outV().cap('sg2').next()
+
+
+--Paper to Paper Citations
+
+--Degree 1
+
+sg = g.V().has('Paper', 'paperTitle', 'ladle pouring guide').outE('References').subgraph('sg1').cap('sg1').next()
+
+
+--Degree 2
+sg = g.V().has('Paper', 'paperTitle', 'ladle pouring guide').outE('References').subgraph('sg2').inV().outE('References').subgraph('sg2').inV().cap('sg2').next()
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-- IN Progress
+--Search by Paper title and Return Journal->Paper->Author graph I think this is right but times out. 
+	
+
+
+sg = g.V().hasLabel('JournalRev').outE('PublishedInRev').as('a').
+      inV().
+      has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
+	  select('a').
+      subgraph('j_p_a').
+	  select('b').
+      inE('AuthorOf').
+      subgraph('j_p_a').cap('j_p_a').next()
+
+
+
+sg = g.V().has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
+     select('b').inE('AuthorOf').subgraph('sg1').
+     select('b').outE('PublishedInRev').subgraph('sg2').
+     cap('sg2').next()
+	
+g.V().has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
+     select('b').outE('AuthorOf').inV().values('normalizedName')
+
+
+
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+
+sg.io(IoCore.graphml()).writeGraph("/home/ubuntu/ladle_cite2.graphml")
+
+
+
+
+
+
+
+
+
+
+
+
+
