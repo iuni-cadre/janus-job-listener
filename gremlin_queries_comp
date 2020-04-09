@@ -84,10 +84,10 @@ sg = g.V().has('Paper', 'paperTitle', 'chapitre 18 myologie').inE('References').
 
 
 --Paper to Paper Citations
-
+g.V().has('Paper', 'paperTitle', 'ladle pouring guide').values('year')
 --Degree 1
 
-sg = g.V().has('Paper', 'paperTitle', 'ladle pouring guide').outE('References').subgraph('sg1').cap('sg1').next()
+sg = g.V().and(has('Paper', 'paperTitle', 'ladle pouring guide'), has('Paper', 'year', '1950')).outE('References').subgraph('sg1').cap('sg1').next()
 
 
 --Degree 2
@@ -95,7 +95,12 @@ sg = g.V().has('Paper', 'paperTitle', 'ladle pouring guide').outE('References').
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+--Or 
 
+sg = g.V().or(has('Paper', 'paperTitle', 'ladle pouring guide'), has('Paper', 'paperTitle', 'the development of the human mandibular joint')).outE('References').subgraph('sg1').outV().cap('sg1').next()
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- IN Progress
 --Search by Paper title and Return Journal->Paper->Author graph I think this is right but times out. 
 	
