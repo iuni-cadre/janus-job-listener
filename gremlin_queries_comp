@@ -101,6 +101,18 @@ sg = g.V().or(has('Paper', 'paperTitle', 'ladle pouring guide'), has('Paper', 'p
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
+--OR-OR-AND
+
+sg = g.V().or(has('JournalRev', 'displayName','Journal of Bone and Mineral Research')).
+      or(has('JournalRev', 'displayName', 'Circulation')).
+      inE('PublishedInRev').
+	  subgraph('sg1').
+      outV().has('Paper', 'year', 2000).
+      .cap('sg1').next()
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
 -- IN Progress
 --Search by Paper title and Return Journal->Paper->Author graph I think this is right but times out. 
 	
