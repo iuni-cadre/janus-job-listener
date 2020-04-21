@@ -10,10 +10,15 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.List;
+
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class GremlinQuery2Test {
+class GremlinGraphWriterTest {
 
     static GraphTraversalSource g;
 
@@ -26,7 +31,7 @@ class GremlinQuery2Test {
 
         g.addV("Paper").property("paperTitle","full case study report upplandsbondens sweden").as("v1").
                 addV("Author").property("name","joe").as("v2").
-                addE("AuthorOf").from("v2").to("v1").iterate();
+                addE("AuthorOf").property("test_edge_property", "test_edge_property_value").from("v2").to("v1").iterate();
 
         g.addV("JournalRev").property("normalizedName","the open acoustics journal").as("v1").
                 addV("Paper").property("name","coolpaper").as("v2").
@@ -108,5 +113,73 @@ class GremlinQuery2Test {
 
 
         assertEquals(6, Iterators.size(sg.vertices()));
+    }
+
+    @Test
+    void can_write_to_graphml()
+    {
+        try {
+            TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
+                    .inE("AuthorOf").subgraph("sg").cap("sg").next();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            GremlinGraphWriter.graph_to_ml(sg, stream);
+            String actualResult = stream.toString(Charset.defaultCharset());
+            assertTrue(actualResult.contains("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\""));
+            assertTrue(actualResult.contains("<data key=\"labelV\">Author</data><data key=\"name\">joe</data>"));
+            assertTrue(actualResult.contains("<data key=\"labelV\">Paper</data><data key=\"paperTitle\">full case study report upplandsbondens sweden</data>"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Test
+    void can_write_to_stream()
+    {
+        TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
+                .inE("AuthorOf").subgraph("sg").cap("sg").next();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        GremlinGraphWriter.dump_graph(sg, stream);
+        String actualResult = stream.toString(Charset.defaultCharset());
+        assertTrue(actualResult.contains("Vertex Author: name = joe;id:"));
+        assertTrue(actualResult.contains("Vertex Paper: paperTitle = full case study report upplandsbondens sweden;id:"));
+        assertTrue(actualResult.contains("Edge AuthorOf: test_edge_property = test_edge_property_value;id:"));
+    }
+
+    @Test
+    void can_write_to_csv()
+    {
+        try {
+            TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
+                    .inE("AuthorOf").subgraph("sg").cap("sg").next();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            GremlinGraphWriter.graph_to_csv(sg, stream);
+            String actualResult = stream.toString(Charset.defaultCharset());
+            assertTrue(actualResult.contains("Type,ID,Label,InVertex,OutVertex"));
+
+            // jumping through some hoops here to avoid dealing with the ID's in the output
+            assertTrue(actualResult.contains("Paper,,,,full case study report upplandsbondens sweden,"));
+            assertTrue(actualResult.contains("Author,,,joe,,"));
+            assertTrue(actualResult.contains("AuthorOf"));
+            assertTrue(actualResult.contains(",,,test_edge_property_value"));
+            String[] splits = actualResult.split("\n");
+            assertTrue(splits[0].contains("paperTitle"));
+            assertTrue(splits[0].contains("name"));
+            assertTrue(splits[0].contains("test_edge_property"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void gather_property_names()
+    {
+        TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
+                .inE("AuthorOf").subgraph("sg").cap("sg").next();
+        List<String> actual = GremlinGraphWriter.gather_property_names(sg);
+        assertEquals(3, actual.size());
+        assertTrue(actual.contains("paperTitle"));
+        assertTrue(actual.contains("name"));
+        assertTrue(actual.contains("test_edge_property"));
     }
 }
