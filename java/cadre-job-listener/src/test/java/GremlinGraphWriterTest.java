@@ -1,6 +1,5 @@
-package iu.cadre.listeners.job;
-
 import com.google.common.collect.Iterators;
+import iu.cadre.listeners.job.GremlinGraphWriter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -15,8 +14,10 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 class GremlinGraphWriterTest {
 
