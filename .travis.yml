@@ -1,1 +1,4 @@
 language: java
+script:
+- cd $TRAVIS_BUILD_DIR/cadre/janus-job-listener
+- mvn test -B         
