@@ -113,29 +113,21 @@ sg = g.V().or(has('JournalRev', 'displayName','Journal of Bone and Mineral Resea
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
--- IN Progress
---Search by Paper title and Return Journal->Paper->Author graph I think this is right but times out. 
-	
+--Search by Paper title and Return Journal->Paper->Author graph 
 
-
-sg = g.V().hasLabel('JournalRev').outE('PublishedInRev').as('a').
-      inV().
-      has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
-	  select('a').
-      subgraph('j_p_a').
-	  select('b').
-      inE('AuthorOf').
-      subgraph('j_p_a').cap('j_p_a').next()
-
-
-
-sg = g.V().has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
-     select('b').inE('AuthorOf').subgraph('sg1').
-     select('b').outE('PublishedInRev').subgraph('sg2').
+sg = g.V().has('Paper', 'paperTitle', 'the citation impact of funded and unfunded research in economics').as('b').
+     select('b').inE('AuthorOf').subgraph('sg2').outV().
+     select('b').outE('PublishedInFixed').subgraph('sg2').inV().
      cap('sg2').next()
-	
-g.V().has('Paper', 'paperTitle', 'the msca program developing analytic').as('b').
-     select('b').outE('AuthorOf').inV().values('normalizedName')
+
+
+
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+--Or with two vertex types
+
+g.V().or(has('Paper', 'paperTitle', 'the citation impact of funded and unfunded research in economics'), has('JournalFixed', 'displayName', 'Scientometrics')).values().limit(10)
 
 
 
