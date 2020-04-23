@@ -74,7 +74,7 @@ public class GremlinGraphWriter {
 
     public static List<String> gather_property_names(TinkerGraph sg)
     {
-        List<String> result = Stream.of(new String[]{}).collect(Collectors.toList());
+        ArrayList<String> result = new ArrayList<String>();
         for (Iterator<Vertex> it = sg.vertices(); it.hasNext(); ) {
             Vertex v = it.next();
             for (Iterator<VertexProperty<Object>> it2 = v.properties(); it2.hasNext(); ) {
@@ -90,6 +90,8 @@ public class GremlinGraphWriter {
                 result.add(p.key());
             }
         }
+        Collections.sort(result);
+
         return result;
     }
 

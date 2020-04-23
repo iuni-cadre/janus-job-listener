@@ -156,17 +156,17 @@ class GremlinGraphWriterTest {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             GremlinGraphWriter.graph_to_csv(sg, stream);
             String actualResult = stream.toString(Charset.defaultCharset());
-            assertTrue(actualResult.contains("Type,ID,Label,InVertex,OutVertex"));
+
+            String[] splits = actualResult.split("\n");
+            String header = splits[0];
+            assertTrue(header.contains("Type,ID,Label,InVertex,OutVertex"));
+            assertTrue(header.contains("name,paperTitle,test_edge_property"));
 
             // jumping through some hoops here to avoid dealing with the ID's in the output
             assertTrue(actualResult.contains("Paper,,,,full case study report upplandsbondens sweden,"));
             assertTrue(actualResult.contains("Author,,,joe,,"));
             assertTrue(actualResult.contains("AuthorOf"));
             assertTrue(actualResult.contains(",,,test_edge_property_value"));
-            String[] splits = actualResult.split("\n");
-            assertTrue(splits[0].contains("paperTitle"));
-            assertTrue(splits[0].contains("name"));
-            assertTrue(splits[0].contains("test_edge_property"));
         } catch (IOException e) {
             e.printStackTrace();
         }
