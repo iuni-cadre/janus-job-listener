@@ -2,7 +2,7 @@
 sg = g.V().has('Paper', 'paperTitle', 'full case study report upplandsbondens sweden').inE('AuthorOf').subgraph('sg').cap('sg').next()
 
 --Search for Journal by exact title match
-sg = g.V().has('JournalRev', 'normalizedName', 'the open acoustics journal').inE().subgraph('sg').cap('sg').next()
+sg = g.V().has('JournalRev', 'displayName', 'the open acoustics journal').outE().subgraph('sg').cap('sg').next()
 
 -------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
