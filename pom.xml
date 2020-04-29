@@ -37,7 +37,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>iu.cadre.listeners.job.JanusConnection</mainClass>
+              <mainClass>iu.cadre.listeners.job.JobListener</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

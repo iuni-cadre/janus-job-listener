@@ -1,0 +1,61 @@
+{
+  "job_name": "Job Name",
+  "dataset": "mag",
+  "csv_output": [
+    {
+      "field": "paperId",
+      "vertexType": "Paper"
+    },
+    {
+      "field": "year",
+      "vertexType": "Paper"
+    },
+    {
+      "field": "originalTitle",
+      "vertexType": "Paper"
+    },
+    {
+      "field": "displayName",
+      "vertexType": "Author"
+    },
+    {
+      "field": "displayName",
+      "vertexType": "JournalFixed"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "vertexType": "Paper",
+        "filters": [
+          {
+            "field": "title",
+            "filterType": "is",
+            "value": "full case study report upplandsbondens sweden",
+            "operator": "AND"
+          },
+          {
+            "field": "year",
+            "filterType": "between",
+            "value": "1990,1995",
+            "operator": ""
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "source": "paper",
+        "target": "journal",
+        "relation": "publishedIn"
+      },
+      {
+        "source": "paper",
+        "target": "author",
+        "relation": "authorOf"
+      }
+    ],
+    "network": "Paper"
+    // can be another json object with necessary info
+  }
+}
