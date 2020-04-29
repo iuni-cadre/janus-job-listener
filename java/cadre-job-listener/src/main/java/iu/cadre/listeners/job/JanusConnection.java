@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.JanusGraph;
@@ -11,6 +12,8 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.as;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 
@@ -61,7 +64,7 @@ public class JanusConnection {
             System.out.println("************ COUNT ******** : " + count);
 
 //            v.and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).inE().subgraph('unicorn').cap('unicorn').next()
-            TinkerGraph tg = (TinkerGraph)traversal.V().and(has(vertexLabel, fieldName, textContainsFuzzy(fieldValue)), has(vertexLabel, "year", 1990)).inE("AuthorOf").subgraph("org_auth2").cap("org_auth2").next();
+            TinkerGraph tg = (TinkerGraph)traversal.V().and(has("Paper", "paperTitle", textContainsFuzzy("unicorns")), has(vertexLabel, "year", 1990)).inE("AuthorOf").subgraph("org_auth2").cap("org_auth2").next();
             GraphTraversalSource sg = tg.traversal();
             sg.io("/home/ubuntu/unicorn_chathuri_2.xml").write().iterate();
 //            int count = 0;
