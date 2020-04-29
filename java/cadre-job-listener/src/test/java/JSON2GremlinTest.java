@@ -5,8 +5,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,10 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class JSON2GremlinTest {
     static GraphTraversalSource g;
@@ -55,18 +58,66 @@ public class JSON2GremlinTest {
     }
 
     @Test
-    void can_create_graph_from_json() {
-        JSONParser parser = new JSONParser();
+    void load_graph__throws_if_no_dataset_specified() {
+        Map<String, Object> query = new HashMap<String, Object>();
+        query.put("job_name", "Job Name");
+        JSONObject obj =  new JSONObject(query);
+        assertThrows(JSONException.class, () -> {
+            JSON2Gremlin.load_graph(g, obj);
+        });
+    }
 
-        //String s = "{filters: [{\"field\": \"year\", \"field\": \"1990\", \"operation\": \"AND\"}, {\"field\": \"paper_title\", \"value\": \"unicorns\", \"operation\": \"\"}]}";
-        String s = "{\"filters\": [{\"field\": \"year\", \"field\": \"1990\", \"operation\": \"AND\"}, {\"field\": \"paper_title\", \"value\": \"unicorns\", \"operation\": \"\"}]}";
-        JSONObject  obj = null;
+    @Test
+    void load_graph__throws_if_not_mag_dataset() {
+        Map<String, Object> query = new HashMap<String, Object>();
+        query.put("job_name", "Job Name");
+        query.put("dataset", "unknown dataset");
+        JSONObject obj =  new JSONObject(query);
+        assertThrows(UnsupportedOperationException.class, () -> {
+            JSON2Gremlin.load_graph(g, obj);
+        });
+    }
+
+    @Test
+    void load_graph__returns_all_papers_without_filters() {
+        Map<String, Object> query = new HashMap<String, Object>();
+        query.put("job_name", "Job Name");
+        query.put("dataset", "mag");
+
         try {
-            obj = (JSONObject)parser.parse(s);
+            query.put("graph", new JSONArray("[{vertexType: \"Paper\"}]"));
+            JSONObject obj =  new JSONObject(query);
             TinkerGraph tg = JSON2Gremlin.load_graph(g, obj);
-            assertNotNull(tg);
-            System.out.println(obj.get("filters"));
-        } catch (ParseException e) {
+            assertEquals(89, Iterators.size(tg.vertices()));
+            assertEquals(47, Iterators.size(tg.edges()));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    void load_graph__can_filter_by_paper_name() {
+        Map<String, Object> query = new HashMap<String, Object>();
+        query.put("job_name", "Job Name");
+        query.put("dataset", "mag");
+
+        try {
+            JSONArray filters = new JSONArray("[\n" +
+                          "                {\n" +
+                          "                    \"field\": \"title\",\n" +
+                          "                    \"filterType\": \"is\",\n" +
+                          "                    \"value\": \"full case study report upplandsbondens sweden\",\n" +
+                          "                    \"operator\": \"\"\n" +
+                          "                }\n" +
+                          "            ]");
+            JSONObject graph = new JSONObject("{vertexType: \"Paper\"}");
+            graph.put("filters", filters);
+            query.put("graph", new JSONArray(graph));
+            JSONObject obj =  new JSONObject(query);
+            TinkerGraph tg = JSON2Gremlin.load_graph(g, obj);
+            assertEquals(89, Iterators.size(tg.vertices()));
+            assertEquals(47, Iterators.size(tg.edges()));
+        } catch (JSONException e) {
             e.printStackTrace();
         }
     }
