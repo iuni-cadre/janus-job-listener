@@ -18,6 +18,7 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.mortbay.util.ajax.JSON;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
@@ -25,6 +26,7 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -129,7 +131,7 @@ public class JobListener {
 
                     if (dataset.equals("mag")){
                         GraphTraversalSource janusTraversal = getJanusTraversal();
-                        GraphTraversalSource subgraph = getSubGraphForQuery(janusTraversal, graphJson, outputFiltersSingle);
+                        GraphTraversalSource subgraph = JSON2Gremlin.getSubGraphForQuery(janusTraversal, graphJson, outputFiltersSingle);
                         subgraph.io(graphMLFile).write().iterate();
                         //  to convert to csv, use BenF method
                     }
@@ -360,79 +362,6 @@ public class JobListener {
 //        }
 //        return hasFilterMap;
 //    }
-
-    public static Map<String, List<Object>> getASLabelFilters(JsonArray nodes){
-        Map<String, List<Object>> hasFilterMap = new LinkedHashMap<>();
-        for (int i=0; i < nodes.size(); i++){
-            String label = "label" + (i+1);
-            JsonObject vertexObject = nodes.get(i).getAsJsonObject();
-            String vertexType = vertexObject.get("vertexType").getAsString();
-            JsonArray filters = vertexObject.get("filters").getAsJsonArray();
-            List< Object> hasFilters = new ArrayList<>();
-            for (int j = 0; j < filters.size(); j++) {
-                JsonObject filterField = filters.get(j).getAsJsonObject();
-                String field = filterField.get("field").getAsString();
-                String value = filterField.get("value").getAsString();
-                String[] fieldValues = new String[]{field, value};
-                String operator = filterField.get("operator").getAsString();
-                if (!field.equals("year") && !field.equals("doi")){
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, textContainsFuzzy(value));
-                    hasFilters.add(asLabelWithFilters);
-                }else {
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, Integer.valueOf(value));
-                    hasFilters.add(asLabelWithFilters);
-                }
-            }
-            hasFilterMap.put(vertexType, hasFilters);
-        }
-        return hasFilterMap;
-    }
-
-    public static GraphTraversalSource getSubGraphForQuery(GraphTraversalSource traversal, JsonObject graphFields, List<String> outputFields){
-        GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
-        JsonArray nodes = graphFields.get("nodes").getAsJsonArray();
-        JsonArray edges = graphFields.get("edges").getAsJsonArray();
-        Map<String, List<Object>> asLabelFilters = getASLabelFilters(nodes);
-        int count = 1;
-        List<Object> allMatchClauses = new ArrayList<>();
-        for (String vertexType : asLabelFilters.keySet()){
-            String label1 = "label" + count;
-            count++;
-            String label2 = "label" + count;
-            List<Object> hasFilterListPerVertex = asLabelFilters.get(vertexType);
-            allMatchClauses.addAll(hasFilterListPerVertex);
-
-            for (int i=0; i < edges.size(); i++){
-                JsonObject edgeJson = edges.get(i).getAsJsonObject();
-                String sourceVertex = edgeJson.get("source").getAsString();
-                String targetVertex = edgeJson.get("target").getAsString();
-                String relation = edgeJson.get("relation").getAsString();
-                if (sourceVertex.equals("paper") && targetVertex.equals("journal")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("paper") && targetVertex.equals("conferenceInstance")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("journal") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("author") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("conferenceInstance") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("paper") && targetVertex.equals("author")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                }
-            }
-        }
-        TinkerGraph tg = (TinkerGraph)filterTraversal.match((Traversal<?, ?>) allMatchClauses).cap("sg").next();
-        GraphTraversalSource sg = tg.traversal();
-        return sg;
-    }
-
 
 //    public static GraphTraversal<Vertex, Vertex> addFiltersForVertex(GraphTraversal<Vertex, Vertex> inputTraversal, JsonArray filtersForVertex, String vertexType){
 //        if (filtersForVertex.size() > 1 ){
