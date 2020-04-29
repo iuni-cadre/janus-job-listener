@@ -1,0 +1,5 @@
+language: java
+script:
+- mvn -f java/cadre-job-listener/pom.xml test -B
+notifications:
+  slack: iuni:eFRCaUGXAWtgylvfwcIxrack
