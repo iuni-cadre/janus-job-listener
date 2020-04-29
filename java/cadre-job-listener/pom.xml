@@ -120,6 +120,7 @@
       <artifactId>postgresql</artifactId>
       <version>42.2.5</version>
     </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-csv</artifactId>
       <version>1.8</version>
