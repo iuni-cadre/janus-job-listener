@@ -52,5 +52,12 @@ sg = g.V().match(
      cap('sg').next()
 
 
+--Paper to Paper Citation
+
+sg = g.V().match(
+			__.as('a').has('Paper','paperTitle', 'ladle pouring guide'),
+			__.as('a').inE('References').subgraph('sg').outV().as('b')).
+	 cap('sg').next()
+
 
 
