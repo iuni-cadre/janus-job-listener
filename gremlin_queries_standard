@@ -1,21 +1,4 @@
 
-
-
-g.V().match(
-			__.as('a').has('Paper','paperTitle', 'ladle pouring guide'),
-			__.as('a').in('AuthorOf').outV().as('b')).
-select('b').values()
-
-
-sg = g.V().match(__.as('a').has('Paper','paperTitle', 'ladle pouring guide'),__.as('a').inE('AuthorOf').subgraph('sg').outV().as('b')).cap('sg').next()
-
-
-
-
-----------------------------------------------------------------------------
-----------------------------------------------------------------------------
-
-
 --One Paper To its Authors
 sg = g.V().match(
 			__.as('a').has('Paper','paperTitle', 'ladle pouring guide'),
@@ -57,33 +40,16 @@ sg = g.V().match(
      cap('sg').next()
 
 
---Authors that have published articles including 'library' in title, published in Journals called 'Informetrics' OR 'Scientometrics' --In Progress
+--Authors that have published articles including 'library' in title, published in Journals called 'Informetrics' OR 'Scientometrics' 
 
 
 sg = g.V().match(
-		__.as('a').has('JournalFixed', 'displayName', textContains('informetrics')),
-        __.as('a').has('JournalFixed', 'displayName', textContains('scientometrics')),
+        __.as('a').has('JournalFixed', 'displayName', textContains('scientometrics').
+		or(textContains('informetrics'))),
 		__.as('a').inE('PublishedInFixed').subgraph('sg').outV().as('b'), 
         __.as('b').has('Paper', 'paperTitle', textContains('library')),
 		__.as('b').inE('AuthorOf').subgraph('sg').outV().as('c')).
      cap('sg').next()
-
-
-
-g.V().match(__.as('a').or(has('JournalFixed', 'displayName', textContains('informetrics')), has('JournalFixed', 'displayName', textContains('scientometrics')))).select('a').valueMap()
-
-
-
-sg = g.V().match(__.as('a').has('JournalFixed', 'displayName', textContains('informetrics')).).select('a').valueMap()
-
-
-
-
-
-
-
-
-
 
 
 
