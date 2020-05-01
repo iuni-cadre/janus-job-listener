@@ -7,18 +7,12 @@ import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.mortbay.util.ajax.JSON;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
@@ -26,24 +20,24 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 public class JobListener {
-    private static final String QUEUE_NAME = "testQueue";
+    private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     protected static final Log LOG = LogFactory.getLog(JobListener.class);
 
     public static void main(String[] args) {
+        try {
+            poll_queue();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 
