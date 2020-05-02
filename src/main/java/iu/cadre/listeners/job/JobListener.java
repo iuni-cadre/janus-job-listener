@@ -34,11 +34,11 @@ public class JobListener {
 
     public static void main(String[] args) {
         try {
+            ConfigReader.loadProperties(args[0]);
             poll_queue();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public static String getFileName(String jobID, String jobName){
