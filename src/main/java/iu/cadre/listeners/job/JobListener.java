@@ -103,6 +103,7 @@ public class JobListener {
                 JsonArray outputFields = messageBodyJObj.get("csv_output").getAsJsonArray();
 
                 String metaDBUrl = "jdbc:postgresql://" + ConfigReader.getMetaDBHost() + ":" + ConfigReader.getMetaDBPort() + "/" + ConfigReader.getMetaDBName();
+                Class.forName("org.postgresql.Driver");
                 try (Connection conn = DriverManager.getConnection(
                         metaDBUrl, ConfigReader.getMetaDBUsername(), ConfigReader.getMetaDBPWD());
                      PreparedStatement preparedStatement = conn.prepareStatement(jobUpdateStatement)) {

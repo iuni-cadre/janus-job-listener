@@ -75,7 +75,8 @@ public class JSON2Gremlin {
                 }
             }
         }
-        TinkerGraph tg = (TinkerGraph)filterTraversal.match((Traversal<?, ?>) allMatchClauses).cap("sg").next();
+        Object[] allMatchPredicates = allMatchClauses.toArray();
+        TinkerGraph tg = (TinkerGraph)filterTraversal.match((Traversal<?, ?>[]) allMatchPredicates).cap("sg").next();
         GraphTraversalSource sg = tg.traversal();
         return sg;
     }
