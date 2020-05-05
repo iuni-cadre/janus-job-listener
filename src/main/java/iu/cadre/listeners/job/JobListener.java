@@ -123,6 +123,7 @@ public class JobListener {
                     String fileName = getFileName(jobId, jobName);
                     String csvPath = userQueryResultDir + File.separator + fileName + ".csv";
                     String graphMLFile = userQueryResultDir + File.separator + fileName + ".xml";
+                    LOG.info(graphMLFile);
 
                     if (dataset.equals("mag")){
                         GraphTraversalSource janusTraversal = getJanusTraversal();

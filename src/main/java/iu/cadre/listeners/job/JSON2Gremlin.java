@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.json.JSONArray;
@@ -17,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
+import static org.janusgraph.core.attribute.Text.textContains;
 
 public class JSON2Gremlin {
 
@@ -39,7 +40,11 @@ public class JSON2Gremlin {
         GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
         JsonArray nodes = graphFields.get("nodes").getAsJsonArray();
         JsonArray edges = graphFields.get("edges").getAsJsonArray();
-        Map<String, List<Object>> asLabelFilters = getASLabelFilters(nodes);
+        boolean edgesIncluded = true;
+        if (edges.size() == 0){
+            edgesIncluded = false;
+        }
+        Map<String, List<Object>> asLabelFilters = getASLabelFilters(nodes, edgesIncluded);
         int count = 1;
         List<Object> allMatchClauses = new ArrayList<>();
         for (String vertexType : asLabelFilters.keySet()){
@@ -50,6 +55,7 @@ public class JSON2Gremlin {
             allMatchClauses.addAll(hasFilterListPerVertex);
 
             for (int i=0; i < edges.size(); i++){
+                System.out.println("*****************");
                 JsonObject edgeJson = edges.get(i).getAsJsonObject();
                 String sourceVertex = edgeJson.get("source").getAsString();
                 String targetVertex = edgeJson.get("target").getAsString();
@@ -75,13 +81,26 @@ public class JSON2Gremlin {
                 }
             }
         }
-        Object[] allMatchPredicates = allMatchClauses.toArray();
-        TinkerGraph tg = (TinkerGraph)filterTraversal.match((Traversal<?, ?>[]) allMatchPredicates).cap("sg").next();
+        GraphTraversal<?, ?> temp[] = new GraphTraversal[allMatchClauses.size()];
+        for (int i = 0; i < allMatchClauses.size(); i++) {
+            temp[i] = (GraphTraversal<?, ?>) allMatchClauses.get(i);
+        }
+//        GraphTraversal<Object, Object> has1 = __.as("test").has("Paper", "paperTitle", textContains("unicorns"));
+//        GraphTraversal<Object, Object> has2 = __.as("test").has("Paper", "year", 1990);
+//        Traversal<?, ?> temp2[] = new Traversal[2];
+//        temp2[0] = has1;
+//        temp2[1] = has2;
+//        int size = filterTraversal.match(temp2).toList().size();
+////        int size = filterTraversal.match(temp).toList().size();
+//        System.out.println("****** COUNT ***** " + size);
+        TinkerGraph tg = (TinkerGraph)filterTraversal.match(temp).cap("sg").next();
         GraphTraversalSource sg = tg.traversal();
         return sg;
+
+
     }
 
-    public static Map<String, List<Object>> getASLabelFilters(JsonArray nodes){
+    public static Map<String, List<Object>> getASLabelFilters(JsonArray nodes, boolean edgesIncluded){
         Map<String, List<Object>> hasFilterMap = new LinkedHashMap<>();
         for (int i=0; i < nodes.size(); i++){
             String label = "label" + (i+1);
@@ -95,12 +114,24 @@ public class JSON2Gremlin {
                 String value = filterField.get("value").getAsString();
                 String[] fieldValues = new String[]{field, value};
                 String operator = filterField.get("operator").getAsString();
-                if (!field.equals("year") && !field.equals("doi")){
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, textContainsFuzzy(value));
-                    hasFilters.add(asLabelWithFilters);
+                if (!edgesIncluded && i == nodes.size() -1){
+                    if (!field.equals("year") && !field.equals("doi")){
+                        System.out.println(field);
+                        GraphTraversal<Object, Edge> asLabelWithFilters = __.as(label).has(vertexType, field, textContains(value)).subgraph("sg");
+                        hasFilters.add(asLabelWithFilters);
+                    }else {
+                        GraphTraversal<Object, Edge> asLabelWithFilters = __.as(label).has(vertexType, field, Integer.valueOf(value)).subgraph("sg");
+                        hasFilters.add(asLabelWithFilters);
+                    }
                 }else {
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, Integer.valueOf(value));
-                    hasFilters.add(asLabelWithFilters);
+                    if (!field.equals("year") && !field.equals("doi")){
+                        System.out.println(field);
+                        GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, textContains(value));
+                        hasFilters.add(asLabelWithFilters);
+                    }else {
+                        GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, Integer.valueOf(value));
+                        hasFilters.add(asLabelWithFilters);
+                    }
                 }
             }
             hasFilterMap.put(vertexType, hasFilters);
