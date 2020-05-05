@@ -124,7 +124,7 @@ class GremlinGraphWriterTest {
                     .inE("AuthorOf").subgraph("sg").cap("sg").next();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             GremlinGraphWriter.graph_to_ml(sg, stream);
-            String actualResult = stream.toString(Charset.defaultCharset());
+            String actualResult = stream.toString();
             assertTrue(actualResult.contains("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\""));
             assertTrue(actualResult.contains("<data key=\"labelV\">Author</data><data key=\"name\">joe</data>"));
             assertTrue(actualResult.contains("<data key=\"labelV\">Paper</data><data key=\"paperTitle\">full case study report upplandsbondens sweden</data>"));
@@ -141,7 +141,7 @@ class GremlinGraphWriterTest {
                 .inE("AuthorOf").subgraph("sg").cap("sg").next();
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         GremlinGraphWriter.dump_graph(sg, stream);
-        String actualResult = stream.toString(Charset.defaultCharset());
+        String actualResult = stream.toString();
         assertTrue(actualResult.contains("Vertex Author: name = joe;id:"));
         assertTrue(actualResult.contains("Vertex Paper: paperTitle = full case study report upplandsbondens sweden;id:"));
         assertTrue(actualResult.contains("Edge AuthorOf: test_edge_property = test_edge_property_value;id:"));
@@ -155,7 +155,7 @@ class GremlinGraphWriterTest {
                     .inE("AuthorOf").subgraph("sg").cap("sg").next();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             GremlinGraphWriter.graph_to_csv(sg, stream);
-            String actualResult = stream.toString(Charset.defaultCharset());
+            String actualResult = stream.toString();
 
             String[] splits = actualResult.split("\n");
             String header = splits[0];
