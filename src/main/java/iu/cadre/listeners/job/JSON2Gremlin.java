@@ -40,6 +40,8 @@ public class JSON2Gremlin {
         GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
         JsonArray nodes = graphFields.get("nodes").getAsJsonArray();
         JsonArray edges = graphFields.get("edges").getAsJsonArray();
+	System.out.println("*****************");
+	System.out.println(edges.size());
         boolean edgesIncluded = true;
         if (edges.size() == 0){
             edgesIncluded = false;
@@ -60,23 +62,24 @@ public class JSON2Gremlin {
                 String sourceVertex = edgeJson.get("source").getAsString();
                 String targetVertex = edgeJson.get("target").getAsString();
                 String relation = edgeJson.get("relation").getAsString();
-                if (sourceVertex.equals("paper") && targetVertex.equals("journal")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
+                if (sourceVertex.equals("Paper") && targetVertex.equals("JournalFixed")){
+	            System.out.println("**** PAPER JOURNAL ****");		
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("paper") && targetVertex.equals("conferenceInstance")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
+                }else if (sourceVertex.equals("Paper") && targetVertex.equals("ConferenceInstance")){
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("journal") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
+                }else if (sourceVertex.equals("JournalFixed") && targetVertex.equals("Paper")){
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("author") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg1").inV().as(label2);
+                }else if (sourceVertex.equals("Author") && targetVertex.equals("Paper")){
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("conferenceInstance") && targetVertex.equals("paper")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
+                }else if (sourceVertex.equals("ConferenceInstance") && targetVertex.equals("Paper")){
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (sourceVertex.equals("paper") && targetVertex.equals("author")){
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg1").outV().as(label2);
+                }else if (sourceVertex.equals("Paper") && targetVertex.equals("Author")){
+                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 }
             }
@@ -92,7 +95,7 @@ public class JSON2Gremlin {
 //        temp2[1] = has2;
 //        int size = filterTraversal.match(temp2).toList().size();
 ////        int size = filterTraversal.match(temp).toList().size();
-//        System.out.println("****** COUNT ***** " + size);
+        System.out.println("****** COUNT ***** " + allMatchClauses.size());
         TinkerGraph tg = (TinkerGraph)filterTraversal.match(temp).cap("sg").next();
         GraphTraversalSource sg = tg.traversal();
         return sg;
