@@ -15,6 +15,7 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
@@ -131,6 +132,12 @@ public class JobListener {
                         subgraph.io(graphMLFile).write().iterate();
                         //  to convert to csv, use BenF method
                     }
+                    System.out.println("Deleting the sqs message");
+                    DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
+                            .queueUrl(queueUrl)
+                            .receiptHandle(m.receiptHandle())
+                            .build();
+                    sqsClient.deleteMessage(deleteMessageRequest);
                 } catch (SQLException e) {
                     LOG.error("Error while updating meta db. Error is : " + e.getMessage());
                     throw new Exception("Error while updating meta db",e);
