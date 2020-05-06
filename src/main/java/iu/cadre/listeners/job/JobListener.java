@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.util.ConfigReader;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
@@ -31,7 +31,7 @@ import java.util.List;
 public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
-    protected static final Log LOG = LogFactory.getLog(JobListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
 
     public static void main(String[] args) {
         try {
