@@ -72,23 +72,19 @@ public class JobListener {
     public static void poll_queue() throws Exception {
         SqsClient sqsClient = SqsClient.builder().region(Region.US_EAST_2).build();
         List<String> outputFiltersSingle = new ArrayList<String>();
+        GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
+                .queueName(QUEUE_NAME)
+                .build();
 
+        String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
+        ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
+                .queueUrl(queueUrl)
+                .build();
         String jobUpdateStatement = "UPDATE user_job SET job_status = 'RUNNING', modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
         String fileInsertStatement = "INSERT INTO query_result(job_id,efs_path, file_checksum, data_type, authenticity, created_by, created_on) " +
                 "VALUES(?,?,?,?,?,?,current_timestamp)";
 
-
         while (true) {
-            GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
-                    .queueName(QUEUE_NAME)
-                    .build();
-
-            String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
-            ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
-                    .queueUrl(queueUrl)
-                    .build();
-
-//            	'Body': '{"job_name": "Test", "filters": [{"field": "year", "value": "2005", "operation": "AND"}, {"field": "journal_display_name", "value": "science", "operation": ""}], "output": [{"field": "paper_id", "type": "single"}, {"field": "year", "type": "single"}, {"field": "original_title", "type": "single"}, {"field": "authors_display_name", "type": "single"}, {"field": "journal_display_name", "type": "single"}, {"field": "citations", "type": "network", "degree": 1}], "dataset": "mag", "job_id": "5d3f63cf-3f49-4a24-9b0f-3461a0485078", "username": "mjzwk4tsmv2hi", "user_id": 25}'
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
             // print out the messages
             for (Message m : messages) {
