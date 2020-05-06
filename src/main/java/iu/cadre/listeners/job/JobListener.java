@@ -32,6 +32,9 @@ public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
+    private static JanusGraph graph = null;
+    private static JanusGraphTransaction graphTransaction = null;
+
 
     public static void main(String[] args) {
         try {
@@ -39,6 +42,11 @@ public class JobListener {
             poll_queue();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (graph != null){
+                graphTransaction.close();
+                graph.close();
+            }
         }
     }
 
@@ -55,13 +63,13 @@ public class JobListener {
     public static GraphTraversalSource getJanusTraversal() throws Exception{
         try {
             String janusConfig = ConfigReader.getJanusPropertiesFile();
-            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
+            graph = JanusGraphFactory.open(janusConfig);
             StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
             // get graph management
             JanusGraphManagement mgmt = standardGraph.openManagement();
             // you code using 'mgmt' to perform any management related operations
             // using graph to do traversal
-            JanusGraphTransaction graphTransaction = graph.newTransaction();
+            graphTransaction = graph.newTransaction();
             return graphTransaction.traversal();
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
@@ -83,7 +91,7 @@ public class JobListener {
         String jobUpdateStatement = "UPDATE user_job SET job_status = 'RUNNING', modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
         String fileInsertStatement = "INSERT INTO query_result(job_id,efs_path, file_checksum, data_type, authenticity, created_by, created_on) " +
                 "VALUES(?,?,?,?,?,?,current_timestamp)";
-
+        LOG.info("SQS connection established and listening");
         while (true) {
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
             // print out the messages
@@ -110,7 +118,7 @@ public class JobListener {
 
                     String efsRootDir = ConfigReader.getEFSRootListenerDir();
                     String efsSubPath = ConfigReader.getEFSSubPathListenerDir();
-                    String efsPath = efsRootDir + efsSubPath;
+                    String efsPath = efsRootDir + File.separator + efsSubPath;
                     String graphImportDir = ConfigReader.getEFSGraphImportDir();
                     String userQueryResultDir = efsPath + '/' + userName + "/query-results";
                     File directory = new File(userQueryResultDir);
@@ -127,6 +135,7 @@ public class JobListener {
                         GraphTraversalSource subgraph = JSON2Gremlin.getSubGraphForQuery(janusTraversal, graphJson, outputFiltersSingle);
                         subgraph.io(graphMLFile).write().iterate();
                         //  to convert to csv, use BenF method
+                        janusTraversal.close();
                     }
                     System.out.println("Deleting the sqs message");
                     DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
@@ -134,6 +143,7 @@ public class JobListener {
                             .receiptHandle(m.receiptHandle())
                             .build();
                     sqsClient.deleteMessage(deleteMessageRequest);
+
                 } catch (SQLException e) {
                     LOG.error("Error while updating meta db. Error is : " + e.getMessage());
                     throw new Exception("Error while updating meta db",e);
