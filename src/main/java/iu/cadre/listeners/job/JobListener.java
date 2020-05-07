@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.util.ConfigReader;
+import iu.cadre.listeners.job.util.ListenerUtils;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -21,6 +23,8 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -88,10 +92,12 @@ public class JobListener {
         ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                 .queueUrl(queueUrl)
                 .build();
-        String jobUpdateStatement = "UPDATE user_job SET job_status = 'RUNNING', modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
+        String jobUpdateStatement = "UPDATE user_job SET job_status = ?, modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
         String fileInsertStatement = "INSERT INTO query_result(job_id,efs_path, file_checksum, data_type, authenticity, created_by, created_on) " +
                 "VALUES(?,?,?,?,?,?,current_timestamp)";
         LOG.info("SQS connection established and listening");
+        String metaDBUrl = "jdbc:postgresql://" + ConfigReader.getMetaDBHost() + ":" + ConfigReader.getMetaDBPort() + "/" + ConfigReader.getMetaDBName();
+
         while (true) {
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
             // print out the messages
@@ -106,23 +112,22 @@ public class JobListener {
                 String userId = messageBodyJObj.get("user_id").getAsString();
                 JsonObject graphJson = messageBodyJObj.get("graph").getAsJsonObject();
                 JsonArray outputFields = messageBodyJObj.get("csv_output").getAsJsonArray();
-
-                String metaDBUrl = "jdbc:postgresql://" + ConfigReader.getMetaDBHost() + ":" + ConfigReader.getMetaDBPort() + "/" + ConfigReader.getMetaDBName();
                 Class.forName("org.postgresql.Driver");
-                try (Connection conn = DriverManager.getConnection(
+                Connection connection = DriverManager.getConnection(
                         metaDBUrl, ConfigReader.getMetaDBUsername(), ConfigReader.getMetaDBPWD());
-                     PreparedStatement preparedStatement = conn.prepareStatement(jobUpdateStatement)) {
-
-                    preparedStatement.setString(1, jobId);
-                    preparedStatement.executeUpdate();
+                PreparedStatement jobStatusPreparedStatement = connection.prepareStatement(jobUpdateStatement);
+                PreparedStatement fileInfoPreparedStatement = connection.prepareStatement(fileInsertStatement);
+                try {
+                    jobStatusPreparedStatement.setString(1, "RUNNING");
+                    jobStatusPreparedStatement.setString(2, jobId);
+                    jobStatusPreparedStatement.executeUpdate();
 
                     String efsRootDir = ConfigReader.getEFSRootListenerDir();
                     String efsSubPath = ConfigReader.getEFSSubPathListenerDir();
                     String efsPath = efsRootDir + File.separator + efsSubPath;
-                    String graphImportDir = ConfigReader.getEFSGraphImportDir();
                     String userQueryResultDir = efsPath + '/' + userName + "/query-results";
                     File directory = new File(userQueryResultDir);
-                    if (! directory.exists()) {
+                    if (!directory.exists()) {
                         directory.mkdirs();
                     }
                     String fileName = getFileName(jobId, jobName);
@@ -130,277 +135,56 @@ public class JobListener {
                     String graphMLFile = userQueryResultDir + File.separator + fileName + ".xml";
                     LOG.info(graphMLFile);
 
-                    if (dataset.equals("mag")){
+                    if (dataset.equals("mag")) {
                         GraphTraversalSource janusTraversal = getJanusTraversal();
-                        GraphTraversalSource subgraph = JSON2Gremlin.getSubGraphForQuery(janusTraversal, graphJson, outputFiltersSingle);
-                        subgraph.io(graphMLFile).write().iterate();
-                        //  to convert to csv, use BenF method
+                        TinkerGraph tg = JSON2Gremlin.getSubGraphForQuery(janusTraversal, graphJson, outputFiltersSingle);
+                        GraphTraversalSource sg = tg.traversal();
+                        sg.io(graphMLFile).write().iterate();
+                        //  to convert to csv
+                        OutputStream stream = new FileOutputStream(csvPath);
+                        GremlinGraphWriter.graph_to_csv(tg, stream);
                         janusTraversal.close();
                     }
-                    System.out.println("Deleting the sqs message");
+                    String csvChecksum = ListenerUtils.getChecksum(csvPath);
+                    String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
+                    LOG.info("Deleting the sqs message");
                     DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
                             .queueUrl(queueUrl)
                             .receiptHandle(m.receiptHandle())
                             .build();
                     sqsClient.deleteMessage(deleteMessageRequest);
+                    jobStatusPreparedStatement.setString(1, "COMPLETED");
+                    jobStatusPreparedStatement.setString(2, jobId);
+                    jobStatusPreparedStatement.executeUpdate();
+
+                    fileInfoPreparedStatement.setString(1, jobId);
+                    fileInfoPreparedStatement.setString(2, csvPath);
+                    fileInfoPreparedStatement.setString(3, csvChecksum);
+                    fileInfoPreparedStatement.setString(4, "MAG");
+                    fileInfoPreparedStatement.setBoolean(5, true);
+                    fileInfoPreparedStatement.setInt(6, Integer.parseInt(userId));
+                    fileInfoPreparedStatement.executeUpdate();
+
+                    fileInfoPreparedStatement.setString(1, jobId);
+                    fileInfoPreparedStatement.setString(2, graphMLFile);
+                    fileInfoPreparedStatement.setString(3, graphMLChecksum);
+                    fileInfoPreparedStatement.setString(4, "MAG");
+                    fileInfoPreparedStatement.setBoolean(5, true);
+                    fileInfoPreparedStatement.setInt(6, Integer.parseInt(userId));
+                    fileInfoPreparedStatement.executeUpdate();
 
                 } catch (SQLException e) {
+                    jobStatusPreparedStatement.setString(1, "FAILED");
+                    jobStatusPreparedStatement.setString(2, jobId);
+                    jobStatusPreparedStatement.executeUpdate();
                     LOG.error("Error while updating meta db. Error is : " + e.getMessage());
-                    throw new Exception("Error while updating meta db",e);
+                    throw new Exception("Error while updating meta db", e);
+                }finally {
+                    jobStatusPreparedStatement.close();
+                    fileInfoPreparedStatement.close();
+                    connection.close();
                 }
             }
         }
     }
-
-    // we will support paper to paper citations for now
-    // filters": [{"field": "year", "field": "2005", "operation": "AND"}, {"field": "journal_display_name", "value": "science", "operation": ""}]
-    // sg = g.V().and(has('Paper', 'paperTitle', 'ladle pouring guide'), has('Paper', 'year', '1950')).outE('References').subgraph('sg1').cap('sg1').next()
-    //  TinkerGraph tg = (TinkerGraph)traversal.V().and(has(vertexLabel, fieldName, teX VCFFF VGFNBVC xtContainsFuzzy(fieldValue)), has(vertexLabel, "year", 1990)).inE("AuthorOf").subgraph("org_auth2").cap("org_auth2").next();
-    //  GraphTraversalSource sg = tg.traversal();
-    //  sg.io("/home/ubuntu/unicorn_chathuri_2.xml").write().iterate();
-//    public static GraphTraversalSource getSubGraphForQueryForDegree1(GraphTraversalSource traversal, JsonArray filterFields, List<String> outputFields){
-//        int size = filterFields.size();
-//        Map<GraphTraversal<Object, Object>, String> hasFilterWithOperatorMap = new LinkedHashMap<GraphTraversal<Object, Object>, String>();
-//        GraphTraversal<Vertex, Vertex> filterTraversal = null;
-//        if (size > 0) {
-//            JsonObject firstJobject = filterFields.get(0).getAsJsonObject();
-//            JsonObject lastJObject = filterFields.get(size - 1).getAsJsonObject();
-//            if (firstJobject == lastJObject) {
-//                String field = firstJobject.get("field").getAsString();
-//                String value = firstJobject.get("value").getAsString();
-//                String operation = firstJobject.get("operation").getAsString();
-//                if (field.equals("year")) {
-//                    filterTraversal = traversal.V().has("Paper", "year", Integer.valueOf(value));
-//                } else if (field.equals("journal_display_name")) {
-//                    filterTraversal = traversal.V().has("Journal", "journalName", textContainsFuzzy(value));
-//                } else if (field.equals("authors_display_name")) {
-//                    filterTraversal = traversal.V().has("Author", "authorsDisplayName", textContainsFuzzy(value));
-//                } else if (field.equals("doi")) {
-//                    filterTraversal = traversal.V().has("Paper", "doi", textContainsFuzzy(value));
-//                } else if (field.equals("conference_display_name")) {
-//                    filterTraversal = traversal.V().has("Paper", "conferenceDisplayName", textContainsFuzzy(value));
-//                } else if (field.equals("paper_title")) {
-//                    filterTraversal = traversal.V().has("Paper", "paperTitle", textContainsFuzzy(value));
-//                } else if (field.equals("paper_abstract")) {
-//                    filterTraversal = traversal.V().has("Paper", "paperAbstract", textContainsFuzzy(value));
-//                }
-//            }else {
-//                String firstField = firstJobject.get("field").getAsString();
-//                String firstValue = firstJobject.get("value").getAsString();
-//                String firstOperation = firstJobject.get("operation").getAsString();
-//                if (firstField.equals("year")) {
-//                    GraphTraversal<Object, Object> yearHas = has("Paper", "year", Integer.valueOf(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, yearHas);
-//                } else if (firstField.equals("journal_display_name")) {
-//                    GraphTraversal<Object, Object> journalNameHas = has("Paper", "journalName", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, journalNameHas);
-//                } else if (firstField.equals("authors_display_name")) {
-//                    GraphTraversal<Object, Object> authorDisplayNameHas = has("Paper", "authorsDisplayName", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, authorDisplayNameHas);
-//                } else if (firstField.equals("doi")) {
-//                    GraphTraversal<Object, Object> doiHas = has("Paper", "doi", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, doiHas);
-//                } else if (firstField.equals("conference_display_name")) {
-//                    GraphTraversal<Object, Object> conferenceDNHas = has("Paper", "conferenceDisplayName", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, conferenceDNHas);
-//                } else if (firstField.equals("paper_title")) {
-//                    GraphTraversal<Object, Object> paperTitleHas = has("Paper", "paperTitle", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, paperTitleHas);
-//                } else if (firstField.equals("paper_abstract")) {
-//                    GraphTraversal<Object, Object> paperAbstractHas = has("Paper", "paperAbstract", textContainsFuzzy(firstValue));
-//                    filterTraversal = addFilters(traversal.V(), firstOperation, paperAbstractHas);
-//                }
-//                for (int i = 1; i < size -1; i++) {
-//                    JsonObject filterObject = filterFields.get(i).getAsJsonObject();
-//                    String field = filterObject.get("field").getAsString();
-//                    String value = filterObject.get("value").getAsString();
-//                    String operation = filterObject.get("operation").getAsString();
-//                    if (field.equals("year")) {
-//                        GraphTraversal<Object, Object> yearHas = has("Paper", "year", Integer.valueOf(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, yearHas);
-//                    } else if (field.equals("journal_display_name")) {
-//                        GraphTraversal<Object, Object> journalNameHas = has("Paper", "journalName", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, journalNameHas);
-//                    } else if (field.equals("authors_display_name")) {
-//                        GraphTraversal<Object, Object> authorDisplayNameHas = has("Paper", "authorsDisplayName", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, authorDisplayNameHas);
-//                    } else if (field.equals("doi")) {
-//                        GraphTraversal<Object, Object> doiHas = has("Paper", "doi", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, doiHas);
-//                    } else if (field.equals("conference_display_name")) {
-//                        GraphTraversal<Object, Object> conferenceDNHas = has("Paper", "conferenceDisplayName", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, conferenceDNHas);
-//                    } else if (field.equals("paper_title")) {
-//                        GraphTraversal<Object, Object> paperTitleHas = has("Paper", "paperTitle", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, paperTitleHas);
-//                    } else if (field.equals("paper_abstract")) {
-//                        GraphTraversal<Object, Object> paperAbstractHas = has("Paper", "paperAbstract", textContainsFuzzy(value));
-//                        filterTraversal = addFilters(filterTraversal, firstOperation, paperAbstractHas);
-//                    }
-//                }
-//                String lastField = lastJObject.get("field").getAsString();
-//                String lastValue = lastJObject.get("value").getAsString();
-//                String lastOperation = lastJObject.get("operation").getAsString();
-//                if (lastField.equals("year")) {
-//                    filterTraversal = filterTraversal.has("Paper", "year", Integer.valueOf(lastValue));
-//                } else if (lastField.equals("journal_display_name")) {
-//                    filterTraversal = filterTraversal.has("Paper", "journalName", textContainsFuzzy(lastValue));
-//                } else if (lastField.equals("authors_display_name")) {
-//                    filterTraversal = filterTraversal.has("Paper", "authorsDisplayName", textContainsFuzzy(lastValue));
-//                } else if (lastField.equals("doi")) {
-//                    filterTraversal = filterTraversal.has("Paper", "doi", textContainsFuzzy(lastValue));
-//                } else if (lastField.equals("conference_display_name")) {
-//                    filterTraversal = filterTraversal.has("Paper", "conferenceDisplayName", textContainsFuzzy(lastValue));
-//                } else if (lastField.equals("paper_title")) {
-//                    filterTraversal = filterTraversal.has("Paper", "paperTitle", textContainsFuzzy(lastValue));
-//                } else if (lastField.equals("paper_abstract")) {
-//                    filterTraversal = filterTraversal.has("Paper", "paperAbstract", textContainsFuzzy(lastValue));
-//                }
-//            }
-//
-//        }
-//        TinkerGraph tg = (TinkerGraph)filterTraversal.outE("References").subgraph("sg1").cap("sg1").next();
-//        GraphTraversalSource sg = tg.traversal();
-//        return sg;
-//    }
-
-//    public static GraphTraversal<Vertex, Vertex> addFilters(GraphTraversal<Vertex, Vertex> inputTraversal, String operator, GraphTraversal<Object, Object> hasFilter){
-//        if (operator.equals("and")){
-//            return inputTraversal.and(hasFilter);
-//        }else if (operator.equals("or")){
-//            return inputTraversal.or(hasFilter);
-//        }else {
-//            return null;
-//        }
-//    }
-//
-//    public static List<String> getTraversalPath(JsonArray graphFields){
-//        List<String> vertices = new ArrayList<String>();
-//        for (int i=0; i < graphFields.size(); i++) {
-//            JsonObject vertexObject = graphFields.get(i).getAsJsonObject();
-//            String vertexType = vertexObject.get("vertexType").getAsString();
-//            vertices.add(vertexType);
-//        }
-//        return vertices;
-//    }
-
-    // inE : paper - journal : publishedIn
-    // inE : author - paper : authorof
-    // inE : paper -> conferenceInstance : presentedAt
-//    public static List<String> getEdgeTypes (List<String> vertices){
-//        List<String> edgesList = new ArrayList<String>();
-//        for(int i=0; i < vertices.size() -1; i++){
-//            String startVertex = vertices.get(i);
-//            String nextVertex = vertices.get(i+1);
-//            if (startVertex.equals("paper") && nextVertex.equals("journal")){
-//                edgesList.add("outE:PublishedInFixed");
-//            }else if (startVertex.equals("paper") && nextVertex.equals("conferenceInstance")){
-//                edgesList.add("inE:PresentedAt");
-//            }else if (startVertex.equals("journal") && nextVertex.equals("paper")){
-//                edgesList.add("inE:PublishedInFixed");
-//            }else if (startVertex.equals("author") && nextVertex.equals("paper")){
-//                edgesList.add("inE:AuthorOf");
-//            }else if (startVertex.equals("conferenceInstance") && nextVertex.equals("paper")){
-//                edgesList.add("outE:PresentedAt");
-//            }else if (startVertex.equals("paper") && nextVertex.equals("author")){
-//                edgesList.add("outE:AuthorOf");
-//            }
-//        }
-//        return edgesList;
-//    }
-
-//    public static GraphTraversalSource getSubGraphForQueryForDegree1(GraphTraversalSource traversal, JsonArray graphFields, List<String> outputFields){
-//        GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
-//        List<String> traversalPath = getTraversalPath(graphFields);
-//        List<String> edgeTypesList = getEdgeTypes(traversalPath);
-//        boolean isNetworkEnabled = false;
-//        if (graphFields.size() > 1){
-//            JsonObject lastVertex = graphFields.get(graphFields.size() - 1).getAsJsonObject();
-//            String lastvertexType = lastVertex.get("vertexType").getAsString();
-//            if (lastvertexType.equals("Paper")){
-//                isNetworkEnabled = true;
-//            }
-//        }
-//        int vertexCount = 0;
-//        List<GraphTraversal<Vertex, Vertex>> filtersPerVertexList = new ArrayList<>();
-//        for (String vertexType : traversalPath){
-//            for (int i=0; i < graphFields.size(); i++){
-//                JsonObject vertexObject = graphFields.get(i).getAsJsonObject();
-//                String vertexTypeList = vertexObject.get("vertexType").getAsString();
-//                if (vertexTypeList.equals(vertexType)){
-//                    JsonArray filters = vertexObject.get("filters").getAsJsonArray();
-//                    GraphTraversal<Vertex, Vertex> vertexVertexGraphTraversal = addFiltersForVertex(filterTraversal, filters, vertexTypeList);
-//                    filtersPerVertexList.add(vertexVertexGraphTraversal);
-//                }
-//            }
-//        }
-//
-//        GraphTraversal<Vertex, Vertex> seedVertexGraphTraversal = filtersPerVertexList.get(0);
-//        for (int j=0; j< filtersPerVertexList.size()-1; j++){
-//            GraphTraversal<Vertex, Vertex> vertexGraphTraversal = filtersPerVertexList.get(j);
-//            String edgeType = edgeTypesList.get(j);
-//            String[] splits = edgeType.split(":");
-//            String direction = splits[0];
-//            String edgeName = splits[1];
-//            if (direction.equals("inE")){
-//                vertexGraphTraversal = seedVertexGraphTraversal.inE(edgeName).subgraph("sg1").outV();
-//            }else {
-//                vertexGraphTraversal = seedVertexGraphTraversal.outE(edgeName).subgraph("sg1").outV();
-//            }
-//        }
-//
-//    }
-
-//    public static Map<String, List<String[]>> getHasFilters(JsonArray nodes){
-//        Map<String, List<String[]>> hasFilterMap = new LinkedHashMap<>();
-//        for (int i=0; i < nodes.size(); i++){
-//            JsonObject vertexObject = nodes.get(i).getAsJsonObject();
-//            String vertexType = vertexObject.get("vertexType").getAsString();
-//            JsonArray filters = vertexObject.get("filters").getAsJsonArray();
-//            List<String[]> hasFilters = new ArrayList<>();
-//            for (int j = 0; j < filters.size(); j++) {
-//                JsonObject filterField = filters.get(j).getAsJsonObject();
-//                String field = filterField.get("field").getAsString();
-//                String value = filterField.get("value").getAsString();
-//                String[] fieldValues = new String[]{field, value};
-//                String operator = filterField.get("operator").getAsString();
-//                hasFilters.add(fieldValues);
-//            }
-//            hasFilterMap.put(vertexType, hasFilters);
-//
-//        }
-//        return hasFilterMap;
-//    }
-
-//    public static GraphTraversal<Vertex, Vertex> addFiltersForVertex(GraphTraversal<Vertex, Vertex> inputTraversal, JsonArray filtersForVertex, String vertexType){
-//        if (filtersForVertex.size() > 1 ){
-//            for (int j = 0; j < filtersForVertex.size(); j++){
-//                JsonObject filterField = filtersForVertex.get(j).getAsJsonObject();
-//                String field = filterField.get("field").getAsString();
-//                String value = filterField.get("value").getAsString();
-//                String operator = filterField.get("operator").getAsString();
-//                GraphTraversal<Object, Object> hasFilter = null;
-//                if (!field.equals("year") && !field.equals("doi")){
-//                    hasFilter = has(vertexType, field, textContainsFuzzy(value));
-//                }else {
-//                    hasFilter = has(vertexType, field, Integer.valueOf(value));
-//                }
-//                if (operator.equals("and")){
-//                    inputTraversal = inputTraversal.and(hasFilter);
-//                }else if (operator.equals("or")){
-//                    inputTraversal = inputTraversal.or(hasFilter);
-//                }
-//            }
-//        }else {
-//            JsonObject filterField = filtersForVertex.get(0).getAsJsonObject();
-//            String field = filterField.get("field").getAsString();
-//            String value = filterField.get("value").getAsString();
-//            if (!field.equals("year") && !field.equals("doi")){
-//                inputTraversal = inputTraversal.has(vertexType, field, textContainsFuzzy(value));
-//            }else {
-//                inputTraversal = inputTraversal.has(vertexType, field, Integer.valueOf(value));
-//            }
-//        }
-//        return inputTraversal;
-//    }
 }
