@@ -104,7 +104,7 @@ public class JSON2Gremlin {
             JsonObject vertexObject = nodes.get(i).getAsJsonObject();
             String vertexType = vertexObject.get("vertexType").getAsString();
             JsonArray filters = vertexObject.get("filters").getAsJsonArray();
-            List< Object> hasFilters = new ArrayList<>();
+            List<Object> hasFilters = new ArrayList<>();
             for (int j = 0; j < filters.size(); j++) {
                 JsonObject filterField = filters.get(j).getAsJsonObject();
                 String field = filterField.get("field").getAsString();
@@ -121,6 +121,16 @@ public class JSON2Gremlin {
                     LOG.info(value);
                     GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, field, Integer.valueOf(value));
                     hasFilters.add(asLabelWithFilters);
+                }
+
+                if (operator.equals("or"))
+                {
+                    int n = hasFilters.size() - 1;
+                    GraphTraversal<Object, Object> gt1 = (GraphTraversal<Object, Object>)hasFilters.get(n);
+                    GraphTraversal<Object, Object> gt2 = (GraphTraversal<Object, Object>)hasFilters.get(n-1);
+                    hasFilters.remove(gt1);
+                    hasFilters.remove(gt2);
+                    hasFilters.add(__.as(label).or(gt1, gt2));
                 }
             }
             hasFilterMap.put(vertexType, hasFilters);

@@ -10,6 +10,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,6 +23,10 @@ import java.util.stream.Stream;
 public class GremlinGraphWriter {
     public static void main(String[] args) {
         try {
+            Logger logger = LoggerFactory.getLogger(GremlinGraphWriter.class);
+
+            logger.info("Hello World");
+
             TinkerIoRegistryV3d0 v = TinkerIoRegistryV3d0.instance();
 
             GraphTraversalSource g = EmptyGraph.instance().traversal().withRemote("conf/remote-graph.properties");
