@@ -103,6 +103,7 @@ public class JobListener {
             // print out the messages
             for (Message m : messages) {
                 String messageBody = m.body();
+                LOG.info(messageBody);
                 JsonElement messageBodyJElement = jsonParser.parse(messageBody);
                 JsonObject messageBodyJObj = messageBodyJElement.getAsJsonObject();
                 String dataset = messageBodyJObj.get("dataset").getAsString();
@@ -152,11 +153,13 @@ public class JobListener {
                             .queueUrl(queueUrl)
                             .receiptHandle(m.receiptHandle())
                             .build();
+                    LOG.info("Updating job status in metadb to completed..");
                     sqsClient.deleteMessage(deleteMessageRequest);
                     jobStatusPreparedStatement.setString(1, "COMPLETED");
                     jobStatusPreparedStatement.setString(2, jobId);
                     jobStatusPreparedStatement.executeUpdate();
 
+                    LOG.info("Updating csv file checksum in metadb to completed..");
                     fileInfoPreparedStatement.setString(1, jobId);
                     fileInfoPreparedStatement.setString(2, csvPath);
                     fileInfoPreparedStatement.setString(3, csvChecksum);
@@ -165,6 +168,7 @@ public class JobListener {
                     fileInfoPreparedStatement.setInt(6, Integer.parseInt(userId));
                     fileInfoPreparedStatement.executeUpdate();
 
+                    LOG.info("Updating graphml checksum in metadb to completed..");
                     fileInfoPreparedStatement.setString(1, jobId);
                     fileInfoPreparedStatement.setString(2, graphMLFile);
                     fileInfoPreparedStatement.setString(3, graphMLChecksum);
@@ -174,6 +178,7 @@ public class JobListener {
                     fileInfoPreparedStatement.executeUpdate();
 
                 } catch (SQLException e) {
+                    LOG.info("Error occurred");
                     jobStatusPreparedStatement.setString(1, "FAILED");
                     jobStatusPreparedStatement.setString(2, jobId);
                     jobStatusPreparedStatement.executeUpdate();
