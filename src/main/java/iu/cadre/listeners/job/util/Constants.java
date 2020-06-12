@@ -23,6 +23,7 @@ public class Constants {
     public static final String META_DATABASE_NAME = "meta.database.name";
     public static final String META_DATABASE_USERNAME = "meta.database.username";
     public static final String META_DATABASE_PASSWORD = "meta.database.password";
+    public static final String META_DATABASE_INMEMORY = "meta.database.inmemory";
     public static final String EFS_ROOT_QUERY_RESULTS_DIR = "efs.root.query.results.listener";
     public static final String EFS_SUBPATH_QUERY_RESULTS_DIR = "efs.subpath.query.results.listener";
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";

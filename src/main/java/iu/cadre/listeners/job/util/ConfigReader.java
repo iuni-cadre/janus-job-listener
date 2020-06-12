@@ -234,6 +234,17 @@ public class ConfigReader {
         }
     }
 
+    public static boolean getMetaDBInMemory() throws Exception{
+        try {
+            if (properties != null){
+                return Boolean.valueOf(properties.getProperty(Constants.META_DATABASE_INMEMORY));
+            }
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.META_DATABASE_INMEMORY);
+        }
+        return false;
+    }
+
     public static String getMetaDBPWD() throws Exception{
         try {
             if (properties != null){
