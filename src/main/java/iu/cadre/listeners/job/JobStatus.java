@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
+import java.util.Enumeration;
 
 class JobStatus {
     private Connection connection;
@@ -13,6 +14,9 @@ class JobStatus {
     private static final Logger LOG = LoggerFactory.getLogger(JobStatus.class);
 
     JobStatus() throws Exception {
+        Class.forName("org.postgresql.Driver");
+        Class.forName("org.sqlite.JDBC");
+
         String jobUpdateStatement = "UPDATE user_job SET job_status = ?, modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
         String fileInsertStatement = "INSERT INTO query_result(job_id,efs_path, file_checksum, data_type, authenticity, created_by, created_on) " +
                                      "VALUES(?,?,?,?,?,?,current_timestamp)";
