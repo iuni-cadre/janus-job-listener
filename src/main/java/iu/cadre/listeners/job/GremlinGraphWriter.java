@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GremlinGraphWriter {
     public static void main(String[] args) {
@@ -63,8 +61,8 @@ public class GremlinGraphWriter {
             ps.printf("id: %s\n", v.id());
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             ps.printf("Edge %s: ", e.label());
             for (Iterator<Property<Object>> it2 = e.properties(); it2.hasNext(); ) {
                 Property<Object> p = it2.next();
@@ -89,8 +87,8 @@ public class GremlinGraphWriter {
             }
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             for (Iterator<Property<Object>> it2 = e.properties(); it2.hasNext(); ) {
                 Property<Object> p = it2.next();
                 result.add(p.key());
@@ -118,8 +116,8 @@ public class GremlinGraphWriter {
             csvPrinter.printRecord(values);
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             List<String> base_values = new ArrayList<String>(Arrays.asList("Edge",
                     e.id().toString(), e.label(), e.inVertex().id().toString(), e.outVertex().id().toString()));
             List<String> values = ListUtils.union(base_values, gather_property_values(properties, e));
