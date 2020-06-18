@@ -31,7 +31,8 @@ class JobStatus {
                          + "	modified_on timestamp\n"
                          + ");";
             String sql2 = "CREATE TABLE IF NOT EXISTS query_result (\n"
-                          + "	job_id integer PRIMARY KEY,\n"
+                          + "   id integer PRIMARY KEY,"
+                          + "	job_id text,\n"
                           + "	efs_path text NOT NULL,\n"
                           + "	file_checksum text NOT NULL,\n"
                           + "	data_type text NOT NULL,\n"
