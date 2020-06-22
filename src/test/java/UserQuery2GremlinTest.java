@@ -126,7 +126,7 @@ public class UserQuery2GremlinTest {
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse("{job_name: \"foo\"}").getAsJsonObject());
         assertThrows(UnsupportedOperationException.class, () -> {
-            UserQuery2Gremlin.getSubGraphForQuery(g, q, null);
+            UserQuery2Gremlin.getSubGraphForQuery(g, q);
         });
     }
 
@@ -136,7 +136,7 @@ public class UserQuery2GremlinTest {
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
         assertThrows(UnsupportedOperationException.class, () -> {
-            UserQuery2Gremlin.getSubGraphForQuery(g, q, null);
+            UserQuery2Gremlin.getSubGraphForQuery(g, q);
         });
     }
 
@@ -150,7 +150,7 @@ public class UserQuery2GremlinTest {
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
 
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
@@ -158,7 +158,7 @@ public class UserQuery2GremlinTest {
     @Test
     void getSubGraphForQuery_paper_in_journal() {
         UserQuery q = create_json("Paper", "JournalFixed");
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
@@ -166,7 +166,7 @@ public class UserQuery2GremlinTest {
     @Test
     void getSubGraphForQuery_paper_in_conference() {
         UserQuery graphJson = create_json("Paper", "ConferenceInstance");
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson);
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
@@ -175,7 +175,7 @@ public class UserQuery2GremlinTest {
     @Disabled
     void getSubGraphForQuery_journal_of_paper() {
         UserQuery graphJson = create_json("JournalFixed", "Paper");
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson);
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
@@ -183,7 +183,7 @@ public class UserQuery2GremlinTest {
     @Test
     void getSubGraphForQuery_author_of_paper() {
         UserQuery graphJson = create_json("Author", "Paper");
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, graphJson);
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
@@ -227,7 +227,7 @@ public class UserQuery2GremlinTest {
                    "}";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q, null);
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(3, Iterators.size(tg.vertices()));
         assertEquals(2, Iterators.size(tg.edges()));
     }

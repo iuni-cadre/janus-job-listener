@@ -24,9 +24,11 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +60,32 @@ public class JobListener {
         return fileName;
     }
 
+    public static void janus_request(UserQuery query, String graphMLFile, String csvPath) throws Exception {
+        LOG.info("Connecting to Janus server");
+        Cluster cluster = Cluster.build()
+                .addContactPoint("localhost")
+                .port(8182)
+                .maxContentLength(10000000)
+                .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
+                        .addRegistry(JanusGraphIoRegistry.instance())
+                        .addRegistry(TinkerIoRegistryV3d0.instance())))
+                .create();
+        GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
+
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(janusTraversal, query);
+        GraphTraversalSource sg = tg.traversal();
+        LOG.info("Graph result received, writing GraphML to " + graphMLFile);
+        sg.io(graphMLFile).write().iterate();
+        //  to convert to csv
+        OutputStream stream = new FileOutputStream(csvPath);
+        GremlinGraphWriter.graph_to_csv(tg, stream);
+        janusTraversal.close();
+        LOG.info("Janus query complete");
+    }
+
     public static void poll_queue() throws Exception {
+        Class.forName("org.postgresql.Driver");
+
         SqsClient sqsClient = SqsClient.builder().region(Region.US_EAST_2).build();
         List<String> outputFiltersSingle = new ArrayList<String>();
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
@@ -76,50 +103,31 @@ public class JobListener {
             JobStatus status = new JobStatus();
             // print out the messages
             for (Message m : messages) {
-                String messageBody = m.body();
-                UserQuery query = new UserQuery(jsonParser.parse(messageBody).getAsJsonObject());
-                Class.forName("org.postgresql.Driver");
-                GraphTraversalSource janusTraversal = null;
+                UserQuery query = new UserQuery(jsonParser.parse(m.body()).getAsJsonObject());
+
+                LOG.info("Accepted " + query.JobId() + " for " + query.UserName());
+                DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
+                        .queueUrl(queueUrl)
+                        .receiptHandle(m.receiptHandle())
+                        .build();
+                sqsClient.deleteMessage(deleteMessageRequest);
 
                 try {
                     status.Update(query.JobId(), "RUNNING");
 
-                    String efsRootDir = ConfigReader.getEFSRootListenerDir();
-                    String efsSubPath = ConfigReader.getEFSSubPathListenerDir();
-                    String efsPath = efsRootDir + File.separator + efsSubPath;
-                    String userQueryResultDir = efsPath + '/' + query.UserName() + "/query-results";
-                    File directory = new File(userQueryResultDir);
-                    if (!directory.exists()) {
-                        directory.mkdirs();
-                    }
+                    Path userQueryResultDir = FileSystems.getDefault().getPath(ConfigReader.getEFSRootListenerDir(),
+                            ConfigReader.getEFSSubPathListenerDir(),
+                            query.UserName(), "query-results");
+                    Files.createDirectories(userQueryResultDir);
+
                     String fileName = getFileName(query.JobId(), query.JobName());
                     String csvPath = userQueryResultDir + File.separator + fileName + ".csv";
                     String graphMLFile = userQueryResultDir + File.separator + fileName + ".xml";
 
                     if (query.DataSet().equals("mag")) {
-                        LOG.info("Connecting to Janus server");
-                        Cluster cluster = Cluster.build()
-                                .addContactPoint("localhost")
-                                .port(8182)
-                                .maxContentLength(10000000)
-                                .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
-                                        .addRegistry(JanusGraphIoRegistry.instance())
-                                        .addRegistry(TinkerIoRegistryV3d0.instance())))
-                                .create();
-                        janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
-                        // janusTraversal = (GraphTraversalSource) EmptyGraph.instance().configuration()..traversal().withRemote("conf/remote-graph.properties");
-
-                        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(janusTraversal, query, outputFiltersSingle);
-                        GraphTraversalSource sg = tg.traversal();
-                        LOG.info("Graph result received, writing GraphML to " + graphMLFile);
-                        sg.io(graphMLFile).write().iterate();
-                        //  to convert to csv
-                        OutputStream stream = new FileOutputStream(csvPath);
-                        GremlinGraphWriter.graph_to_csv(tg, stream);
-                        janusTraversal.close();
-                        janusTraversal = null;
-                        LOG.info("Janus query complete");
+                        janus_request(query, graphMLFile, csvPath);
                     }
+
                     String csvChecksum = ListenerUtils.getChecksum(csvPath);
                     String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
                     status.Update(query.JobId(), "COMPLETED");
@@ -141,16 +149,6 @@ public class JobListener {
                     status.Update(query.JobId(), "FAILED");
                     throw e;
                 }
-                finally {
-                    if (janusTraversal != null) janusTraversal.close();
-                    LOG.info("Deleting the sqs message");
-                    DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
-                            .queueUrl(queueUrl)
-                            .receiptHandle(m.receiptHandle())
-                            .build();
-                    sqsClient.deleteMessage(deleteMessageRequest);
-                }
-
            }
             status.Close();
         }

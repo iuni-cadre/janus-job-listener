@@ -15,7 +15,7 @@ import static org.janusgraph.core.attribute.Text.textContains;
 public class UserQuery2Gremlin {
     private static final Logger LOG = LoggerFactory.getLogger(UserQuery2Gremlin.class);
 
-    public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query, List<String> outputFields){
+    public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query){
         if (!query.DataSet().equals("mag"))
             throw new UnsupportedOperationException("Only MAG database is supported");
 
