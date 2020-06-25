@@ -7,20 +7,20 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.Enumeration;
 
-class JobStatus {
+public class JobStatus {
     private Connection connection;
     private PreparedStatement jobStatusPreparedStatement;
     private PreparedStatement fileInfoPreparedStatement;
     private static final Logger LOG = LoggerFactory.getLogger(JobStatus.class);
 
-    JobStatus() throws Exception {
+    public JobStatus(Boolean inMemory) throws Exception {
         Class.forName("org.postgresql.Driver");
         Class.forName("org.sqlite.JDBC");
 
-        String jobUpdateStatement = "UPDATE user_job SET job_status = ?, modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
+        String jobUpdateStatement = "UPDATE user_job SET job_status = ?, description = ?, modified_on = CURRENT_TIMESTAMP WHERE job_id = ?";
         String fileInsertStatement = "INSERT INTO query_result(job_id,efs_path, file_checksum, data_type, authenticity, created_by, created_on) " +
                                      "VALUES(?,?,?,?,?,?,current_timestamp)";
-        if (ConfigReader.getMetaDBInMemory())
+        if (inMemory)
         {
             String metaDBUrl = "jdbc:sqlite::memory:";
             connection = DriverManager.getConnection(
@@ -28,6 +28,7 @@ class JobStatus {
             String sql = "CREATE TABLE IF NOT EXISTS user_job (\n"
                          + "	job_id integer PRIMARY KEY,\n"
                          + "	job_status text NOT NULL,\n"
+                         + "    description character varying(256),\n"
                          + "	modified_on timestamp\n"
                          + ");";
             String sql2 = "CREATE TABLE IF NOT EXISTS query_result (\n"
@@ -45,6 +46,8 @@ class JobStatus {
             // create a new table
             stmt.execute(sql);
             stmt.execute(sql2);
+            stmt.executeUpdate("INSERT INTO user_job (job_id, job_status) VALUES ('1234', 'SUBMITTED')");
+
         }
         else
         {
@@ -59,10 +62,11 @@ class JobStatus {
 
     }
 
-    public void Update(String jobId, String status) throws SQLException {
+    public void Update(String jobId, String status, String description) throws SQLException {
         LOG.info("Updating job status in metadb to " + status   );
         jobStatusPreparedStatement.setString(1, status);
-        jobStatusPreparedStatement.setString(2, jobId);
+        jobStatusPreparedStatement.setString(2, description);
+        jobStatusPreparedStatement.setString(3, jobId);
         jobStatusPreparedStatement.executeUpdate();
     }
 
@@ -80,5 +84,19 @@ class JobStatus {
         fileInfoPreparedStatement.setBoolean(5, true);
         fileInfoPreparedStatement.setInt(6, Integer.parseInt(userId));
         fileInfoPreparedStatement.executeUpdate();
+    }
+
+    public String GetStatus(String job_id) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement("SELECT job_status, description FROM user_job WHERE job_id = ?");
+        statement.setString(1, job_id);
+        ResultSet rs = statement.executeQuery();
+        String result = new String();
+        while (rs.next()) {
+            result += rs.getString("job_status");
+            result += " - ";
+            result += rs.getString("description");
+        }
+        return result;
+
     }
 }

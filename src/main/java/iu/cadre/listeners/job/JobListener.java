@@ -100,7 +100,7 @@ public class JobListener {
         LOG.info("SQS connection established and listening");
         while (true) {
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
-            JobStatus status = new JobStatus();
+            JobStatus status = new JobStatus(ConfigReader.getMetaDBInMemory());
             // print out the messages
             for (Message m : messages) {
                 UserQuery query = new UserQuery(jsonParser.parse(m.body()).getAsJsonObject());
@@ -113,7 +113,7 @@ public class JobListener {
                 sqsClient.deleteMessage(deleteMessageRequest);
 
                 try {
-                    status.Update(query.JobId(), "RUNNING");
+                    status.Update(query.JobId(), "RUNNING", "");
 
                     Path userQueryResultDir = FileSystems.getDefault().getPath(ConfigReader.getEFSRootListenerDir(),
                             ConfigReader.getEFSSubPathListenerDir(),
@@ -130,14 +130,14 @@ public class JobListener {
 
                     String csvChecksum = ListenerUtils.getChecksum(csvPath);
                     String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
-                    status.Update(query.JobId(), "COMPLETED");
+                    status.Update(query.JobId(), "COMPLETED", "");
 
                     status.AddQueryResult(query.JobId(), query.UserId(), csvPath, csvChecksum);
                     status.AddQueryResult(query.JobId(), query.UserId(), graphMLFile, graphMLChecksum);
                 } catch (CompletionException e) {
                     // Error with Janus. Log it, mark the job failed and keep going
                     LOG.error("Error reading JanusGraph: " + e.getMessage());
-                    status.Update(query.JobId(), "FAILED");
+                    status.Update(query.JobId(), "FAILED", e.getMessage());
                 } catch (SQLException e) {
                     // Error with the metadatabase. Very bad since we can't report that
                     // the user's job failed. Exit the loop
@@ -146,7 +146,7 @@ public class JobListener {
                     // Unknown error. We know it's not with the metadatabase as that
                     // would have been caught above, so mark the job failed and exit
                     // the loop
-                    status.Update(query.JobId(), "FAILED");
+                    status.Update(query.JobId(), "FAILED", e.getMessage());
                     throw e;
                 }
            }

@@ -1,7 +1,9 @@
 import com.google.common.collect.Iterators;
 import com.google.gson.JsonParser;
+import iu.cadre.listeners.job.JobStatus;
 import iu.cadre.listeners.job.UserQuery2Gremlin;
 import iu.cadre.listeners.job.UserQuery;
+import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -14,6 +16,9 @@ import org.junit.jupiter.api.Test;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -187,6 +192,19 @@ public class UserQuery2GremlinTest {
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
+
+    @Test
+    void JobStatus_update() {
+        JobStatus js = null;
+        try {
+            js = new JobStatus(true);
+            assertEquals("SUBMITTED - null", js.GetStatus("1234"));
+            js.Update("1234", "Groovy", "Awesome");
+            assertEquals("Groovy - Awesome", js.GetStatus("1234"));
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+   }
 
     @Test
     void getSubGraphForQuery_paper_or() {
