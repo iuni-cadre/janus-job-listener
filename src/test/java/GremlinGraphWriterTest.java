@@ -1,5 +1,8 @@
 import com.google.common.collect.Iterators;
 import iu.cadre.listeners.job.GremlinGraphWriter;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -11,8 +14,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -155,32 +161,89 @@ class GremlinGraphWriterTest {
                     .inE("AuthorOf").subgraph("sg").cap("sg").next();
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             GremlinGraphWriter.graph_to_csv(sg, stream);
-            String actualResult = stream.toString();
+            List<Map<String, String>> csvInputList = parse_csv(stream);
+            assertEquals(3, csvInputList.size());
 
+            Map<String, String> author = csvInputList.stream()
+                    .filter(value -> value.get("Label").equals("Author"))
+                    .findFirst().get();
+            assertEquals("joe", author.get("name"));
+
+            Map<String, String> paper = csvInputList.stream()
+                    .filter(value -> value.get("Label").equals("Paper"))
+                    .findFirst().get();
+            assertEquals("full case study report upplandsbondens sweden", paper.get("paperTitle"));
+
+            Map<String, String> authorOf = csvInputList.stream()
+                    .filter(value -> value.get("Label").equals("AuthorOf"))
+                    .findFirst().get();
+            assertEquals(paper.get("ID"), authorOf.get("InVertex"));
+            assertEquals(author.get("ID"), authorOf.get("OutVertex"));
+
+            /*
             String[] splits = actualResult.split("\n");
-            String header = splits[0];
-            assertTrue(header.contains("Type,ID,Label,InVertex,OutVertex"));
-            assertTrue(header.contains("name,paperTitle,test_edge_property"));
+            Set<String> header = new HashSet<>(Arrays.asList(splits[0].trim().split(",")));
+            Set<String> expected = new HashSet<>(Arrays.asList("Type", "ID", "Label", "InVertex", "OutVertex",
+                    "name","paperTitle","test_edge_property"));
+            assertEquals(expected, header);
 
             // jumping through some hoops here to avoid dealing with the ID's in the output
-            assertTrue(actualResult.contains("Paper,,,,full case study report upplandsbondens sweden,"));
+            assertTrue(actualResult.contains("Paper,,,,,full case study report upplandsbondens sweden,"));
             assertTrue(actualResult.contains("Author,,,joe,,"));
             assertTrue(actualResult.contains("AuthorOf"));
             assertTrue(actualResult.contains(",,,test_edge_property_value"));
+            */
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
     @Test
     void gather_property_names()
     {
         TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
                 .inE("AuthorOf").subgraph("sg").cap("sg").next();
-        List<String> actual = GremlinGraphWriter.gather_property_names(sg);
+        List actual = GremlinGraphWriter.gather_property_names(sg);
         assertEquals(3, actual.size());
         assertTrue(actual.contains("paperTitle"));
         assertTrue(actual.contains("name"));
         assertTrue(actual.contains("test_edge_property"));
+    }
+
+    @Test
+    void gather_property_names__returns_no_duplicates()
+    {
+        TinkerGraph sg = (TinkerGraph)g.V().has("Paper", "year", "1900")
+                .inE("AuthorOf").subgraph("sg").cap("sg").next();
+        List actual = GremlinGraphWriter.gather_property_names(sg);
+        assertEquals("tinkergraph[vertices:40 edges:20]", sg.toString());
+        assertEquals(3, actual.size());
+        assertTrue(actual.contains("paperTitle"));
+        assertTrue(actual.contains("name"));
+        assertTrue(actual.contains("year"));
+
+    }
+
+    private List<Map<String, String>> parse_csv(ByteArrayOutputStream stream) throws IOException {
+        Reader in = new StringReader(stream.toString());
+        CSVFormat format = CSVFormat.newFormat(',').withHeader();
+        CSVParser parser = new CSVParser(in,format);
+        List<CSVRecord> actualResult = parser.getRecords();
+        List<Map<String, String>> csvInputList = new CopyOnWriteArrayList<>();
+        List<Map<String, Integer>> headerList = new CopyOnWriteArrayList<>();
+        Map<String, Integer> headerMap = parser.getHeaderMap();
+        for(CSVRecord record : actualResult){
+            Map<String, String> inputMap = new LinkedHashMap<>();
+
+            for(Map.Entry<String, Integer> header : headerMap.entrySet()){
+                inputMap.put(header.getKey(), record.get(header.getValue()));
+            }
+
+            if (!inputMap.isEmpty()) {
+                csvInputList.add(inputMap);
+            }
+        }
+        return csvInputList;
     }
 }

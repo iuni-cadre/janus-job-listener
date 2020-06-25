@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GremlinGraphWriter {
     public static void main(String[] args) {
@@ -94,9 +95,10 @@ public class GremlinGraphWriter {
                 result.add(p.key());
             }
         }
-        Collections.sort(result);
-
-        return result;
+        return result.stream()
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public static void graph_to_csv(TinkerGraph sg, OutputStream stream) throws IOException {
