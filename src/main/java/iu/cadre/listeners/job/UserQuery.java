@@ -80,4 +80,11 @@ public class UserQuery {
         }
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "UserQuery{" +
+               "_json=" + _json +
+               '}';
+    }
 }

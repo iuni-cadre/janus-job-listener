@@ -104,8 +104,8 @@ public class JobListener {
             // print out the messages
             for (Message m : messages) {
                 UserQuery query = new UserQuery(jsonParser.parse(m.body()).getAsJsonObject());
-
                 LOG.info("Accepted " + query.JobId() + " for " + query.UserName());
+                LOG.info(query.toString());
                 DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
                         .queueUrl(queueUrl)
                         .receiptHandle(m.receiptHandle())

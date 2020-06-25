@@ -85,7 +85,7 @@ public class UserQuery2GremlinTest {
         mgmt.addProperties(paper, title, year);
         mgmt.addProperties(author, displayName);
         mgmt.addProperties(journal, normalizedName);
-        System.out.println(mgmt.printSchema());
+        //System.out.println(mgmt.printSchema());
         mgmt.commit();
     }
 
@@ -227,6 +227,7 @@ public class UserQuery2GremlinTest {
                    "}";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
+        System.out.println(q.toString());
         TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(3, Iterators.size(tg.vertices()));
         assertEquals(2, Iterators.size(tg.edges()));
