@@ -1,6 +1,7 @@
 package iu.cadre.listeners.job;
 
 import iu.cadre.listeners.job.util.ConfigReader;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class JobStatus {
     public void Update(String jobId, String status, String description) throws SQLException {
         LOG.info("Updating job status in metadb to " + status   );
         jobStatusPreparedStatement.setString(1, status);
-        jobStatusPreparedStatement.setString(2, description);
+        jobStatusPreparedStatement.setString(2, StringUtils.abbreviate(description, 240));
         jobStatusPreparedStatement.setString(3, jobId);
         jobStatusPreparedStatement.executeUpdate();
     }

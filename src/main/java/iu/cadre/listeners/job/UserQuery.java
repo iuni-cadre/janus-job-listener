@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import javax.json.Json;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +57,8 @@ public class UserQuery {
                 f.field = filterField.get("field").getAsString();
                 if (f.field.equals("title"))
                     f.field = "paperTitle"; // hopefully temporary hack
+                if (f.field.equals("name"))
+                    f.field = "displayName"; // hopefully temporary hack
                 f.value =  filterField.get("value").getAsString();
                 f.operator = filterField.get("operator").getAsString();
                 n.filters.add(f);

@@ -4,6 +4,7 @@ import iu.cadre.listeners.job.JobStatus;
 import iu.cadre.listeners.job.UserQuery2Gremlin;
 import iu.cadre.listeners.job.UserQuery;
 import iu.cadre.listeners.job.util.ConfigReader;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -33,15 +34,15 @@ public class UserQuery2GremlinTest {
                 .set(STORAGE_BACKEND.toStringWithoutRoot(), "inmemory")
                 .set(TIMESTAMP_PROVIDER.toStringWithoutRoot(), "NANO")
                 .set(SCHEMA_CONSTRAINTS.toStringWithoutRoot(), true)
-                 .set(AUTO_TYPE.toStringWithoutRoot(), "none")
-                 .open();
+                .set(AUTO_TYPE.toStringWithoutRoot(), "none")
+                .open();
 
         create_schema(graph);
 
         g = graph.traversal();
 
         g.addV("Paper").property("paperTitle", "full case study report upplandsbondens sweden").as("v1").
-                addV("Author").property("displayName", "joe").as("v2").
+                addV("Author").property("displayName", "James W. Throckmorton").as("v2").
                 addE("AuthorOf").from("v2").to("v1").
                 addV("Paper").property("paperTitle", "Unicorns").as("v3").
                 addE("References").from("v1").to("v3").
@@ -54,13 +55,13 @@ public class UserQuery2GremlinTest {
         for (int i = 0; i < 20; ++i)
             g.addV("Paper").property("paperTitle", String.format("Paper%s", i)).
                     property("year", "1900").as("v1").
-                    addV("Author").property("displayName", "joe").as("v2").
+                    addV("Author").property("displayName", "James W. Throckmorton").as("v2").
                     addE("AuthorOf").from("v2").to("v1").iterate();
 
         for (int i = 0; i < 20; ++i)
             g.addV("Paper").property("paperTitle", String.format("Paper%s", i + 1945)).
                     property("year", 1945f).as("v1").
-                    addV("Author").property("displayName", "jane").as("v2").
+                    addV("Author").property("displayName", "Elizabeth Marguerite Bowes-Lyon").as("v2").
                     addE("AuthorOf").from("v2").to("v1").iterate();
 
         Vertex journal = g.V().hasLabel(JOURNAL_FIELD).next();
@@ -204,7 +205,20 @@ public class UserQuery2GremlinTest {
         } catch (Exception e) {
             fail(e.getMessage());
         }
-   }
+    }
+
+    @Test
+    void JobStatus_update_maxes_at_256_chars() {
+        JobStatus js = null;
+        try {
+            String numbers = "0123456789";
+            js = new JobStatus(true);
+            js.Update("1234", "Groovy", StringUtils.repeat(numbers, 30));
+            assert (js.GetStatus("1234").length() < 255);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+    }
 
     @Test
     void getSubGraphForQuery_paper_or() {
@@ -245,9 +259,59 @@ public class UserQuery2GremlinTest {
                    "}";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
-        System.out.println(q.toString());
         TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(3, Iterators.size(tg.vertices()));
         assertEquals(2, Iterators.size(tg.edges()));
     }
+
+    @Test
+    void getSubGraphForQuery_author_name_reqest_translated() {
+        String s = "{\n" +
+                      "    \"csv_output\": [{\n" +
+                      "            \"field\": \"paperId\",\n" +
+                      "            \"vertexType\": \"Paper\"\n" +
+                      "        }, {\n" +
+                      "            \"field\": \"year\",\n" +
+                      "            \"vertexType\": \"Paper\"\n" +
+                      "        }, {\n" +
+                      "            \"field\": \"originalTitle\",\n" +
+                      "            \"vertexType\": \"Paper\"\n" +
+                      "        }, {\n" +
+                      "            \"field\": \"displayName\",\n" +
+                      "            \"vertexType\": \"Author\"\n" +
+                      "        }, {\n" +
+                      "            \"field\": \"displayName\",\n" +
+                      "            \"vertexType\": \"JournalFixed\"\n" +
+                      "        }\n" +
+                      "    ],\n" +
+                      "    \"dataset\": \"mag\",\n" +
+                      "    \"graph\": {\n" +
+                      "        \"edges\": [{\n" +
+                      "                \"relation\": \"AuthorOf\",\n" +
+                      "                \"source\": \"Author\",\n" +
+                      "                \"target\": \"Paper\"\n" +
+                      "            }\n" +
+                      "        ],\n" +
+                      "        \"nodes\": [{\n" +
+                      "                \"filters\": [{\n" +
+                      "                        \"field\": \"name\",\n" +
+                      "                        \"filterType\": \"is\",\n" +
+                      "                        \"operator\": \"\",\n" +
+                      "                        \"value\": \"Throckmorton\"\n" +
+                      "                    }\n" +
+                      "                ],\n" +
+                      "                \"vertexType\": \"Author\"\n" +
+                      "            }\n" +
+                      "        ]\n" +
+                      "    },\n" +
+                      "    \"job_id\": \"93c8ef52-d7ec-4ede-b8bb-4528bfbc1cd9\",\n" +
+                      "    \"job_name\": \"athota-test4\",\n" +
+                      "    \"user_id\": 82,\n" +
+                      "    \"username\": \"mf2gq33ume\"\n" +
+                      "}";
+        JsonParser jsonParser = new JsonParser();
+        UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
+        assertEquals(42, Iterators.size(tg.vertices()));
+        assertEquals(21, Iterators.size(tg.edges()));    }
 }
