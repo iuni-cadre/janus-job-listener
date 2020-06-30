@@ -1,3 +1,5 @@
+package iu.cadre.listeners.job;
+
 import com.google.common.collect.Iterators;
 import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.JobStatus;
@@ -20,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -265,7 +269,7 @@ public class UserQuery2GremlinTest {
     }
 
     @Test
-    void getSubGraphForQuery_author_name_reqest_translated() {
+    void getSubGraphForQuery_author_name_request_translated() {
         String s = "{\n" +
                       "    \"csv_output\": [{\n" +
                       "            \"field\": \"paperId\",\n" +
@@ -314,4 +318,16 @@ public class UserQuery2GremlinTest {
         TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
         assertEquals(42, Iterators.size(tg.vertices()));
         assertEquals(21, Iterators.size(tg.edges()));    }
+
+    @Test
+    void getASLabelFilters__ignores_unfiltered_nodes() {
+        Node n = new Node("Paper");
+        Filter f = new Filter();
+        f.field = "";
+        f.operator = "";
+        n.filters.add(f);
+        Node empty = new Node("Author");
+        Map result = UserQuery2Gremlin.getASLabelFilters(Arrays.asList(n, empty));
+        assertEquals(1, result.size());
+    }
 }

@@ -3,20 +3,9 @@ package iu.cadre.listeners.job;
 import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.util.ConfigReader;
 import iu.cadre.listeners.job.util.ListenerUtils;
-import org.apache.tinkerpop.gremlin.driver.Cluster;
-import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
-import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV1d0;
-import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
-import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
@@ -25,7 +14,6 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,29 +46,6 @@ public class JobListener {
             fileName = jobName + '_' + jobID;
         }
         return fileName;
-    }
-
-    public static void janus_request(UserQuery query, String graphMLFile, String csvPath) throws Exception {
-        LOG.info("Connecting to Janus server");
-        Cluster cluster = Cluster.build()
-                .addContactPoint("localhost")
-                .port(8182)
-                .maxContentLength(10000000)
-                .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
-                        .addRegistry(JanusGraphIoRegistry.instance())
-                        .addRegistry(TinkerIoRegistryV3d0.instance())))
-                .create();
-        GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
-
-        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(janusTraversal, query);
-        GraphTraversalSource sg = tg.traversal();
-        LOG.info("Graph result received, writing GraphML to " + graphMLFile);
-        sg.io(graphMLFile).write().iterate();
-        //  to convert to csv
-        OutputStream stream = new FileOutputStream(csvPath);
-        GremlinGraphWriter.graph_to_csv(tg, stream);
-        janusTraversal.close();
-        LOG.info("Janus query complete");
     }
 
     public static void poll_queue() throws Exception {
@@ -125,7 +90,7 @@ public class JobListener {
                     String graphMLFile = userQueryResultDir + File.separator + fileName + ".xml";
 
                     if (query.DataSet().equals("mag")) {
-                        janus_request(query, graphMLFile, csvPath);
+                        JanusConnection.Request(query, graphMLFile, csvPath);
                     }
 
                     String csvChecksum = ListenerUtils.getChecksum(csvPath);

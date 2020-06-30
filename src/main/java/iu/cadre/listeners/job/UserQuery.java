@@ -1,5 +1,6 @@
 package iu.cadre.listeners.job;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,9 +14,15 @@ class Edge {
     String relation;
 }
 
+@VisibleForTesting
 class Node {
     String type;
     ArrayList<Filter> filters;
+
+    Node(String _type) {
+        type = _type;
+        filters = new ArrayList<>();
+    }
 }
 
 class Filter {
@@ -47,10 +54,8 @@ public class UserQuery {
         ArrayList<Node> result = new ArrayList<Node>();
         for (int i=0; i < nodes.size(); i++) {
             JsonObject edgeJson = nodes.get(i).getAsJsonObject();
-            Node n = new Node();
-            n.type = edgeJson.get("vertexType").getAsString();
+            Node n = new Node(edgeJson.get("vertexType").getAsString());
             JsonArray filters = edgeJson.get("filters").getAsJsonArray();
-            n.filters = new ArrayList<>();
             for (int j = 0; j < filters.size(); j++) {
                 Filter f = new Filter();
                 JsonObject filterField = filters.get(j).getAsJsonObject();

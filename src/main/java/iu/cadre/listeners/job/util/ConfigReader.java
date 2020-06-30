@@ -102,6 +102,17 @@ public class ConfigReader {
         }
     }
 
+    public static String getJanusHost() throws Exception{
+        try {
+            if (properties != null){
+                return properties.getProperty(Constants.JANUS_HOST);
+            }
+            return "localhost";
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.JANUS_HOST);
+            throw new Exception("Error reading config file", e);
+        }
+    }
     public static String getWOSDBPort() throws Exception{
         try {
             if (properties != null){

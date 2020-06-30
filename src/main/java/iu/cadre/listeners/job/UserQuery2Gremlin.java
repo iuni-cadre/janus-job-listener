@@ -82,6 +82,11 @@ public class UserQuery2Gremlin {
         while(litr.hasNext()){
             String label = "label" + (i+1);
             Node node = litr.next();
+            if (node.filters.isEmpty())
+            {
+                LOG.warn("Node without filters requested, rejecting");
+                continue;
+            }
             String vertexType = node.type;
             List<Object> hasFilters = new ArrayList<>();
             ListIterator<Filter> fitr=node.filters.listIterator();
