@@ -42,7 +42,8 @@ public class JanusConnection {
             JsonParser parser = new JsonParser();
             UserQuery query = new UserQuery(parser.parse(reader).getAsJsonObject());
             String fileNameWithOutExtension = FilenameUtils.removeExtension(args[1]);
-            Request(query, fileNameWithOutExtension + ".ml", fileNameWithOutExtension + ".csv");
+            Request(query, fileNameWithOutExtension + ".xml", fileNameWithOutExtension + ".csv");
+            System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {

@@ -7,7 +7,10 @@ import iu.cadre.listeners.job.UserQuery2Gremlin;
 import iu.cadre.listeners.job.UserQuery;
 import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.*;
@@ -22,10 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+
+import static org.janusgraph.core.attribute.Text.textContains;
 
 public class UserQuery2GremlinTest {
     //public static final String JOURNAL_FIELD = "JournalRev";
@@ -329,5 +331,54 @@ public class UserQuery2GremlinTest {
         Node empty = new Node("Author");
         Map result = UserQuery2Gremlin.getASLabelFilters(Arrays.asList(n, empty));
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void getSubGraphForQuery__adds_AuthorOf_edge_if_none_specified() {
+        String s = "{\n" +
+                   "    \"csv_output\": [{\n" +
+                   "            \"field\": \"paperId\",\n" +
+                   "            \"vertexType\": \"Paper\"\n" +
+                   "        }, {\n" +
+                   "            \"field\": \"year\",\n" +
+                   "            \"vertexType\": \"Paper\"\n" +
+                   "        }, {\n" +
+                   "            \"field\": \"originalTitle\",\n" +
+                   "            \"vertexType\": \"Paper\"\n" +
+                   "        }, {\n" +
+                   "            \"field\": \"displayName\",\n" +
+                   "            \"vertexType\": \"Author\"\n" +
+                   "        }, {\n" +
+                   "            \"field\": \"displayName\",\n" +
+                   "            \"vertexType\": \"JournalFixed\"\n" +
+                   "        }\n" +
+                   "    ],\n" +
+                   "    \"dataset\": \"mag\",\n" +
+                   "    \"graph\": {\n" +
+                   "        \"edges\": [],\n" +
+                   "        \"nodes\": [{\n" +
+                   "                \"filters\": [{\n" +
+                   "                        \"field\": \"title\",\n" +
+                   "                        \"filterType\": \"is\",\n" +
+                   "                        \"operator\": \"\",\n" +
+                   "                        \"value\": \"Paper8\"\n" +
+                   "                    }\n" +
+                   "                ],\n" +
+                   "                \"vertexType\": \"Paper\"\n" +
+                   "            }\n" +
+                   "        ]\n" +
+                   "    },\n" +
+                   "    \"job_id\": \"336074bb-8071-4d5b-a448-1d0673f6f4a8\",\n" +
+                   "    \"job_name\": \"\",\n" +
+                   "    \"user_id\": 78,\n" +
+                   "    \"username\": \"mjswm5lmorxw4\"\n" +
+                   "}\n";
+
+        JsonParser jsonParser = new JsonParser();
+
+        UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
+        TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(g, q);
+        assertEquals(2, Iterators.size(tg.vertices()));
+        assertEquals(1, Iterators.size(tg.edges()));
     }
 }

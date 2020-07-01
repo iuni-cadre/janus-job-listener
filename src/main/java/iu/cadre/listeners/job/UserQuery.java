@@ -12,6 +12,11 @@ class Edge {
     String source;
     String target;
     String relation;
+
+    @Override
+    public String toString() {
+        return "Edge{ " + source + " => " + relation + " => " + target + "}";
+    }
 }
 
 @VisibleForTesting

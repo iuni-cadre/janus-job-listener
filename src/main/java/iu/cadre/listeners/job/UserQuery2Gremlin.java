@@ -21,7 +21,16 @@ public class UserQuery2Gremlin {
 
         LOG.info("Creating subgraph for the query");
         GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
+
         List<Edge> edges = query.Edges();
+        if (edges.isEmpty())
+        {
+            Edge e = new Edge();
+            e.source = "Paper";
+            e.target = "Author";
+            e.relation = "AuthorOf";
+            edges.add(e);
+        }
         Map<String, List<Object>> asLabelFilters = getASLabelFilters(query.Nodes());
         int count = 1;
         List<Object> allMatchClauses = new ArrayList<>();
@@ -32,56 +41,51 @@ public class UserQuery2Gremlin {
             List<Object> hasFilterListPerVertex = asLabelFilters.get(vertexType);
             allMatchClauses.addAll(hasFilterListPerVertex);
 
-            ListIterator<Edge> litr=edges.listIterator();
-            while(litr.hasNext()){
-                Edge edge = litr.next();
-                if (edge.source.equals("Paper") && edge.target.equals("JournalFixed")){
-	                LOG.info("**** PAPER JOURNAL ****");
+            for (Edge edge : edges) {
+                LOG.info(edge.toString());
+                if (edge.source.equals("Paper") && edge.target.equals("JournalFixed")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("Paper") && edge.target.equals("ConferenceInstance")){
-                    LOG.info("**** PAPER ConferenceInstance ****");
+                } else if (edge.source.equals("Paper") && edge.target.equals("ConferenceInstance")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("JournalFixed") && edge.target.equals("Paper")){
-                    LOG.info("**** JOURNAL PAPER ****");
+                } else if (edge.source.equals("JournalFixed") && edge.target.equals("Paper")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("Author") && edge.target.equals("Paper")){
-                    LOG.info("**** AUTHOR PAPER ****");
+                } else if (edge.source.equals("Author") && edge.target.equals("Paper")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("ConferenceInstance") && edge.target.equals("Paper")){
-                    LOG.info("**** CONFERENCEINSTANCE PAPER ****");
+                } else if (edge.source.equals("ConferenceInstance") && edge.target.equals("Paper")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("Paper") && edge.target.equals("Author")){
-                    LOG.info("**** PAPER AUTHOR ****");
+                } else if (edge.source.equals("Paper") && edge.target.equals("Author")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
-                }else if (edge.source.equals("Paper") && edge.target.equals("Paper")){
-                    LOG.info("**** PAPER PAPER ****");
+                } else if (edge.source.equals("Paper") && edge.target.equals("Paper")) {
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 }
             }
         }
-        GraphTraversal<?, ?> temp[] = new GraphTraversal[allMatchClauses.size()];
+
+        GraphTraversal<?, ?>[] temp = new GraphTraversal[allMatchClauses.size()];
         for (int i = 0; i < allMatchClauses.size(); i++) {
             temp[i] = (GraphTraversal<?, ?>) allMatchClauses.get(i);
         }
-        LOG.info("****** COUNT ***** " + allMatchClauses.size());
+
+        LOG.info(allMatchClauses.size() + " total clauses in query");
+
         TinkerGraph tg = (TinkerGraph)filterTraversal.match(temp).cap("sg").next();
+
         return tg;
     }
 
     public static Map<String, List<Object>> getASLabelFilters(List<Node> nodes){
         Map<String, List<Object>> hasFilterMap = new LinkedHashMap<>();
-        ListIterator<Node> litr=nodes.listIterator();
         int i = 0;
-        while(litr.hasNext()){
+        for (Node node: nodes)
+        {
             String label = "label" + (i+1);
-            Node node = litr.next();
             if (node.filters.isEmpty())
             {
                 LOG.warn("Node without filters requested, rejecting");
@@ -89,24 +93,20 @@ public class UserQuery2Gremlin {
             }
             String vertexType = node.type;
             List<Object> hasFilters = new ArrayList<>();
-            ListIterator<Filter> fitr=node.filters.listIterator();
-            while(fitr.hasNext()){
-                Filter filterField = fitr.next();
-                LOG.info(filterField.field);
-                LOG.info(filterField.value);
-                if (!filterField.field.equals("year") && !filterField.field.equals("doi")){
+            for (Filter filterField : node.filters) {
+                LOG.info(filterField.field + " = " + filterField.value);
+                if (!filterField.field.equals("year") && !filterField.field.equals("doi")) {
                     GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, filterField.field, textContains(filterField.value));
                     hasFilters.add(asLabelWithFilters);
-                }else {
+                } else {
                     GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, filterField.field, Integer.valueOf(filterField.value));
                     hasFilters.add(asLabelWithFilters);
                 }
 
-                if (filterField.operator.equals("or"))
-                {
+                if (filterField.operator.equals("or")) {
                     int n = hasFilters.size() - 1;
-                    GraphTraversal<Object, Object> gt1 = (GraphTraversal<Object, Object>)hasFilters.get(n);
-                    GraphTraversal<Object, Object> gt2 = (GraphTraversal<Object, Object>)hasFilters.get(n-1);
+                    GraphTraversal gt1 = (GraphTraversal<Object, Object>) hasFilters.get(n);
+                    GraphTraversal gt2 = (GraphTraversal<Object, Object>) hasFilters.get(n - 1);
                     hasFilters.remove(gt1);
                     hasFilters.remove(gt2);
                     hasFilters.add(__.as(label).or(gt1, gt2));
