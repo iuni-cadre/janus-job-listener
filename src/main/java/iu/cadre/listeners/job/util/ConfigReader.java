@@ -113,6 +113,19 @@ public class ConfigReader {
             throw new Exception("Error reading config file", e);
         }
     }
+
+    public static int getJanusRecordLimit() throws Exception{
+        try {
+            if (properties != null){
+                return Integer.parseInt(properties.getProperty(Constants.JANUS_RECORD_LIMIT));
+            }
+            return 100000;
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.JANUS_RECORD_LIMIT);
+            throw new Exception("Error reading config file", e);
+        }
+    }
+
     public static String getWOSDBPort() throws Exception{
         try {
             if (properties != null){

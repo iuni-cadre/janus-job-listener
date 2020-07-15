@@ -10,6 +10,7 @@ public class Constants {
     public static final String JOB_QUEUE_URL = "job.queue";
     public static final String JANUS_PROPERTIES_FILE = "janus.config";
     public static final String JANUS_HOST = "janus.host";
+    public static final String JANUS_RECORD_LIMIT = "janus.recordlimit";
     public static final String WOS_DATABASE_HOST = "wos.database.host";
     public static final String WOS_DATABASE_PORT = "wos.database.port";
     public static final String WOS_DATABASE_NAME = "wos.database.name";

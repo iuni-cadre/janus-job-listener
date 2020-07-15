@@ -9,7 +9,9 @@ import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
@@ -46,8 +48,10 @@ public class JanusConnection {
             System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(-1);
         } catch (Exception e) {
             e.printStackTrace();
+            System.exit(-1);
         }
     }
 
@@ -56,12 +60,15 @@ public class JanusConnection {
         Cluster cluster = Cluster.build()
                 .addContactPoint(ConfigReader.getJanusHost())
                 .port(8182)
-                .maxContentLength(10000000)
+                .maxContentLength(100000000)
                 .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
                         .addRegistry(JanusGraphIoRegistry.instance())
                         .addRegistry(TinkerIoRegistryV3d0.instance())))
                 .create();
-        GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
+
+        Graph graph = EmptyGraph.instance();
+         //graph.compute()
+       GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
 
         TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(janusTraversal, query);
         GraphTraversalSource sg = tg.traversal();

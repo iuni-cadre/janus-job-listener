@@ -1,5 +1,6 @@
 package iu.cadre.listeners.job;
 
+import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -15,7 +16,7 @@ import static org.janusgraph.core.attribute.Text.textContains;
 public class UserQuery2Gremlin {
     private static final Logger LOG = LoggerFactory.getLogger(UserQuery2Gremlin.class);
 
-    public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query){
+    public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (!query.DataSet().equals("mag"))
             throw new UnsupportedOperationException("Only MAG database is supported");
 
@@ -75,7 +76,7 @@ public class UserQuery2Gremlin {
 
         LOG.info(allMatchClauses.size() + " total clauses in query");
 
-        TinkerGraph tg = (TinkerGraph)filterTraversal.match(temp).cap("sg").next();
+        TinkerGraph tg = (TinkerGraph)filterTraversal.match(temp).limit(ConfigReader.getJanusRecordLimit()).cap("sg").next();
 
         return tg;
     }
