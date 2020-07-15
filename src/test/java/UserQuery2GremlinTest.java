@@ -2,15 +2,8 @@ package iu.cadre.listeners.job;
 
 import com.google.common.collect.Iterators;
 import com.google.gson.JsonParser;
-import iu.cadre.listeners.job.JobStatus;
-import iu.cadre.listeners.job.UserQuery2Gremlin;
-import iu.cadre.listeners.job.UserQuery;
-import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.*;
@@ -22,12 +15,7 @@ import org.junit.jupiter.api.Test;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.*;
-
-import static org.janusgraph.core.attribute.Text.textContains;
 
 public class UserQuery2GremlinTest {
     //public static final String JOURNAL_FIELD = "JournalRev";

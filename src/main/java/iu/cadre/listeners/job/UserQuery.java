@@ -67,9 +67,11 @@ public class UserQuery {
                 f.field = filterField.get("field").getAsString();
                 if (f.field.equals("title"))
                     f.field = "paperTitle"; // hopefully temporary hack
-                if (n.type == "Paper" && f.field.equals("name"))
+                if (n.type.equals("Paper") && f.field.equals("name"))
                     f.field = "displayName"; // hopefully temporary hack
-                if (n.type == "JournalFixed" && f.field.equals("name"))
+                if (n.type.equals("Author") && f.field.equals("name"))
+                    f.field = "displayName"; // hopefully temporary hack
+                if (n.type.equals("JournalFixed") && f.field.equals("name"))
                     f.field = "normalizedName"; // hopefully temporary hack
                 f.value =  filterField.get("value").getAsString();
                 f.operator = filterField.get("operator").getAsString();
