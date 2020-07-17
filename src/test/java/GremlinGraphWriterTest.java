@@ -36,7 +36,8 @@ class GremlinGraphWriterTest {
                 .set(TIMESTAMP_PROVIDER.toStringWithoutRoot(), "NANO").open();
         g = graph.traversal();
 
-        g.addV("Paper").property("paperTitle","full case study report upplandsbondens sweden").as("v1").
+        g.addV("Paper").property("paperTitle","full case study report upplandsbondens sweden")
+                             .as("v1").
                 addV("Author").property("name","joe").as("v2").
                 addE("AuthorOf").property("test_edge_property", "test_edge_property_value").from("v2").to("v1").iterate();
 
@@ -223,6 +224,39 @@ class GremlinGraphWriterTest {
         assertTrue(actual.contains("name"));
         assertTrue(actual.contains("year"));
 
+    }
+
+    @Test
+    void projection_to_csv__writes_nothing_on_list_empty()
+    {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try {
+            GremlinGraphWriter.projection_to_csv(new ArrayList<Map>(), stream);
+            assertEquals( "", stream.toString());
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    void projection_to_csv()
+    {
+        Map<String, String> map = new HashMap<>();
+
+        map.put("title", "My Paper"); // put example
+        map.put("author", "betty");
+        map.put("journal", "Science");
+
+        List<Map> p = Arrays.asList(map);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try {
+            GremlinGraphWriter.projection_to_csv(p, stream);
+            List<Map<String, String>> csvInputList = parse_csv(stream);
+            assertEquals(1, csvInputList.size());
+            assertEquals(map, csvInputList.get(0));
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 
     private List<Map<String, String>> parse_csv(ByteArrayOutputStream stream) throws IOException {

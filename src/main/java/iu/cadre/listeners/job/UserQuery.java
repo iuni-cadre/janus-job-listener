@@ -8,6 +8,11 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
+class CSVOutput {
+    String field;
+    String vertexType;
+}
+
 class Edge {
     String source;
     String target;
@@ -34,6 +39,13 @@ class Filter {
     String field;
     String value;
     String operator;
+
+    Filter() {}
+    Filter(String field_, String value_)
+    {
+        field = field_;
+        value = value_;
+    }
 }
 
 public class UserQuery {
@@ -72,7 +84,7 @@ public class UserQuery {
                 if (n.type.equals("Author") && f.field.equals("name"))
                     f.field = "displayName"; // hopefully temporary hack
                 if (n.type.equals("JournalFixed") && f.field.equals("name"))
-                    f.field = "normalizedName"; // hopefully temporary hack
+                    f.field = "displayName"; // hopefully temporary hack
                 f.value =  filterField.get("value").getAsString();
                 f.operator = filterField.get("operator").getAsString();
                 n.filters.add(f);
@@ -94,6 +106,25 @@ public class UserQuery {
             result.add(e);
         }
         return result;
+    }
+
+    public List<CSVOutput> CSV()
+    {
+        JsonArray fields = _json.getAsJsonObject().get("csv_output").getAsJsonArray();
+        ArrayList<CSVOutput> result = new ArrayList<CSVOutput>();
+        for (JsonElement field: fields) {
+            JsonObject edgeJson = field.getAsJsonObject();
+            CSVOutput e = new CSVOutput();
+            e.field = edgeJson.get("field").getAsString();
+            e.vertexType = edgeJson.get("vertexType").getAsString();
+            result.add(e);
+        }
+        return result;
+    }
+
+    public boolean RequiresGraph()
+    {
+        return Edges().stream().anyMatch(e -> e.relation.equals("References"));
     }
 
     @Override

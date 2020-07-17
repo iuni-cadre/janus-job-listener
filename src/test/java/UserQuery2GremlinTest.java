@@ -14,12 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class UserQuery2GremlinTest {
-    //public static final String JOURNAL_FIELD = "JournalRev";
-    public static final String JOURNAL_FIELD = "JournalFixed";
     static GraphTraversalSource g;
 
     @BeforeAll
@@ -42,9 +43,9 @@ public class UserQuery2GremlinTest {
                 addE("References").from("v1").to("v3").
                 iterate();
 
-        g.addV(JOURNAL_FIELD).property("normalizedName", "the open acoustics journal").as("v1").
+        g.addV(UserQuery2Gremlin.JOURNAL_FIELD).property("normalizedName", "the open acoustics journal").as("v1").
                 addV("Paper").property("paperTitle", "coolpaper").as("v2").
-                addE("PublishedIn").from("v2").to("v1").iterate();
+                addE(UserQuery2Gremlin.PUBLISHED_IN_FIELD).from("v2").to("v1").iterate();
 
         for (int i = 0; i < 20; ++i)
             g.addV("Paper").property("paperTitle", String.format("Paper%s", i)).
@@ -58,11 +59,11 @@ public class UserQuery2GremlinTest {
                     addV("Author").property("displayName", "Elizabeth Marguerite Bowes-Lyon").as("v2").
                     addE("AuthorOf").from("v2").to("v1").iterate();
 
-        Vertex journal = g.V().hasLabel(JOURNAL_FIELD).next();
+        Vertex journal = g.V().hasLabel(UserQuery2Gremlin.JOURNAL_FIELD).next();
         for (int i = 0; i < 5; ++i)
             g.addV("Paper").property("paperTitle", String.format("Paper%s", i + 2001)).
                     property("year", 2001).as("v1").
-                    addE("PublishedIn").from("v1").to(journal).iterate();
+                    addE(UserQuery2Gremlin.PUBLISHED_IN_FIELD).from("v1").to(journal).iterate();
         g.tx().commit();
     }
 
@@ -70,9 +71,9 @@ public class UserQuery2GremlinTest {
         JanusGraphManagement mgmt = graph.openManagement();
         VertexLabel paper = mgmt.makeVertexLabel("Paper").make();
         VertexLabel author = mgmt.makeVertexLabel("Author").make();
-        VertexLabel journal = mgmt.makeVertexLabel(JOURNAL_FIELD).make();
+        VertexLabel journal = mgmt.makeVertexLabel(UserQuery2Gremlin.JOURNAL_FIELD).make();
         EdgeLabel authorof = mgmt.makeEdgeLabel("AuthorOf").make();
-        EdgeLabel publishedin = mgmt.makeEdgeLabel("PublishedIn").make();
+        EdgeLabel publishedin = mgmt.makeEdgeLabel(UserQuery2Gremlin.PUBLISHED_IN_FIELD).make();
         EdgeLabel references = mgmt.makeEdgeLabel("References").make();
         PropertyKey title = mgmt.makePropertyKey("paperTitle").dataType(String.class).make();
         PropertyKey displayName = mgmt.makePropertyKey("displayName").dataType(String.class).make();
@@ -112,7 +113,7 @@ public class UserQuery2GremlinTest {
                    "      {\n" +
                    "                \"source\": \"" + source + "\",\n" +
                    "                \"target\": \"" + target + "\",\n" +
-                   "                \"relation\": \"PublishedIn\"\n" +
+                   "                \"relation\": \"" + UserQuery2Gremlin.PUBLISHED_IN_FIELD + "\"\n" +
                    "            }\n" +
                    "        ]\n" +
                    "    }\n" +
@@ -271,7 +272,7 @@ public class UserQuery2GremlinTest {
                    "      {\n" +
                    "                \"source\": \"" + source + "\",\n" +
                    "                \"target\": \"" + target + "\",\n" +
-                   "                \"relation\": \"PublishedIn\"\n" +
+                   "                \"relation\": \"" + UserQuery2Gremlin.PUBLISHED_IN_FIELD + "\"\n" +
                    "            }\n" +
                    "        ]\n" +
                    "    }\n" +
@@ -409,4 +410,153 @@ public class UserQuery2GremlinTest {
         assertEquals(2, Iterators.size(tg.vertices()));
         assertEquals(1, Iterators.size(tg.edges()));
     }
+
+    @Test
+    void getProjectionForQuery_returns_list_if_no_csv()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Arrays.asList(new Node("Paper"));
+        Filter f = new Filter();
+        f.field = "year";
+        f.value = "1945";
+        nodes.get(0).filters.add(f);
+        when(q.Nodes()).thenReturn(nodes);
+        List actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(20, actual.size());
+        List titles = (List) actual.stream().map(r -> ((List)((Map)r).get("paperTitle")).get(0) ).collect( Collectors.toList() );
+        titles.sort(String.CASE_INSENSITIVE_ORDER);
+        assertEquals("Paper1945", titles.get(0));
+    }
+
+    @Test
+    void getProjectionForQuery_returns_list_if_csv()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Collections.singletonList(new Node("Paper"));
+        Filter f = new Filter();
+        f.field = "year";
+        f.value = "1945";
+        nodes.get(0).filters.add(f);
+        List<CSVOutput> csv = Collections.singletonList(new CSVOutput());
+        csv.get(0).field = "year";
+        csv.get(0).vertexType = "Paper";
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(20, actual.size());
+        assertEquals(1945, actual.get(0).get("Paper_year"));
+    }
+
+    @Test
+    void getProjectionForQuery_returns_author_if_csv()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Collections.singletonList(new Node("Paper"));
+        nodes.get(0).filters.add(new Filter("year", "1945"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
+        csv.get(0).field = "year";
+        csv.get(0).vertexType = "Paper";
+        csv.get(1).field = "displayName";
+        csv.get(1).vertexType = "Author";
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(20, actual.size());
+        assertEquals(1945, actual.get(0).get("Paper_year"));
+        String actualAuthor = (String)((List)actual.get(0).get("Author_displayName")).get(0);
+        assertEquals("Elizabeth Marguerite Bowes-Lyon", actualAuthor);
+    }
+
+    @Test
+    void getProjectionForQuery_returns_journal_if_csv()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Collections.singletonList(new Node("Paper"));
+        nodes.get(0).filters.add(new Filter("paperTitle", "Paper2003"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
+        csv.get(0).field = "year";
+        csv.get(0).vertexType = "Paper";
+        csv.get(1).field = "normalizedName";
+        csv.get(1).vertexType = "JournalFixed";
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(1, actual.size());
+        assertEquals(2001, actual.get(0).get("Paper_year"));
+        String actualJournal = (String)((List)actual.get(0).get("JournalFixed_normalizedName")).get(0);
+        assertEquals("the open acoustics journal", actualJournal);
+    }
+
+    @Test
+    void getProjectionForQuery_handles_two_node_filters()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Arrays.asList(new Node("Paper"), new Node("JournalFixed"));
+        nodes.get(0).filters.add(new Filter("year", "2001"));
+        nodes.get(1).filters.add(new Filter("normalizedName", "acoustics"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
+        csv.get(0).field = "paperTitle";
+        csv.get(0).vertexType = "Paper";
+        csv.get(1).field = "normalizedName";
+        csv.get(1).vertexType = "JournalFixed";
+
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(5, actual.size());
+        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle"))).collect( Collectors.toList() );
+        titles.sort(String.CASE_INSENSITIVE_ORDER);
+        assertEquals("Paper2001", titles.get(0));
+    }
+
+    @Test
+    void getProjectionForQuery_returns_author()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Collections.singletonList(new Node("Author"));
+        nodes.get(0).filters.add(new Filter("displayName", "Throckmorton"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
+        csv.get(0).field = "paperTitle";
+        csv.get(0).vertexType = "Paper";
+        csv.get(1).field = "displayName";
+        csv.get(1).vertexType = "Author";
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(21, actual.size());
+        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle").get)).sorted().collect( Collectors.toList() );
+        assertEquals("full case study report upplandsbondens sweden", titles.get(0));
+    }
+
 }
