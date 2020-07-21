@@ -555,8 +555,9 @@ public class UserQuery2GremlinTest {
             fail(e.getMessage());
         }
         assertEquals(21, actual.size());
-        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle").get)).sorted().collect( Collectors.toList() );
-        assertEquals("full case study report upplandsbondens sweden", titles.get(0));
+        List titles = (List) actual.stream().map(r -> (((List)r.get("Paper_paperTitle")).get(0))).sorted().collect( Collectors.toList() );
+        assertEquals("Paper0", titles.get(0));
+        assertEquals("full case study report upplandsbondens sweden", titles.get(20));
     }
 
 }
