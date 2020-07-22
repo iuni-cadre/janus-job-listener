@@ -93,12 +93,18 @@ public class JobListener {
                         JanusConnection.Request(query, graphMLFile, csvPath);
                     }
 
-                    String csvChecksum = ListenerUtils.getChecksum(csvPath);
-                    String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
+                    if (new File(csvPath).exists()) {
+                        String csvChecksum = ListenerUtils.getChecksum(csvPath);
+                        status.AddQueryResult(query.JobId(), query.UserId(), csvPath, csvChecksum);
+                    }
+
+                    if (new File(graphMLFile).exists()) {
+                        String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
+                        status.AddQueryResult(query.JobId(), query.UserId(), graphMLFile, graphMLChecksum);
+                    }
+
                     status.Update(query.JobId(), "COMPLETED", "");
 
-                    status.AddQueryResult(query.JobId(), query.UserId(), csvPath, csvChecksum);
-                    status.AddQueryResult(query.JobId(), query.UserId(), graphMLFile, graphMLChecksum);
                 } catch (CompletionException e) {
                     // Error with Janus. Log it, mark the job failed and keep going
                     LOG.error("Error reading JanusGraph: " + e.getMessage());

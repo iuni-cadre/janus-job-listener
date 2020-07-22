@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.logging.Level.INFO;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.valueMap;
 import static org.janusgraph.core.attribute.Text.textContains;
@@ -195,6 +196,7 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+        LOG.info("Query: " + t);
         return t.toList();
     }
 
@@ -230,6 +232,7 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+        LOG.info("Query: " + t);
         return t.toList();
     }
 
@@ -256,11 +259,14 @@ public class UserQuery2Gremlin {
             for (CSVOutput c : query.CSV()) {
                 if (c.vertexType.equals(AUTHOR_FIELD))
                     t = t.by(c.field);
+                else if (c.vertexType.equals(PAPER_FIELD))
+                    t = t.by(__.both(edgeLabel(AUTHOR_FIELD, c.vertexType)).values(c.field));
                 else {
                     t = t.by(__.both(edgeLabel(AUTHOR_FIELD, c.vertexType)).values(c.field).fold());
                 }
             }
         }
+        LOG.info("Query: " + t);
         return t.toList();
     }
 }
