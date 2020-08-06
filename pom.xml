@@ -90,6 +90,11 @@
       <version>0.5.0</version>
     </dependency>
     <dependency>
+      <groupId>org.janusgraph</groupId>
+      <artifactId>janusgraph-driver</artifactId>
+      <version>0.5.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
       <version>4.4.13</version>

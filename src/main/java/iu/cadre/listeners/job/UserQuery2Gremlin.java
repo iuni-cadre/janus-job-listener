@@ -16,6 +16,7 @@ import static java.util.logging.Level.INFO;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.valueMap;
 import static org.janusgraph.core.attribute.Text.textContains;
+import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 public class UserQuery2Gremlin {
     public static final String PAPER_FIELD = "Paper";
@@ -247,7 +248,7 @@ public class UserQuery2Gremlin {
         List<Node> otherNodes = query.Nodes().stream().filter(n -> !n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
         for (Node otherNode : otherNodes) {
             Filter f = otherNode.filters.get(0);
-            t = t.where(__.both(edgeLabel(AUTHOR_FIELD, otherNode.type)).has(otherNode.type, f.field, textContains(f.value)));
+            t = t.where(__.both(edgeLabel(AUTHOR_FIELD, otherNode.type)).has(otherNode.type, f.field, textContainsFuzzy(f.value)));
         }
 
         t = t.limit(record_limit).as("a");
