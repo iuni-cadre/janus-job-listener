@@ -127,6 +127,11 @@ public class UserQuery {
         return Edges().stream().anyMatch(e -> e.relation.equals("References"));
     }
 
+    public boolean HasAbstractSearch() {
+        return Nodes().stream().anyMatch(n ->
+                n.filters.stream().anyMatch( f -> f.field.equals("abstract")));
+    }
+
     @Override
     public String toString() {
         return "UserQuery{" +

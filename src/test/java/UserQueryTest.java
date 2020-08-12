@@ -102,4 +102,72 @@ public class UserQueryTest {
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
         assertFalse(q.RequiresGraph());
     }
+
+    @Test
+    void UserQuery_hasAbstractSearch_returns_false_if_no_abstracts() {
+        String s = "{\n" +
+                   "    \"job_name\": \"Job Name\",\n" +
+                   "    \"dataset\": \"mag\",\n" +
+                   "    \"job_id\": \"sassas1221\",\n" +
+                   "    \"username\": \"abc\",\n" +
+                   "    \"user_id\": \"1\",\n" +
+                   "    \"graph\": {\n" +
+                   "        \"nodes\": [\n" +
+                   "            {\n" +
+                   "                \"vertexType\": \"Paper\",\n" +
+                   "                \"filters\": [\n" +
+                   "                    {\n" +
+                   "                        \"field\": \"paperTitle\",\n" +
+                   "                        \"filterType\": \"is\",\n" +
+                   "                        \"value\": \"paper2001\",\n" +
+                   "                        \"operator\": \"\"\n" +
+                   "                    }\n" + ",\n" +
+                   "                    {\n" +
+                   "                        \"field\": \"paperTitle\",\n" +
+                   "                        \"filterType\": \"is\",\n" +
+                   "                        \"value\": \"paper2002\",\n" +
+                   "                        \"operator\": \"or\"\n" +
+                   "                    }" +
+                   "        ]\n" +
+                   "      }]" +
+                   "    }\n" +
+                   "}";
+        JsonParser jsonParser = new JsonParser();
+        UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
+        assertFalse(q.HasAbstractSearch());
+    }
+
+    @Test
+    void UserQuery_hasAbstractSearch_returns_true_if_abstracts() {
+        String s = "{\n" +
+                   "    \"job_name\": \"Job Name\",\n" +
+                   "    \"dataset\": \"mag\",\n" +
+                   "    \"job_id\": \"sassas1221\",\n" +
+                   "    \"username\": \"abc\",\n" +
+                   "    \"user_id\": \"1\",\n" +
+                   "    \"graph\": {\n" +
+                   "        \"nodes\": [\n" +
+                   "            {\n" +
+                   "                \"vertexType\": \"Paper\",\n" +
+                   "                \"filters\": [\n" +
+                   "                    {\n" +
+                   "                        \"field\": \"paperTitle\",\n" +
+                   "                        \"filterType\": \"is\",\n" +
+                   "                        \"value\": \"paper2001\",\n" +
+                   "                        \"operator\": \"\"\n" +
+                   "                    }\n" + ",\n" +
+                   "                    {\n" +
+                   "                        \"field\": \"abstract\",\n" +
+                   "                        \"filterType\": \"is\",\n" +
+                   "                        \"value\": \"hippity hop\",\n" +
+                   "                        \"operator\": \"or\"\n" +
+                   "                    }" +
+                   "        ]\n" +
+                   "      }]" +
+                   "    }\n" +
+                   "}";
+        JsonParser jsonParser = new JsonParser();
+        UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
+        assertTrue(q.HasAbstractSearch());
+    }
 }

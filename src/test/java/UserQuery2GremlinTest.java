@@ -560,4 +560,28 @@ public class UserQuery2GremlinTest {
         assertEquals("full case study report upplandsbondens sweden", titles.get(20));
     }
 
+    @Test
+    void getProjectionForQuery_handles_two_paper_filters()
+    {
+        UserQuery q = mock(UserQuery.class);
+        List<Node> nodes = Arrays.asList(new Node("Paper"));
+        nodes.get(0).filters.add(new Filter("year", "2001"));
+        nodes.get(0).filters.add(new Filter("paperTitle", "Paper2005"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput());
+        csv.get(0).field = "paperTitle";
+        csv.get(0).vertexType = "Paper";
+
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(1, actual.size());
+        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle"))).collect( Collectors.toList() );
+        assertEquals("Paper2005", titles.get(0));
+    }
 }

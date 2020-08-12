@@ -35,6 +35,7 @@ public class UserQuery2Gremlin {
         LOG.info("Creating subgraph for the query");
         GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
 
+
         List<Edge> edges = query.Edges();
 
         if (edges.isEmpty()) {
@@ -152,6 +153,9 @@ public class UserQuery2Gremlin {
     }
 
     public static List getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.HasAbstractSearch())
+            throw new UnsupportedOperationException("Search by abstract is not supported");
+
         GraphTraversal t = traversal.V();
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
@@ -167,19 +171,21 @@ public class UserQuery2Gremlin {
     private static List getProjectionForJournalQuery(GraphTraversal t, UserQuery query) throws Exception {
         List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
         for (Node journalNode : journalNodes) {
-            Filter f = journalNode.filters.get(0);
-            t = t.has(journalNode.type, f.field, textContains(f.value));
+            for (Filter f : journalNode.filters) {
+                t = t.has(journalNode.type, f.field, textContains(f.value));
+            }
         }
         t = t.limit(100).both();
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
         for (Node paperNode : paperNodes) {
-            Filter f = paperNode.filters.get(0);
-            if (f.field.equals("year")) {
-                t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
-            } else if (f.field.equals("doi")) {
-                t = t.has(paperNode.type, f.field, f.value);
-            } else {
-                t = t.has(paperNode.type, f.field, textContains(f.value));
+            for (Filter f : paperNode.filters) {
+                if (f.field.equals("year")) {
+                    t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
+                } else if (f.field.equals("doi")) {
+                    t = t.has(paperNode.type, f.field, f.value);
+                } else {
+                    t = t.has(paperNode.type, f.field, textContains(f.value));
+                }
             }
         }
         if (query.CSV().isEmpty()) {
@@ -205,18 +211,21 @@ public class UserQuery2Gremlin {
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
 
         for (Node paperNode : paperNodes) {
-            Filter f = paperNode.filters.get(0);
-            if (f.field.equals("year") || f.field.equals("doi")) {
-                t = t.has(paperNode.type, f.field, f.value);
-            } else {
-                t = t.has(paperNode.type, f.field, textContains(f.value));
+
+            for (Filter f : paperNode.filters) {
+                if (f.field.equals("year") || f.field.equals("doi")) {
+                    t = t.has(paperNode.type, f.field, f.value);
+                } else {
+                    t = t.has(paperNode.type, f.field, textContains(f.value));
+                }
             }
         }
 
         List<Node> otherNodes = query.Nodes().stream().filter(n -> !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
         for (Node otherNode : otherNodes) {
-            Filter f = otherNode.filters.get(0);
-            t = t.where(__.both(edgeLabel(PAPER_FIELD, otherNode.type)).has(otherNode.type, f.field, textContains(f.value)));
+            for (Filter f : otherNode.filters) {
+                t = t.where(__.both(edgeLabel(PAPER_FIELD, otherNode.type)).has(otherNode.type, f.field, textContains(f.value)));
+            }
         }
 
         t = t.limit(record_limit).as("a");
@@ -241,14 +250,16 @@ public class UserQuery2Gremlin {
         List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
 
         for (Node authorNode : authorNodes) {
-            Filter f = authorNode.filters.get(0);
-            t = t.has(authorNode.type, f.field, textContains(f.value));
+            for (Filter f : authorNode.filters) {
+                t = t.has(authorNode.type, f.field, textContains(f.value));
+            }
         }
 
         List<Node> otherNodes = query.Nodes().stream().filter(n -> !n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
         for (Node otherNode : otherNodes) {
-            Filter f = otherNode.filters.get(0);
-            t = t.where(__.both(edgeLabel(AUTHOR_FIELD, otherNode.type)).has(otherNode.type, f.field, textContainsFuzzy(f.value)));
+            for (Filter f : otherNode.filters) {
+                t = t.where(__.both(edgeLabel(AUTHOR_FIELD, otherNode.type)).has(otherNode.type, f.field, textContainsFuzzy(f.value)));
+            }
         }
 
         t = t.limit(record_limit).as("a");
