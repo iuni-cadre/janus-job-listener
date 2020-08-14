@@ -175,19 +175,21 @@ public class UserQuery2Gremlin {
                 t = t.has(journalNode.type, f.field, textContains(f.value));
             }
         }
-        t = t.limit(100).both();
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
         for (Node paperNode : paperNodes) {
             for (Filter f : paperNode.filters) {
                 if (f.field.equals("year")) {
-                    t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
+                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, Integer.parseInt(f.value));
                 } else if (f.field.equals("doi")) {
-                    t = t.has(paperNode.type, f.field, f.value);
+                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, f.value);
                 } else {
-                    t = t.has(paperNode.type, f.field, textContains(f.value));
+                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, textContains(f.value));
                 }
             }
         }
+
+        t = t.limit(record_limit);
+
         if (query.CSV().isEmpty()) {
             return t.valueMap().toList();
         }
