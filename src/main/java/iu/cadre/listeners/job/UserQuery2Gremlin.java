@@ -37,6 +37,7 @@ public class UserQuery2Gremlin {
 
 
         List<Edge> edges = query.Edges();
+        LOG.info("egde size " + edges.size());
 
         if (edges.isEmpty()) {
             Edge e = new Edge();
@@ -48,40 +49,61 @@ public class UserQuery2Gremlin {
         Map<String, List<Object>> asLabelFilters = getASLabelFilters(query.Nodes());
         int count = 1;
         List<Object> allMatchClauses = new ArrayList<>();
+        String lastLable1 = null;
+        String lastLable2 = null;
         for (String vertexType : asLabelFilters.keySet()) {
             String label1 = "label" + count;
             count++;
             String label2 = "label" + count;
+            lastLable1 = label1;
+            lastLable2 = label2;
+            LOG.info(vertexType);
             List<Object> hasFilterListPerVertex = asLabelFilters.get(vertexType);
+            LOG.info("has filter count for vertex : " + vertexType + " is : " + hasFilterListPerVertex.size());
             allMatchClauses.addAll(hasFilterListPerVertex);
 
             for (Edge edge : edges) {
                 LOG.info(edge.toString());
                 if (edge.source.equals(PAPER_FIELD) && edge.target.equals(JOURNAL_FIELD)) {
+                    LOG.info("paper -> journal");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals("ConferenceInstance")) {
+                    LOG.info("paper -> confInstance");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 } else if (edge.source.equals(JOURNAL_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                    LOG.info("journal -> paper");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 } else if (edge.source.equals(AUTHOR_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                    LOG.info("author -> paper");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 } else if (edge.source.equals("ConferenceInstance") && edge.target.equals(PAPER_FIELD)) {
+                    LOG.info("confInstance -> paper");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(AUTHOR_FIELD)) {
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                    LOG.info("paper -> author");
                     GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
                     allMatchClauses.add(nextAsLabel);
                 }
+//                else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
+//                    LOG.info("paper -> paper");
+//                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
+//                    allMatchClauses.add(nextAsLabel);
+//                }
             }
         }
 
+        for (Edge edge : edges) {
+            if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                LOG.info("paper -> paper");
+                GraphTraversal<Object, Vertex> nextAsLabel = __.as(lastLable1).inE(edge.relation).subgraph("sg").outV().as(lastLable2);
+                allMatchClauses.add(nextAsLabel);
+            }
+        }
         GraphTraversal<?, ?>[] temp = new GraphTraversal[allMatchClauses.size()];
         for (int i = 0; i < allMatchClauses.size(); i++) {
             temp[i] = (GraphTraversal<?, ?>) allMatchClauses.get(i);

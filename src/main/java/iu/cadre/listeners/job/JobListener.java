@@ -68,6 +68,7 @@ public class JobListener {
             JobStatus status = new JobStatus(ConfigReader.getMetaDBInMemory());
             // print out the messages
             for (Message m : messages) {
+                LOG.info(m.body());
                 UserQuery query = new UserQuery(jsonParser.parse(m.body()).getAsJsonObject());
                 LOG.info("Accepted " + query.JobId() + " for " + query.UserName());
                 LOG.info(query.toString());
