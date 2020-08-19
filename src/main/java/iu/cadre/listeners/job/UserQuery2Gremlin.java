@@ -102,7 +102,8 @@ public class UserQuery2Gremlin {
         for (Edge edge : edges) {
             if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
                 LOG.info("paper -> paper");
-                GraphTraversal<Object, Vertex> nextAsLabel = __.as(lastLable1).inE(edge.relation).subgraph("sg").outV().as(lastLable2);
+                LOG.info(lastLable1 + " " + lastLable2);
+                GraphTraversal<Object, Vertex> nextAsLabel = __.as(lastLable1).inE(edge.relation).subgraph("sg").outV().as(lastLable2).limit(record_limit);
                 allMatchClauses.add(nextAsLabel);
             }
         }
@@ -137,8 +138,7 @@ public class UserQuery2Gremlin {
                     hasFilters.add(asLabelWithFilters);
                 } else {
                     GraphTraversal<Object, Object> asLabelWithFilters = __.as(label)
-                            .has(vertexType, filterField.field, Integer.valueOf(filterField.value))
-                            .values("paperId", "year");
+                            .has(vertexType, filterField.field, Integer.valueOf(filterField.value));
                     hasFilters.add(asLabelWithFilters);
                 }
 
