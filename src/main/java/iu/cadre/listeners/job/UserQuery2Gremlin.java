@@ -64,30 +64,32 @@ public class UserQuery2Gremlin {
 
             for (Edge edge : edges) {
                 LOG.info(edge.toString());
-                if (edge.source.equals(PAPER_FIELD) && edge.target.equals(JOURNAL_FIELD)) {
-                    LOG.info("paper -> journal");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals("ConferenceInstance")) {
-                    LOG.info("paper -> confInstance");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals(JOURNAL_FIELD) && edge.target.equals(PAPER_FIELD)) {
-                    LOG.info("journal -> paper");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals(AUTHOR_FIELD) && edge.target.equals(PAPER_FIELD)) {
-                    LOG.info("author -> paper");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals("ConferenceInstance") && edge.target.equals(PAPER_FIELD)) {
-                    LOG.info("confInstance -> paper");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
-                } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(AUTHOR_FIELD)) {
-                    LOG.info("paper -> author");
-                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                    allMatchClauses.add(nextAsLabel);
+                if (edge.source.equals(vertexType)) {
+                    if (edge.source.equals(PAPER_FIELD) && edge.target.equals(JOURNAL_FIELD)) {
+                        LOG.info("paper -> journal");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals("ConferenceInstance")) {
+                        LOG.info("paper -> confInstance");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    } else if (edge.source.equals(JOURNAL_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                        LOG.info("journal -> paper");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    } else if (edge.source.equals(AUTHOR_FIELD) && edge.target.equals(PAPER_FIELD)) {
+                        LOG.info("author -> paper");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    } else if (edge.source.equals("ConferenceInstance") && edge.target.equals(PAPER_FIELD)) {
+                        LOG.info("confInstance -> paper");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(AUTHOR_FIELD)) {
+                        LOG.info("paper -> author");
+                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
+                        allMatchClauses.add(nextAsLabel);
+                    }
                 }
 //                else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
 //                    LOG.info("paper -> paper");
