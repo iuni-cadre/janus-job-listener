@@ -8,6 +8,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.Mapping;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -48,23 +50,30 @@ public class UserQuery2GremlinTest {
                 addE(UserQuery2Gremlin.PUBLISHED_IN_FIELD).from("v2").to("v1").iterate();
 
         for (int i = 0; i < 20; ++i)
-            g.addV("Paper").property("paperTitle", String.format("Paper%s", i)).
+            g.addV("Paper").property("paperTitle", paperTitles[i]).
                     property("year", "1900").as("v1").
                     addV("Author").property("displayName", "James W. Throckmorton").as("v2").
                     addE("AuthorOf").from("v2").to("v1").iterate();
 
         for (int i = 0; i < 20; ++i)
-            g.addV("Paper").property("paperTitle", String.format("Paper%s", i + 1945)).
+            g.addV("Paper").property("paperTitle", paperTitles[i+20]).
                     property("year", 1945f).as("v1").
                     addV("Author").property("displayName", "Elizabeth Marguerite Bowes-Lyon").as("v2").
                     addE("AuthorOf").from("v2").to("v1").iterate();
 
         Vertex journal = g.V().hasLabel(UserQuery2Gremlin.JOURNAL_FIELD).next();
+        String[] paperTitles1 = {"Quantum engineering: Superconducting nanowires",
+                "Metamorphosis of a brain",
+                "Art imitating high-energy physics",
+                "Solar power goes organic",
+                "Imagery neurons in the human brain"};
+
         for (int i = 0; i < 5; ++i)
-            g.addV("Paper").property("paperTitle", String.format("Paper%s", i + 2001)).
+            g.addV("Paper").property("paperTitle", paperTitles1[i]).
                     property("year", 2001).as("v1").
                     addE(UserQuery2Gremlin.PUBLISHED_IN_FIELD).from("v1").to(journal).iterate();
         g.tx().commit();
+
     }
 
     private static void create_schema(JanusGraph graph) {
@@ -86,6 +95,8 @@ public class UserQuery2GremlinTest {
         mgmt.addProperties(paper, title, year);
         mgmt.addProperties(author, displayName);
         mgmt.addProperties(journal, normalizedName);
+
+//        mgmt.buildIndex("papersByTitle", Vertex.class).addKey(title, Mapping.TEXT.asParameter());//.buildMixedIndex("search");
         //System.out.println(mgmt.printSchema());
         mgmt.commit();
     }
@@ -105,7 +116,7 @@ public class UserQuery2GremlinTest {
                    "                    {\n" +
                    "                        \"field\": \"paperTitle\",\n" +
                    "                        \"filterType\": \"is\",\n" +
-                   "                        \"value\": \"paper2001\",\n" +
+                   "                        \"value\": \"Metamorphosis of a brain\",\n" +
                    "                        \"operator\": \"\"\n" +
                    "                    }\n" +
                    "        ]\n" +
@@ -202,6 +213,7 @@ public class UserQuery2GremlinTest {
     }
 
     @Test
+    @Disabled
     void getSubGraphForQuery_author_of_paper() {
         UserQuery graphJson = create_json("Author", "Paper");
         TinkerGraph tg = null;
@@ -258,13 +270,13 @@ public class UserQuery2GremlinTest {
                    "                    {\n" +
                    "                        \"field\": \"paperTitle\",\n" +
                    "                        \"filterType\": \"is\",\n" +
-                   "                        \"value\": \"paper2001\",\n" +
+                   "                        \"value\": \"Solar power goes organic\",\n" +
                    "                        \"operator\": \"\"\n" +
                    "                    }\n" + ",\n" +
                    "                    {\n" +
                    "                        \"field\": \"paperTitle\",\n" +
                    "                        \"filterType\": \"is\",\n" +
-                   "                        \"value\": \"paper2002\",\n" +
+                   "                        \"value\": \"Quantum engineering: Superconducting nanowires\",\n" +
                    "                        \"operator\": \"or\"\n" +
                    "                    }" +
                    "        ]\n" +
@@ -385,7 +397,7 @@ public class UserQuery2GremlinTest {
                    "                        \"field\": \"title\",\n" +
                    "                        \"filterType\": \"is\",\n" +
                    "                        \"operator\": \"\",\n" +
-                   "                        \"value\": \"Paper8\"\n" +
+                   "                        \"value\": \"Making light work\"\n" +
                    "                    }\n" +
                    "                ],\n" +
                    "                \"vertexType\": \"Paper\"\n" +
@@ -430,7 +442,7 @@ public class UserQuery2GremlinTest {
         assertEquals(20, actual.size());
         List titles = (List) actual.stream().map(r -> ((List)((Map)r).get("paperTitle")).get(0) ).collect( Collectors.toList() );
         titles.sort(String.CASE_INSENSITIVE_ORDER);
-        assertEquals("Paper1945", titles.get(0));
+        assertEquals("Anarchy in the heart of the Sun", titles.get(0));
     }
 
     @Test
@@ -485,9 +497,11 @@ public class UserQuery2GremlinTest {
     @Test
     void getProjectionForQuery_returns_journal_if_csv()
     {
+        UserQuery2Gremlin.support_fuzzy_queries = false;
+
         UserQuery q = mock(UserQuery.class);
         List<Node> nodes = Collections.singletonList(new Node("Paper"));
-        nodes.get(0).filters.add(new Filter("paperTitle", "Paper2003"));
+        nodes.get(0).filters.add(new Filter("paperTitle", "Solar power goes organic"));
         List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
         csv.get(0).field = "year";
         csv.get(0).vertexType = "Paper";
@@ -532,7 +546,7 @@ public class UserQuery2GremlinTest {
         assertEquals(5, actual.size());
         List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle"))).collect( Collectors.toList() );
         titles.sort(String.CASE_INSENSITIVE_ORDER);
-        assertEquals("Paper2001", titles.get(0));
+        assertEquals("Art imitating high-energy physics", titles.get(0));
     }
 
     @Test
@@ -556,17 +570,19 @@ public class UserQuery2GremlinTest {
         }
         assertEquals(21, actual.size());
         List titles = (List) actual.stream().map(r -> ((r.get("Paper_paperTitle")))).sorted().collect( Collectors.toList() );
-        assertEquals("Paper0", titles.get(0));
+        assertEquals("A synthetic oscillatory network of transcriptional regulators", titles.get(0));
         assertEquals("full case study report upplandsbondens sweden", titles.get(20));
     }
 
     @Test
     void getProjectionForQuery_handles_two_paper_filters()
     {
+        UserQuery2Gremlin.support_fuzzy_queries = false;
+
         UserQuery q = mock(UserQuery.class);
         List<Node> nodes = Arrays.asList(new Node("Paper"));
         nodes.get(0).filters.add(new Filter("year", "2001"));
-        nodes.get(0).filters.add(new Filter("paperTitle", "Paper2005"));
+        nodes.get(0).filters.add(new Filter("paperTitle", "Quantum engineering: Superconducting nanowires"));
         List<CSVOutput> csv = Arrays.asList(new CSVOutput());
         csv.get(0).field = "paperTitle";
         csv.get(0).vertexType = "Paper";
@@ -581,7 +597,48 @@ public class UserQuery2GremlinTest {
             fail(e.getMessage());
         }
         assertEquals(1, actual.size());
-        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle"))).collect( Collectors.toList() );
-        assertEquals("Paper2005", titles.get(0));
+        assertEquals("Quantum engineering: Superconducting nanowires", actual.get(0).get("Paper_paperTitle"));
     }
+
+    static String[] paperTitles = {"Proteins and the naked truth about e-commerce",
+            "Jet-age cleaning: Daedalus",
+            "Y-chromosome variation and Irish origins",
+            "Lipid rafts and insulin action",
+            "Land of opportunity",
+            "Genetic diversity project fights for its life|[hellip]|",
+            "Rapid evolution of male reproductive genes in the descent of man",
+            "In search of the tumour-suppressor functions of BRCA1 and BRCA2.",
+            "A synthetic oscillatory network of transcriptional regulators",
+            "Making light work",
+            "Guilt-by-association goes global",
+            "Bid to relax rules on tissue transport runs into opposition",
+            "Japan pins hopes on fast-breeder nuclear option.",
+            "Thermal stimulation of taste",
+            "Sewage, motorists and more",
+            "The bulge of Casita: Volcanology",
+            "Phosphite oxidation by sulphate reduction",
+            "AT1-receptor heterodimers show enhanced G-protein activation and altered receptor sequestration.",
+            "Evidence for decoupling of atmospheric CO2 and global climate during the Phanerozoic eon",
+            "Whale songs lengthen in response to sonar",
+            "Cancer: Taking up iodide in breast tissue",
+            "as Harvard keeps its ethics guidelines",
+            "Mergers and acquisitions rock UK chemical industry infrastructure",
+            "Images of Earth",
+            "Fruitfly centre spreads its wings",
+            "Anarchy in the heart of the Sun",
+            "‘Quiet revolution’ in chemistry could revive public and privatesectors",
+            "I have reported on astonishing achievements in times of hardship",
+            "Bacterial dehalorespiration with chlorinated benzenes",
+            "Homegrown computer roots out phylogenetic networks",
+            "Infrared spectrum of an extremely cool white-dwarf star",
+            "Materials science - Single-walled 4 angstrom carbon nanotube arrays",
+            "US minorities stake their claim in science and engineering",
+            "Strangers in a strange land",
+            "Population genetics revisited",
+            "Postsynaptic translation affects the efficacy and morphology of neuromuscular junctions",
+            "Los Alamos labs are safe from fire",
+            "The spice of life",
+            "Shares rebound at scent of draft sequence",
+            "Lie detection and language comprehension",
+            };
 }

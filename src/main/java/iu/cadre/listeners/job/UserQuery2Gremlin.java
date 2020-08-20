@@ -11,10 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.rmi.UnexpectedException;
 
-import static java.util.logging.Level.INFO;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.count;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.valueMap;
 import static org.janusgraph.core.attribute.Text.textContains;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
@@ -27,6 +25,7 @@ public class UserQuery2Gremlin {
     public static final String AUTHOR_OF_FIELD = "AuthorOf";
 
     public static Integer record_limit = 100000;
+    public static Boolean support_fuzzy_queries = true;
 
     public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (!query.DataSet().equals("mag"))
@@ -176,87 +175,10 @@ public class UserQuery2Gremlin {
         throw new Exception("No edge between " + source + " and " + target);
     }
 
-    public static List getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (query.HasAbstractSearch())
-            throw new UnsupportedOperationException("Search by abstract is not supported");
-
-        GraphTraversal t = traversal.V();
-
-        if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
-            return getProjectionForJournalQuery(t, query);
-        }
-        else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
-                return getProjectionForAuthorQuery(t, query);
-        } else {
-            return getProjectionForPaperQuery(t, query);
-        }
-    }
-
-    private static List getProjectionForJournalQuery(GraphTraversal t, UserQuery query) throws Exception {
-        List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
-        for (Node journalNode : journalNodes) {
-            for (Filter f : journalNode.filters) {
-                t = t.has(journalNode.type, f.field, textContains(f.value));
-            }
-        }
-        List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-        for (Node paperNode : paperNodes) {
-            for (Filter f : paperNode.filters) {
-                if (f.field.equals("year")) {
-                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, Integer.parseInt(f.value));
-                } else if (f.field.equals("doi")) {
-                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, f.value);
-                } else {
-                    t = t.both(edgeLabel(JOURNAL_FIELD, PAPER_FIELD)).has(paperNode.type, f.field, textContains(f.value));
-                }
-            }
-        }
-
-        t = t.limit(record_limit);
-
+    private static GraphTraversal getPaperProjection(GraphTraversal t, UserQuery query) throws Exception
+    {
         if (query.CSV().isEmpty()) {
-            return t.valueMap().toList();
-        }
-        else {
-            List<CSVOutput> nonAuthorNodes = query.CSV().stream().filter(v -> !v.vertexType.equals(AUTHOR_FIELD)).collect(Collectors.toList());
-            String[] projections = nonAuthorNodes.stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
-            t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
-            for (CSVOutput c : nonAuthorNodes) {
-                if (c.vertexType.equals(PAPER_FIELD)) {
-                    t = t.by(c.field);
-                } else if (c.vertexType.equals(JOURNAL_FIELD)) {
-                    t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
-                }
-            }
-        }
-        LOG.info("Query: " + t);
-        return t.toList();
-    }
-
-    private static List getProjectionForPaperQuery(GraphTraversal t, UserQuery query) throws Exception {
-        List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-
-        for (Node paperNode : paperNodes) {
-
-            for (Filter f : paperNode.filters) {
-                if (f.field.equals("year") || f.field.equals("doi")) {
-                    t = t.has(paperNode.type, f.field, f.value);
-                } else {
-                    t = t.has(paperNode.type, f.field, textContains(f.value));
-                }
-            }
-        }
-
-        List<Node> otherNodes = query.Nodes().stream().filter(n -> !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-        for (Node otherNode : otherNodes) {
-            for (Filter f : otherNode.filters) {
-                t = t.where(__.both(edgeLabel(PAPER_FIELD, otherNode.type)).has(otherNode.type, f.field, textContains(f.value)));
-            }
-        }
-
-        t = t.limit(record_limit).as("a");
-        if (query.CSV().isEmpty()) {
-            return t.valueMap().toList();
+            return t.valueMap();
         } else {
             String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
             t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
@@ -268,42 +190,87 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+
+        return t;
+    }
+
+    private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
+        List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+        if (paperNodes.isEmpty())
+        {
+            /// even if we don't filter by paper, we still probably want to return a list of papers
+            t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+        }
+        else {
+            for (Node paperNode : paperNodes) {
+                for (Filter f : paperNode.filters) {
+                    if (f.field.equals("year")) {
+                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, Integer.parseInt(f.value));
+                    } else if (f.field.equals("doi")) {
+                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, f.value);
+                    } else {
+                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                    }
+                }
+            }
+        }
+
+        return t;
+    }
+
+    public static List getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.HasAbstractSearch())
+            throw new UnsupportedOperationException("Search by abstract is not supported");
+
+        GraphTraversal t = traversal.V();
+
+        if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
+            return getProjectionForNonPaperQuery(t, query, JOURNAL_FIELD);
+        }
+        else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
+            return getProjectionForNonPaperQuery(t, query, AUTHOR_FIELD);
+        } else {
+            return getProjectionForPaperQuery(t, query);
+        }
+    }
+
+    private static List getProjectionForNonPaperQuery(GraphTraversal t, UserQuery query, String nodeType) throws Exception {
+        List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
+        for (Node n : nonPaperNodes) {
+            for (Filter f : n.filters) {
+                t = t.has(n.type, f.field, textContains(f.value));
+            }
+        }
+
+        t = getPaperFilter(t, query, nodeType);
+
+        t = t.limit(record_limit);
+
+        t = getPaperProjection(t, query);
+
         LOG.info("Query: " + t);
         return t.toList();
     }
 
-    private static List getProjectionForAuthorQuery(GraphTraversal t, UserQuery query) throws Exception {
-        List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
+    private static List getProjectionForPaperQuery(GraphTraversal t, UserQuery query) throws Exception {
+        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
+            throw new UnexpectedException("Can't filter non-paper nodes here");
 
-        for (Node authorNode : authorNodes) {
-            for (Filter f : authorNode.filters) {
-                t = t.has(authorNode.type, f.field, textContains(f.value));
-            }
-        }
+        for (Node paperNode : query.Nodes()) {
 
-        List<Node> otherNodes = query.Nodes().stream().filter(n -> !n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
-        for (Node otherNode : otherNodes) {
-            for (Filter f : otherNode.filters) {
-                t = t.where(__.both(edgeLabel(AUTHOR_FIELD, otherNode.type)).has(otherNode.type, f.field, textContainsFuzzy(f.value)));
+            for (Filter f : paperNode.filters) {
+                if (f.field.equals("year") || f.field.equals("doi")) {
+                    t = t.has(paperNode.type, f.field, f.value);
+                } else {
+                    t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                }
             }
         }
 
         t = t.limit(record_limit).as("a");
-        if (query.CSV().isEmpty()) {
-            return t.valueMap().toList();
-        } else {
-            String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
-            t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
-            for (CSVOutput c : query.CSV()) {
-                if (c.vertexType.equals(AUTHOR_FIELD))
-                    t = t.by(c.field);
-                else if (c.vertexType.equals(PAPER_FIELD))
-                    t = t.by(__.both(edgeLabel(AUTHOR_FIELD, c.vertexType)).values(c.field));
-                else {
-                    t = t.by(__.both(edgeLabel(AUTHOR_FIELD, c.vertexType)).values(c.field).fold());
-                }
-            }
-        }
+
+        t = getPaperProjection(t, query);
+
         LOG.info("Query: " + t);
         return t.toList();
     }
