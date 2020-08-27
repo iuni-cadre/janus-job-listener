@@ -175,7 +175,7 @@ public class UserQuery2Gremlin {
         throw new Exception("No edge between " + source + " and " + target);
     }
 
-    private static GraphTraversal getPaperProjection(GraphTraversal t, UserQuery query) throws Exception
+    public static GraphTraversal getPaperProjection(GraphTraversal t, UserQuery query) throws Exception
     {
         if (query.CSV().isEmpty()) {
             return t.valueMap();
@@ -191,6 +191,12 @@ public class UserQuery2Gremlin {
             }
         }
 
+        return t;
+    }
+
+    public static GraphTraversal getPaperProjectionForNetwork(GraphTraversal t, UserQuery query) throws Exception
+    {
+        t = t.project("From", "To").by(__.outV().id()).by(__.inV().id());
         return t;
     }
 
@@ -218,10 +224,9 @@ public class UserQuery2Gremlin {
         return t;
     }
 
-    public static List getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static GraphTraversal getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
-
         GraphTraversal t = traversal.V();
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
@@ -234,7 +239,7 @@ public class UserQuery2Gremlin {
         }
     }
 
-    private static List getProjectionForNonPaperQuery(GraphTraversal t, UserQuery query, String nodeType) throws Exception {
+    private static GraphTraversal getProjectionForNonPaperQuery(GraphTraversal t, UserQuery query, String nodeType) throws Exception {
         List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
         for (Node n : nonPaperNodes) {
             for (Filter f : n.filters) {
@@ -243,16 +248,11 @@ public class UserQuery2Gremlin {
         }
 
         t = getPaperFilter(t, query, nodeType);
-
-        t = t.limit(record_limit);
-
-        t = getPaperProjection(t, query);
-
         LOG.info("Query: " + t);
-        return t.toList();
+        return t;
     }
 
-    private static List getProjectionForPaperQuery(GraphTraversal t, UserQuery query) throws Exception {
+    private static GraphTraversal getProjectionForPaperQuery(GraphTraversal t, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes here");
 
@@ -266,12 +266,7 @@ public class UserQuery2Gremlin {
                 }
             }
         }
-
-        t = t.limit(record_limit).as("a");
-
-        t = getPaperProjection(t, query);
-
         LOG.info("Query: " + t);
-        return t.toList();
+        return t;
     }
 }

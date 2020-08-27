@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.remote.DriverRemoteConnection;
 import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -23,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
 
@@ -56,7 +58,7 @@ public class JanusConnection {
         }
     }
 
-    public static void Request(UserQuery query, String graphMLFile, String csvPath) throws Exception {
+    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws Exception {
         LOG.info("Connecting to Janus server");
         Cluster cluster = Cluster.build()
                 .addContactPoint(ConfigReader.getJanusHost())
@@ -67,25 +69,30 @@ public class JanusConnection {
                         .addRegistry(TinkerIoRegistryV3d0.instance())))
                 .create();
 
-       GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
+        GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
 
-        UserQuery2Gremlin.record_limit = ConfigReader.getJanusRecordLimit();
-       if (query.RequiresGraph())
-       {
-           TinkerGraph tg = UserQuery2Gremlin.getSubGraphForQuery(janusTraversal, query);
-           GraphTraversalSource sg = tg.traversal();
-           LOG.info("Graph result received, writing GraphML to " + graphMLFile);
-           sg.io(graphMLFile).write().iterate();
-           //  to convert to csv
-           OutputStream stream = new FileOutputStream(csvPath);
-           GremlinGraphWriter.graph_to_csv(tg, stream);
-       }
-       else
-       {
-           List tg = UserQuery2Gremlin.getProjectionForQuery(janusTraversal, query);
-           OutputStream stream = new FileOutputStream(csvPath);
-           GremlinGraphWriter.projection_to_csv(tg, stream);
-       }
+        record_limit = ConfigReader.getJanusRecordLimit();
+        OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
+        OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+
+
+        GraphTraversal t = UserQuery2Gremlin.getProjectionForQuery(janusTraversal, query);
+        if (query.RequiresGraph()) {
+            GraphTraversal tn = t.outE("References");
+            tn = tn.limit(record_limit).as("a");
+            tn = UserQuery2Gremlin.getPaperProjectionForNetwork(tn, query);
+            List tg1 = tn.toList();
+            GremlinGraphWriter.projection_to_csv(tg1, edgesStream);
+            GraphTraversal tOther = t.limit(record_limit).as("a");
+            tOther = UserQuery2Gremlin.getPaperProjection(tOther, query);
+            List tg2 = tOther.toList();
+            GremlinGraphWriter.projection_to_csv(tg2, verticesStream);
+        } else {
+            t = t.limit(record_limit).as("a");
+            t = UserQuery2Gremlin.getPaperProjection(t, query);
+            List tg = t.toList();
+            GremlinGraphWriter.projection_to_csv(tg, verticesStream);
+        }
 
         janusTraversal.close();
         LOG.info("Janus query complete");

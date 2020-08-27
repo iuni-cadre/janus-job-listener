@@ -87,21 +87,21 @@ public class JobListener {
                     Files.createDirectories(userQueryResultDir);
 
                     String fileName = getFileName(query.JobId(), query.JobName());
-                    String csvPath = userQueryResultDir + File.separator + fileName + ".csv";
-                    String graphMLFile = userQueryResultDir + File.separator + fileName + ".xml";
+                    String verticesCSVPath = userQueryResultDir + File.separator + fileName + ".csv";
+                    String edgesCSVPath = userQueryResultDir + File.separator + fileName + "_edges.csv";
 
                     if (query.DataSet().equals("mag")) {
-                        JanusConnection.Request(query, graphMLFile, csvPath);
+                        JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
                     }
 
-                    if (new File(csvPath).exists()) {
-                        String csvChecksum = ListenerUtils.getChecksum(csvPath);
-                        status.AddQueryResult(query.JobId(), query.UserId(), csvPath, csvChecksum);
+                    if (new File(verticesCSVPath).exists()) {
+                        String csvChecksum = ListenerUtils.getChecksum(verticesCSVPath);
+                        status.AddQueryResult(query.JobId(), query.UserId(), verticesCSVPath, csvChecksum);
                     }
 
-                    if (new File(graphMLFile).exists()) {
-                        String graphMLChecksum = ListenerUtils.getChecksum(graphMLFile);
-                        status.AddQueryResult(query.JobId(), query.UserId(), graphMLFile, graphMLChecksum);
+                    if (new File(edgesCSVPath).exists()) {
+                        String graphMLChecksum = ListenerUtils.getChecksum(edgesCSVPath);
+                        status.AddQueryResult(query.JobId(), query.UserId(), edgesCSVPath, graphMLChecksum);
                     }
 
                     status.Update(query.JobId(), "COMPLETED", "");
