@@ -82,9 +82,10 @@ public class JanusConnection {
             t = UserQuery2Gremlin.getPaperProjection(t, query);
             List tg = t.toList();
             GremlinGraphWriter.projection_to_csv(tg, verticesStream);
-            t = t.outE("References");
-            t = UserQuery2Gremlin.getPaperProjectionForNetwork(t, query);
-            List tg1 = t.toList();
+            GraphTraversal tclone = t.asAdmin().clone();
+            tclone = tclone.outE("References");
+            tclone = UserQuery2Gremlin.getPaperProjectionForNetwork(tclone, query);
+            List tg1 = tclone.toList();
             GremlinGraphWriter.projection_to_csv(tg1, edgesStream);
         } else {
             t = t.limit(record_limit).as("a");
