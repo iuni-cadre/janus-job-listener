@@ -73,22 +73,20 @@ public class JanusConnection {
 
         record_limit = ConfigReader.getJanusRecordLimit();
         OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
-        OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-
 
         GraphTraversal t = UserQuery2Gremlin.getProjectionForQuery(janusTraversal, query);
+        t = t.limit(record_limit).as("a");
         if (query.RequiresGraph()) {
-            t = t.limit(record_limit).as("a");
-            t = UserQuery2Gremlin.getPaperProjection(t, query);
+            OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+            t = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone(), query);
+            LOG.info("Query1 " + t);
             List tg = t.toList();
             GremlinGraphWriter.projection_to_csv(tg, verticesStream);
-            GraphTraversal tclone = t.asAdmin().clone();
-            tclone = tclone.outE("References");
-            tclone = UserQuery2Gremlin.getPaperProjectionForNetwork(tclone, query);
-            List tg1 = tclone.toList();
+            t = UserQuery2Gremlin.getPaperProjectionForNetwork( t.asAdmin().clone().outE("References"), query);
+            LOG.info("Query2 " + t);
+            List tg1 = t.toList();
             GremlinGraphWriter.projection_to_csv(tg1, edgesStream);
         } else {
-            t = t.limit(record_limit).as("a");
             t = UserQuery2Gremlin.getPaperProjection(t, query);
             List tg = t.toList();
             GremlinGraphWriter.projection_to_csv(tg, verticesStream);
