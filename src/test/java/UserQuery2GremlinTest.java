@@ -68,9 +68,13 @@ public class UserQuery2GremlinTest {
                 "Solar power goes organic",
                 "Imagery neurons in the human brain"};
 
+        String[] authors = {"Lacey Bass", "Rosie Stevenson", "Marla Schneider"};
+
         for (int i = 0; i < 5; ++i)
             g.addV("Paper").property("paperTitle", paperTitles1[i]).
                     property("year", 2001).as("v1").
+                    addV("Author").property("displayName", authors[i%3]).as("v2").
+                    addE("AuthorOf").from("v2").to("v1").
                     addE(UserQuery2Gremlin.PUBLISHED_IN_FIELD).from("v1").to(journal).iterate();
         g.tx().commit();
 
@@ -137,9 +141,7 @@ public class UserQuery2GremlinTest {
     void load_graph__throws_if_no_dataset_specified() {
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse("{job_name: \"foo\"}").getAsJsonObject());
-        assertThrows(UnsupportedOperationException.class, () -> {
-            UserQuery2Gremlin.getSubGraphForQuery(g, q);
-        });
+        assertThrows(UnsupportedOperationException.class, () -> UserQuery2Gremlin.getSubGraphForQuery(g, q));
     }
 
     @Test
@@ -147,16 +149,11 @@ public class UserQuery2GremlinTest {
         String s = "{dataset: \"WOS\"}";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
-        assertThrows(UnsupportedOperationException.class, () -> {
-            UserQuery2Gremlin.getSubGraphForQuery(g, q);
-        });
+        assertThrows(UnsupportedOperationException.class, () -> UserQuery2Gremlin.getSubGraphForQuery(g, q));
     }
 
     @Test
     void load_graph__can_filter_by_paper_name() {
-        Map<String, Object> query = new HashMap<String, Object>();
-        query.put("job_name", "Job Name");
-        query.put("dataset", "mag");
         String s = "{\"csv_output\": [{\"field\": \"paperId\", \"vertexType\": \"Paper\"}, {\"field\": \"year\", \"vertexType\": \"Paper\"}, {\"field\": \"originalTitle\", \"vertexType\": \"Paper\"}, {\"field\": \"displayName\", \"vertexType\": \"Author\"}, {\"field\": \"displayName\", \"vertexType\": \"JournalFixed\"}], \"dataset\": \"mag\", \"graph\": {\"edges\": [{\"relation\": \"References\", \"source\": \"Paper\", \"target\": \"Paper\"}], \"nodes\": [{\"filters\": [{\"field\": \"title\", \"filterType\": \"is\", \"operator\": \"\", \"value\": \"Unicorns\"}], \"vertexType\": \"Paper\"}]}, \"job_id\": \"a4ed5759-4e96-4639-a7ca-389f04fb0c8a\", \"job_name\": \"TestJob\", \"user_id\": 78, \"username\": \"mjswm5lmorxw4\"}";
 
         JsonParser jsonParser = new JsonParser();
@@ -228,7 +225,7 @@ public class UserQuery2GremlinTest {
 
     @Test
     void JobStatus_update() {
-        JobStatus js = null;
+        JobStatus js;
         try {
             js = new JobStatus(true);
             assertEquals("SUBMITTED - null", js.GetStatus("1234"));
@@ -241,7 +238,7 @@ public class UserQuery2GremlinTest {
 
     @Test
     void JobStatus_update_maxes_at_256_chars() {
-        JobStatus js = null;
+        JobStatus js;
         try {
             String numbers = "0123456789";
             js = new JobStatus(true);
@@ -427,7 +424,7 @@ public class UserQuery2GremlinTest {
     void getProjectionForQuery_returns_list_if_no_csv()
     {
         UserQuery q = mock(UserQuery.class);
-        List<Node> nodes = Arrays.asList(new Node("Paper"));
+        List<Node> nodes = Collections.singletonList(new Node("Paper"));
         Filter f = new Filter();
         f.field = "year";
         f.value = "1945";
@@ -435,7 +432,7 @@ public class UserQuery2GremlinTest {
         when(q.Nodes()).thenReturn(nodes);
         List actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -461,7 +458,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -484,7 +481,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -511,7 +508,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -539,7 +536,7 @@ public class UserQuery2GremlinTest {
 
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -564,7 +561,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -592,12 +589,48 @@ public class UserQuery2GremlinTest {
 
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q);
+            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
         assertEquals(1, actual.size());
         assertEquals("Quantum engineering: Superconducting nanowires", actual.get(0).get("Paper_paperTitle"));
+    }
+
+    @Test
+    void getProjectionForNonPaperQuery() {
+        UserQuery2Gremlin.support_fuzzy_queries = false;
+
+        List<Node> nodes = Arrays.asList(
+                new Node( UserQuery2Gremlin.JOURNAL_FIELD),
+                new Node( UserQuery2Gremlin.PAPER_FIELD),
+                new Node( UserQuery2Gremlin.AUTHOR_FIELD));
+        nodes.get(0).filters.add(new Filter("normalizedName", "acoustics"));
+        nodes.get(1).filters.add(new Filter("year", "2001"));
+        nodes.get(2).filters.add(new Filter("displayName", "Schneider"));
+        List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput(), new CSVOutput());
+        csv.get(0).field = "paperTitle";
+        csv.get(0).vertexType = UserQuery2Gremlin.PAPER_FIELD;
+        csv.get(1).field = "displayName";
+        csv.get(1).vertexType = UserQuery2Gremlin.AUTHOR_FIELD;
+        csv.get(2).field = "normalizedName";
+        csv.get(2).vertexType = UserQuery2Gremlin.JOURNAL_FIELD;
+
+        UserQuery q = mock(UserQuery.class);
+        when(q.Nodes()).thenReturn(nodes);
+        when(q.CSV()).thenReturn(csv);
+
+        List<Map> actual = null;
+        try {
+            actual = UserQuery2Gremlin.getProjectionForNonPaperQuery(g.V(), q, UserQuery2Gremlin.JOURNAL_FIELD).toList();
+        } catch (Exception e) {
+            fail(e.getMessage());
+        }
+        assertEquals(1, actual.size());
+        assertEquals("Art imitating high-energy physics", actual.get(0).get("Paper_paperTitle"));
+        assertEquals("Marla Schneider", ((List)actual.get(0).get("Author_displayName")).get(0));
+        assertEquals("the open acoustics journal", ((List)actual.get(0).get("JournalFixed_normalizedName")).get(0));
+
     }
 
     static String[] paperTitles = {"Proteins and the naked truth about e-commerce",
