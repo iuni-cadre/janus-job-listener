@@ -78,7 +78,7 @@ public class JanusConnection {
         t = t.limit(record_limit).as("a");
         if (query.RequiresGraph()) {
             OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-            GraphTraversal t1 = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone(), query);
+            GraphTraversal t1 = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone().outE("References").bothV().dedup(), query);
             LOG.info("Query1 " + t1);
             List tg = t1.toList();
             GremlinGraphWriter.projection_to_csv(tg, verticesStream);
