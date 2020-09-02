@@ -23,6 +23,8 @@ public class UserQuery2Gremlin {
     public static final String PUBLISHED_IN_FIELD = "PublishedInFixed";
     public static final String AUTHOR_FIELD = "Author";
     public static final String AUTHOR_OF_FIELD = "AuthorOf";
+    public static final String CONFERENCE_INSTANCE_FIELD = "ConferenceInstance";
+    public static final String PRESENTED_AT_FIELD = "PresentedAt";
 
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
@@ -231,9 +233,10 @@ public class UserQuery2Gremlin {
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
             return getProjectionForNonPaperQuery(t, query, JOURNAL_FIELD);
-        }
-        else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
             return getProjectionForNonPaperQuery(t, query, AUTHOR_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
+            return getProjectionForNonPaperQuery(t, query, CONFERENCE_INSTANCE_FIELD);
         } else {
             return getProjectionForPaperQuery(t, query);
         }
