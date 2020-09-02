@@ -174,6 +174,9 @@ public class UserQuery2Gremlin {
         if (source.equals(AUTHOR_FIELD) && target.equals(JOURNAL_FIELD))
             return PUBLISHED_IN_FIELD;
 
+        if (source.equals(PAPER_FIELD) && target.equals(CONFERENCE_INSTANCE_FIELD))
+            return PRESENTED_AT_FIELD;
+
         throw new Exception("No edge between " + source + " and " + target);
     }
 
