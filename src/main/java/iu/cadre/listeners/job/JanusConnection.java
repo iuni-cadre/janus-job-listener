@@ -60,9 +60,17 @@ public class JanusConnection {
 
     public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws Exception {
         LOG.info("Connecting to Janus server");
+        String server = ConfigReader.getJanusHost();
+        int port = 8182;
+        if (!query.DataSet().equals("mag"))
+        {
+
+            server = ConfigReader.getWOSDBHost();
+            port = Integer.parseInt(ConfigReader.getWOSDBPort());
+        }
         Cluster cluster = Cluster.build()
-                .addContactPoint(ConfigReader.getJanusHost())
-                .port(8182)
+                .addContactPoint(server)
+                .port(port)
                 .maxContentLength(100000000)
                 .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
                         .addRegistry(JanusGraphIoRegistry.instance())

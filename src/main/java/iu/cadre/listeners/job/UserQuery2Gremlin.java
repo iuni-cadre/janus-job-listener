@@ -192,7 +192,7 @@ public class UserQuery2Gremlin {
             t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
             for (CSVOutput c : query.CSV()) {
                 if (c.vertexType.equals(PAPER_FIELD))
-                    t = t.by(c.field);
+                    t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                 else {
                     t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                 }
