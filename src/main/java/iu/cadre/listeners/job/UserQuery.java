@@ -85,6 +85,8 @@ public class UserQuery {
                     f.field = "displayName"; // hopefully temporary hack
                 if (n.type.equals("JournalFixed") && f.field.equals("name"))
                     f.field = "displayName"; // hopefully temporary hack
+                if (n.type.equals("ConferenceInstance") && f.field.equals("name"))
+                    f.field = "displayName"; // hopefully temporary hack
                 f.value =  filterField.get("value").getAsString();
                 f.operator = filterField.get("operator").getAsString();
                 n.filters.add(f);
