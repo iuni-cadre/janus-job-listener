@@ -1,0 +1,38 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Author"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }
+  ],
+  "dataset": "mag",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+      "filters": [{
+        "field": "year",
+        "filterType": "is",
+        "operator": "",
+        "value": "1900"
+      }
+      ],
+      "vertexType": "Paper"
+    }
+    ]
+  },
+  "job_id": "3cf569de-0d14-42a0-9261-c321a5edc5cd",
+  "job_name": "PapersFrom1900",
+  "user_id": 78,
+  "username": "mjswm5lmorxw4"
+}

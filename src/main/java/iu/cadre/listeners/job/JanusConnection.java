@@ -47,7 +47,7 @@ public class JanusConnection {
             LOG.info("Read query: " + query.toString());
 
             String fileNameWithOutExtension = FilenameUtils.removeExtension(args[1]);
-            Request(query, fileNameWithOutExtension + ".xml", fileNameWithOutExtension + ".csv");
+            Request(query, fileNameWithOutExtension + ".csv", fileNameWithOutExtension + "_edges.csv");
             System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
