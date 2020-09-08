@@ -117,19 +117,20 @@ public class JanusConnection {
             OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
             GraphTraversal t1 = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone().outE("References").bothV().dedup(), query);
             LOG.info("Query1 " + t1);
-            if (t1.hasNext()) {
+            while (t1.hasNext()) {
                 t1Elements.addAll(t1.next(batchSize));
             }
             GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
             GraphTraversal t2 = UserQuery2Gremlin.getPaperProjectionForNetwork(t.asAdmin().clone().outE("References"), query);
             LOG.info("Query2 " + t2);
-            if (t2.hasNext()) {
+
+            while (t2.hasNext()) {
                 t2Elements.addAll(t2.next(batchSize));
             }
             GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
         } else {
             t = UserQuery2Gremlin.getPaperProjection(t, query);
-            if (t.hasNext()) {
+            while (t.hasNext()) {
                 t3Elements.addAll(t.next(batchSize));
             }
             GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
