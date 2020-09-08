@@ -27,7 +27,9 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
@@ -104,22 +106,33 @@ public class JanusConnection {
         record_limit = ConfigReader.getJanusRecordLimit();
         OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
 
+        int batchSize = 100; // we need some test to figure out the best batchSize to use, I just make up a number here
+        List<Map> t1Elements = new ArrayList<>();
+        List<Map> t2Elements = new ArrayList<>();
+        List<Map> t3Elements = new ArrayList<>();
+
         GraphTraversal t = UserQuery2Gremlin.getProjectionForQuery(janusTraversal, query);
         t = t.limit(record_limit).as("a");
         if (query.RequiresGraph()) {
             OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
             GraphTraversal t1 = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone().outE("References").bothV().dedup(), query);
             LOG.info("Query1 " + t1);
-            List tg = t1.toList();
-            GremlinGraphWriter.projection_to_csv(tg, verticesStream);
+            if (t1.hasNext()) {
+                t1Elements.addAll(t1.next(batchSize));
+            }
+            GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
             GraphTraversal t2 = UserQuery2Gremlin.getPaperProjectionForNetwork(t.asAdmin().clone().outE("References"), query);
             LOG.info("Query2 " + t2);
-            List tg1 = t2.toList();
-            GremlinGraphWriter.projection_to_csv(tg1, edgesStream);
+            if (t2.hasNext()) {
+                t2Elements.addAll(t2.next(batchSize));
+            }
+            GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
         } else {
             t = UserQuery2Gremlin.getPaperProjection(t, query);
-            List tg = t.toList();
-            GremlinGraphWriter.projection_to_csv(tg, verticesStream);
+            if (t.hasNext()) {
+                t3Elements.addAll(t.next(batchSize));
+            }
+            GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
         }
 
         janusTraversal.close();
