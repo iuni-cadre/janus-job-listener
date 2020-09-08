@@ -13,6 +13,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.core.JanusGraphTransaction;
+import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 import java.io.FileOutputStream;
@@ -58,6 +63,23 @@ public class JanusConnection {
         }
     }
 
+    public static GraphTraversalSource getJanusTraversal() throws Exception{
+        try {
+            String janusConfig = ConfigReader.getJanusPropertiesFile();
+            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
+            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
+            // get graph management
+            JanusGraphManagement mgmt = standardGraph.openManagement();
+            // you code using 'mgmt' to perform any management related operations
+            // using graph to do traversal
+            JanusGraphTransaction graphTransaction = graph.newTransaction();
+            return graphTransaction.traversal();
+        }catch (Exception e){
+            LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
+            throw new Exception("Unable to create graph traversal object.", e);
+        }
+    }
+
     public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws Exception {
         LOG.info("Connecting to Janus server");
         String server = ConfigReader.getJanusHost();
@@ -77,7 +99,7 @@ public class JanusConnection {
                         .addRegistry(TinkerIoRegistryV3d0.instance())))
                 .create();
 
-        GraphTraversalSource janusTraversal = traversal().withRemote(DriverRemoteConnection.using(cluster));
+        GraphTraversalSource janusTraversal = getJanusTraversal();
 
         record_limit = ConfigReader.getJanusRecordLimit();
         OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
