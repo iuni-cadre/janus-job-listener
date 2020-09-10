@@ -265,6 +265,14 @@ public class UserQuery2Gremlin {
 
         t = getPaperFilter(t, query, nodeType);
 
+        /// now we have a list of papers. Do we need to do any more filtering?
+        List<Node> moreFilters = query.Nodes().stream().filter(n -> !n.type.equals(nodeType) && !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+        for (Node n : moreFilters) {
+            for (Filter f : n.filters) {
+                t = t.where(__.both(edgeLabel(PAPER_FIELD, n.type)).has(n.type, f.field, textContains(f.value)));
+            }
+        }
+
         LOG.info("Query: " + t);
         return t;
     }
