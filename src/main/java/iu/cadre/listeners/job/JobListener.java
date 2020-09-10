@@ -90,9 +90,7 @@ public class JobListener {
                     String verticesCSVPath = userQueryResultDir + File.separator + fileName + ".csv";
                     String edgesCSVPath = userQueryResultDir + File.separator + fileName + "_edges.csv";
 
-                    if (query.DataSet().equals("mag")) {
-                        JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
-                    }
+                    JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
 
                     if (new File(verticesCSVPath).exists()) {
                         String csvChecksum = ListenerUtils.getChecksum(verticesCSVPath);
