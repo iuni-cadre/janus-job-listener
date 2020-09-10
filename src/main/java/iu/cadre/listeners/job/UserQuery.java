@@ -69,28 +69,46 @@ public class UserQuery {
     {
         JsonArray nodes = _json.get("graph").getAsJsonObject().get("nodes").getAsJsonArray();
         ArrayList<Node> result = new ArrayList<Node>();
+
         for (int i=0; i < nodes.size(); i++) {
             JsonObject edgeJson = nodes.get(i).getAsJsonObject();
             Node n = new Node(edgeJson.get("vertexType").getAsString());
             JsonArray filters = edgeJson.get("filters").getAsJsonArray();
-            for (int j = 0; j < filters.size(); j++) {
-                Filter f = new Filter();
-                JsonObject filterField = filters.get(j).getAsJsonObject();
-                f.field = filterField.get("field").getAsString();
-                if (f.field.equals("title"))
-                    f.field = "paperTitle"; // hopefully temporary hack
-                if (n.type.equals("Paper") && f.field.equals("name"))
-                    f.field = "displayName"; // hopefully temporary hack
-                if (n.type.equals("Author") && f.field.equals("name"))
-                    f.field = "displayName"; // hopefully temporary hack
-                if (n.type.equals("JournalFixed") && f.field.equals("name"))
-                    f.field = "displayName"; // hopefully temporary hack
-                if (n.type.equals("ConferenceInstance") && f.field.equals("name"))
-                    f.field = "displayName"; // hopefully temporary hack
-                f.value =  filterField.get("value").getAsString();
-                f.operator = filterField.get("operator").getAsString();
-                n.filters.add(f);
-            }
+
+                for (int j = 0; j < filters.size(); j++) {
+                    Filter f = new Filter();
+                    JsonObject filterField = filters.get(j).getAsJsonObject();
+                    f.field = filterField.get("field").getAsString();
+                    if (DataSet().equals("mag")) {
+                        if (f.field.equals("title"))
+                            f.field = "paperTitle"; // hopefully temporary hack
+                        if (n.type.equals("Paper") && f.field.equals("name"))
+                            f.field = "displayName"; // hopefully temporary hack
+                        if (n.type.equals("Author") && f.field.equals("name"))
+                            f.field = "displayName"; // hopefully temporary hack
+                        if (n.type.equals("JournalFixed") && f.field.equals("name"))
+                            f.field = "displayName"; // hopefully temporary hack
+                        if (n.type.equals("ConferenceInstance") && f.field.equals("name"))
+                            f.field = "displayName"; // hopefully temporary hack
+                        f.value = filterField.get("value").getAsString();
+                        f.operator = filterField.get("operator").getAsString();
+                        n.filters.add(f);
+                    }else { // WOS
+                        if (n.type.equals("Paper") && f.field.equals("year")){
+                            f.field = "publicationYear";
+                        }
+                        if (n.type.equals("Paper") && f.field.equals("title")){
+                            f.field = "articleTitle";
+                        }
+                        if (n.type.equals("Paper") && f.field.equals("author")){
+                            f.field = "authorFullNames";
+                        }
+                        if (n.type.equals("Paper") && f.field.equals("journal")){
+                            f.field = "SourceTitle";
+                        }
+                    }
+                }
+
             result.add(n);
         }
         return result;

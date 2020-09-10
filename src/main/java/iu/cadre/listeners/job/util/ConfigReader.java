@@ -90,14 +90,26 @@ public class ConfigReader {
         }
     }
 
-    public static String getJanusPropertiesFile() throws Exception{
+    public static String getJanusMAGPropertiesFile() throws Exception{
         try {
             if (properties != null){
-                return properties.getProperty(Constants.JANUS_PROPERTIES_FILE);
+                return properties.getProperty(Constants.JANUS_MAG_PROPERTIES_FILE);
             }
             return null;
         } catch (Exception e) {
-            LOG.error("Error reading property : " + Constants.JANUS_PROPERTIES_FILE);
+            LOG.error("Error reading property : " + Constants.JANUS_MAG_PROPERTIES_FILE);
+            throw new Exception("Error reading config file", e);
+        }
+    }
+
+    public static String getJanusWOSPropertiesFile() throws Exception{
+        try {
+            if (properties != null){
+                return properties.getProperty(Constants.JANUS_WOS_PROPERTIES_FILE);
+            }
+            return null;
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.JANUS_WOS_PROPERTIES_FILE);
             throw new Exception("Error reading config file", e);
         }
     }

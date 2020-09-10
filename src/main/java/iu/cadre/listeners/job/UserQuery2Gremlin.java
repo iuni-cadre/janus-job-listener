@@ -232,7 +232,7 @@ public class UserQuery2Gremlin {
         return t;
     }
 
-    public static GraphTraversal getProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static GraphTraversal getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
         GraphTraversal t = traversal.V();
@@ -246,6 +246,13 @@ public class UserQuery2Gremlin {
         } else {
             return getProjectionForPaperQuery(t, query);
         }
+    }
+
+    public static GraphTraversal getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.HasAbstractSearch())
+            throw new UnsupportedOperationException("Search by abstract is not supported");
+        GraphTraversal t = traversal.V();
+        return getProjectionForPaperQuery(t, query);
     }
 
     public static GraphTraversal getProjectionForNonPaperQuery(GraphTraversal t, UserQuery query, String nodeType) throws Exception {
@@ -267,12 +274,19 @@ public class UserQuery2Gremlin {
             throw new UnexpectedException("Can't filter non-paper nodes here");
 
         for (Node paperNode : query.Nodes()) {
-
             for (Filter f : paperNode.filters) {
-                if (f.field.equals("year") || f.field.equals("doi")) {
-                    t = t.has(paperNode.type, f.field, f.value);
-                } else {
-                    t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                if (query.DataSet().equals("mag")){
+                    if (f.field.equals("year") || f.field.equals("doi")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    } else {
+                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                    }
+                }else {
+                    if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    } else {
+                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                    }
                 }
             }
         }

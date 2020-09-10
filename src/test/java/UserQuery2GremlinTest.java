@@ -8,8 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.Mapping;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -432,7 +430,7 @@ public class UserQuery2GremlinTest {
         when(q.Nodes()).thenReturn(nodes);
         List actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -458,7 +456,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -481,7 +479,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -508,7 +506,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -536,7 +534,7 @@ public class UserQuery2GremlinTest {
 
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -561,7 +559,7 @@ public class UserQuery2GremlinTest {
         when(q.CSV()).thenReturn(csv);
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }
@@ -589,7 +587,7 @@ public class UserQuery2GremlinTest {
 
         List<Map> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForQuery(g, q).toList();
+            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
         } catch (Exception e) {
             fail(e.getMessage());
         }

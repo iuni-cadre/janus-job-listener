@@ -1,0 +1,90 @@
+==>------------------------------------------------------------------------------------------------
+Vertex Label Name              | Partitioned | Static                                             |
+---------------------------------------------------------------------------------------------------
+Paper                          | false       | false                                              |
+---------------------------------------------------------------------------------------------------
+Edge Label Name                | Directed    | Unidirected | Multiplicity                         |
+---------------------------------------------------------------------------------------------------
+References                     | true        | false       | MULTI                                |
+---------------------------------------------------------------------------------------------------
+Property Key Name              | Cardinality | Data Type                                          |
+---------------------------------------------------------------------------------------------------
+ISBN                           | SINGLE      | class java.lang.String                             |
+DOI                            | SINGLE      | class java.lang.String                             |
+pubmedId                       | SINGLE      | class java.lang.String                             |
+bookEditors                    | SINGLE      | class java.lang.String                             |
+groupAuthors                   | SINGLE      | class java.lang.String                             |
+bookSeriesTitle                | SINGLE      | class java.lang.String                             |
+bookSeriesSubtitle             | SINGLE      | class java.lang.String                             |
+conferenceDate                 | SINGLE      | class java.lang.String                             |
+conferenceLocation             | SINGLE      | class java.lang.String                             |
+conferenceSponsor              | SINGLE      | class java.lang.String                             |
+conferenceHost                 | SINGLE      | class java.lang.String                             |
+keywordsPlus                   | SINGLE      | class java.lang.String                             |
+reprintAddresses               | SINGLE      | class java.lang.String                             |
+emailAddresses                 | SINGLE      | class java.lang.String                             |
+RIDs                           | SINGLE      | class java.lang.String                             |
+ORCIDs                         | SINGLE      | class java.lang.String                             |
+fundingOrgs                    | SINGLE      | class java.lang.String                             |
+publisherCity                  | SINGLE      | class java.lang.String                             |
+publisherAddress               | SINGLE      | class java.lang.String                             |
+journalAbbreviation            | SINGLE      | class java.lang.String                             |
+journalISOAbbreviation         | SINGLE      | class java.lang.String                             |
+publicationDate                | SINGLE      | class java.lang.String                             |
+volume                         | SINGLE      | class java.lang.String                             |
+issue                          | SINGLE      | class java.lang.String                             |
+partNumber                     | SINGLE      | class java.lang.String                             |
+supplement                     | SINGLE      | class java.lang.String                             |
+specialIssue                   | SINGLE      | class java.lang.String                             |
+startPage                      | SINGLE      | class java.lang.String                             |
+endPage                        | SINGLE      | class java.lang.String                             |
+articleNumber                  | SINGLE      | class java.lang.String                             |
+bookDOI                        | SINGLE      | class java.lang.String                             |
+earlyAccessDate                | SINGLE      | class java.lang.String                             |
+numberOfPages                  | SINGLE      | class java.lang.Integer                            |
+wosId                          | SINGLE      | class java.lang.String                             |
+publicationYear                | SINGLE      | class java.lang.Integer                            |
+standardNames                  | SINGLE      | class java.lang.String                             |
+authorFullNames                | SINGLE      | class java.lang.String                             |
+articleTitle                   | SINGLE      | class java.lang.String                             |
+sourceTitle                    | SINGLE      | class java.lang.String                             |
+documentType                   | SINGLE      | class java.lang.String                             |
+conferenceTitle                | SINGLE      | class java.lang.String                             |
+abstract                       | SINGLE      | class java.lang.String                             |
+addresses                      | SINGLE      | class java.lang.String                             |
+fundingText                    | SINGLE      | class java.lang.String                             |
+citedReferenceCount            | SINGLE      | class java.lang.Integer                            |
+publisher                      | SINGLE      | class java.lang.String                             |
+ISSN                           | SINGLE      | class java.lang.String                             |
+eISSN                          | SINGLE      | class java.lang.String                             |
+---------------------------------------------------------------------------------------------------
+Vertex Index Name              | Type        | Unique    | Backing        | Key:           Status |
+---------------------------------------------------------------------------------------------------
+wosPubYearMixed                | Mixed       | false     | search         | publicationYear:    ENABLED |
+wosCitedRefCountMixed          | Mixed       | false     | search         | citedReferenceCount:    ENABLED |
+wosFundingTextMixed            | Mixed       | false     | search         | fundingText:    ENABLED |
+wosSourceTitleComposite        | Composite   | false     | internalindex  | sourceTitle:    ENABLED |
+wosSourceTitleMixed            | Mixed       | false     | search         | sourceTitle:    ENABLED |
+wosArticleTitleMixed           | Mixed       | false     | search         | articleTitle:    ENABLED |
+wosArticleTitleComposite       | Composite   | false     | internalindex  | articleTitle:    ENABLED |
+wosWosIdComposite              | Composite   | false     | internalindex  | wosId:        ENABLED |
+wosAbstractMixed               | Mixed       | false     | search         | abstract:     ENABLED |
+wosStandardNamesMixed          | Mixed       | false     | search         | standardNames:    ENABLED |
+wosAuthorFullNamesMixed        | Mixed       | false     | search         | authorFullNames:    ENABLED |
+wosConferenceTitleComposite    | Composite   | false     | internalindex  | conferenceTitle:    ENABLED |
+wosConferenceTitleMixed        | Mixed       | false     | search         | conferenceTitle:    ENABLED |
+wosDocumentTypeComposite       | Composite   | false     | internalindex  | documentType:    ENABLED |
+wosPublisherComposite          | Composite   | false     | internalindex  | publisher:    ENABLED |
+wosAddressesMixed              | Mixed       | false     | search         | addresses:    ENABLED |
+wosPubmedIdComposite           | Composite   | false     | internalindex  | pubmedId:     ENABLED |
+wosIsbnComposite               | Composite   | false     | internalindex  | ISBN:         ENABLED |
+wosEissnComposite              | Composite   | false     | internalindex  | eISSN:        ENABLED |
+wosDoiComposite                | Composite   | false     | internalindex  | DOI:          ENABLED |
+wosIssnComposite               | Composite   | false     | internalindex  | ISSN:         ENABLED |
+wosPubYearComposite            | Composite   | false     | internalindex  | publicationYear:    ENABLED |
+---------------------------------------------------------------------------------------------------
+Edge Index (VCI) Name          | Type        | Unique    | Backing        | Key:           Status |
+---------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
+Relation Index                 | Type        | Direction | Sort Key       | Order    |     Status |
+---------------------------------------------------------------------------------------------------
