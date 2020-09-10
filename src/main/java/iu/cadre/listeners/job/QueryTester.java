@@ -1,5 +1,7 @@
 package iu.cadre.listeners.job;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -15,7 +17,10 @@ import java.util.List;
 import static org.janusgraph.core.attribute.Text.textContains;
 
 public class QueryTester {
+    protected static final Log LOG = LogFactory.getLog(QueryTester.class);
+
     public static void main(String[] args) {
+        LOG.info("****************************");
         if (null == args || args.length != 1) {
             System.err.println(
                     "Usage: JanusGraphConnSample <janusgraph-config-file>");
@@ -42,6 +47,6 @@ public class QueryTester {
                 papers.addAll(gt.next(batchSize));
             }
         }
-        System.out.println("Paper Count : " + papers.size());
+        LOG.info("Paper Count : " + papers.size());
     }
 }
