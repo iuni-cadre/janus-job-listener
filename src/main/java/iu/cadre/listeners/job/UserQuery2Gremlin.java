@@ -344,6 +344,7 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+        t = t.limit(record_limit);
         LOG.info("Query: " + t);
         return t.toList();
     }
