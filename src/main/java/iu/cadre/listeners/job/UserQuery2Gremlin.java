@@ -301,7 +301,11 @@ public class UserQuery2Gremlin {
                 if (papers.size() < (record_limit - 100)){
                     papers.addAll(gt.next(batchSize));
                 }
+                else
+                    break;
             }
+            if (papers.size() >= record_limit)
+                break;
         }
         LOG.info("********* Papers returned **********");
 //        t = getPaperFilter(t, query, nodeType);
