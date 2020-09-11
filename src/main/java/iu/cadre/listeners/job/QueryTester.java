@@ -21,6 +21,7 @@ public class QueryTester {
 
     public static void main(String[] args) {
         LOG.info("****************************");
+        long time1 = System.currentTimeMillis();
         if (null == args || args.length != 1) {
             System.err.println(
                     "Usage: JanusGraphConnSample <janusgraph-config-file>");
@@ -38,15 +39,22 @@ public class QueryTester {
         GraphTraversalSource traversal = graphTransaction.traversal();
 
         List<Vertex> journals = traversal.V().has("JournalFixed", "displayName", textContains("nature")).toList();
+        long time2 = System.currentTimeMillis();
+        LOG.info("Journals with nature returned");
+        long timeForJournals = time2 - time1;
+        LOG.info("Time to return journals : " + timeForJournals);
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
         for (Vertex journal : journals) {
             // loop over each journal node and run the following query
-            GraphTraversal<Vertex, Vertex> gt = traversal.V(journal).in().has("year", 2002);
+            GraphTraversal<Vertex, Vertex> gt = traversal.V(journal).in().has("year", 2002).limit(10000);
             while (gt.hasNext()) {
                 papers.addAll(gt.next(batchSize));
             }
         }
+        long time3 = System.currentTimeMillis();
+        long timeForAll = time3 - time1;
+        LOG.info("Time to return all : " + timeForAll);
         LOG.info("Paper Count : " + papers.size());
     }
 }
