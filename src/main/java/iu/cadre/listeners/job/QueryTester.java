@@ -52,6 +52,7 @@ public class QueryTester {
                 papers.addAll(gt.next(batchSize));
             }
         }
+
         long time3 = System.currentTimeMillis();
         long timeForAll = time3 - time1;
         LOG.info("Time to return all : " + timeForAll);

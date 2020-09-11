@@ -183,21 +183,39 @@ public class UserQuery2Gremlin {
         throw new Exception("No edge between " + source + " and " + target);
     }
 
-    public static GraphTraversal getPaperProjection(GraphTraversal t, UserQuery query) throws Exception
+    public static GraphTraversal getPaperProjection(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
     {
+        GraphTraversal t = null;
         if (query.CSV().isEmpty()) {
-            return t.valueMap();
-        } else {
+            for (Vertex v : verticesList) {
+                t = traversal.V(v).valueMap();
+            }
+        }else {
             String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
-            t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
-            for (CSVOutput c : query.CSV()) {
-                if (c.vertexType.equals(PAPER_FIELD))
-                    t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                else {
-                    t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+            for (Vertex v : verticesList) {
+                t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
+                for (CSVOutput c : query.CSV()) {
+                    if (c.vertexType.equals(PAPER_FIELD))
+                        t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+                    else {
+                        t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                    }
                 }
             }
         }
+//        if (query.CSV().isEmpty()) {
+//            return t.valueMap();
+//        } else {
+//            String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
+//            t = t.project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
+//            for (CSVOutput c : query.CSV()) {
+//                if (c.vertexType.equals(PAPER_FIELD))
+//                    t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+//                else {
+//                    t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+//                }
+//            }
+//        }
 
         return t;
     }
@@ -232,55 +250,68 @@ public class UserQuery2Gremlin {
         return t;
     }
 
-    public static GraphTraversal getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static List<Vertex> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
-        GraphTraversal t = traversal.V();
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
-            return getProjectionForNonPaperQuery(t, query, JOURNAL_FIELD);
+            return getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
-            return getProjectionForNonPaperQuery(t, query, AUTHOR_FIELD);
+            return getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
-            return getProjectionForNonPaperQuery(t, query, CONFERENCE_INSTANCE_FIELD);
+            return getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
         } else {
-            return getProjectionForPaperQuery(t, query);
+            return getProjectionForPaperQuery(traversal, query);
         }
     }
 
-    public static GraphTraversal getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static List<Vertex> getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
-        GraphTraversal t = traversal.V();
-        return getProjectionForPaperQuery(t, query);
+        return getProjectionForPaperQuery(traversal, query);
     }
 
-    public static GraphTraversal getProjectionForNonPaperQuery(GraphTraversal t, UserQuery query, String nodeType) throws Exception {
+    public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
+        GraphTraversal t = traversal.V();
         for (Node n : nonPaperNodes) {
             for (Filter f : n.filters) {
                 t = t.has(n.type, f.field, textContains(f.value));
             }
         }
-
-        t = getPaperFilter(t, query, nodeType);
-
-        /// now we have a list of papers. Do we need to do any more filtering?
-        List<Node> moreFilters = query.Nodes().stream().filter(n -> !n.type.equals(nodeType) && !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-        for (Node n : moreFilters) {
-            for (Filter f : n.filters) {
-                t = t.where(__.both(edgeLabel(PAPER_FIELD, n.type)).has(n.type, f.field, textContains(f.value)));
+        List<Vertex> nonPaperNodesList = t.toList();
+        List<Vertex> papers = new ArrayList<>();
+        int batchSize = 100;
+        for (Vertex nonPaperVertex : nonPaperNodesList){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, nodeType);
+            if (query.RequiresGraph()){
+                gt = gt.outE("References").bothV().dedup();
+            }
+            while (gt.hasNext()) {
+                if (papers.size() < (record_limit - 100)){
+                    papers.addAll(gt.next(batchSize));
+                }
             }
         }
+//        t = getPaperFilter(t, query, nodeType);
 
-        LOG.info("Query: " + t);
-        return t;
+//        LOG.info("Query after paper filter : " + t);
+        /// now we have a list of papers. Do we need to do any more filtering?
+//        List<Node> moreFilters = query.Nodes().stream().filter(n -> !n.type.equals(nodeType) && !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+//        for (Node n : moreFilters) {
+//            for (Filter f : n.filters) {
+//                t = t.where(__.both(edgeLabel(PAPER_FIELD, n.type)).has(n.type, f.field, textContains(f.value)));
+//            }
+//        }
+
+//        LOG.info("Query: " + t);
+        return papers;
     }
 
-    private static GraphTraversal getProjectionForPaperQuery(GraphTraversal t, UserQuery query) throws Exception {
+    private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
-            throw new UnexpectedException("Can't filter non-paper nodes here");
-
+            throw new UnexpectedException("Can't filter non-paper nodes hernone");
+        GraphTraversal t = traversal.V();
         for (Node paperNode : query.Nodes()) {
             for (Filter f : paperNode.filters) {
                 if (query.DataSet().equals("mag")){
@@ -299,6 +330,6 @@ public class UserQuery2Gremlin {
             }
         }
         LOG.info("Query: " + t);
-        return t;
+        return t.toList();
     }
 }

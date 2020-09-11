@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.janusgraph.core.JanusGraph;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 
 import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
-import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
 
 public class JanusConnection {
@@ -129,17 +129,18 @@ public class JanusConnection {
         GraphTraversal t1 = null;
         GraphTraversal t2 = null;
         GraphTraversal t = null;
+        List<Vertex> magVertices = new ArrayList();
+        List<Vertex> wosVertices = new ArrayList();
 
         if (query.DataSet().equals("mag")){
-            t = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
+            magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
         }else {
-            t = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+            wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
         }
 
-        t = t.limit(record_limit).as("a");
         if (query.RequiresGraph()) {
             OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-            t1 = UserQuery2Gremlin.getPaperProjection(t.asAdmin().clone().outE("References").bothV().dedup(), query);
+            t1 = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
             LOG.info("Query1 " + t1);
             while (t1.hasNext()) {
                 t1Elements.addAll(t1.next(batchSize));
@@ -153,7 +154,7 @@ public class JanusConnection {
             }
             GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
         } else {
-            t = UserQuery2Gremlin.getPaperProjection(t, query);
+            t = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
             while (t.hasNext()) {
                 t3Elements.addAll(t.next(batchSize));
             }
