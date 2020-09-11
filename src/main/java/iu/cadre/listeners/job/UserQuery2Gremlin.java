@@ -183,8 +183,9 @@ public class UserQuery2Gremlin {
         throw new Exception("No edge between " + source + " and " + target);
     }
 
-    public static GraphTraversal getPaperProjection(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
+    public static List getPaperProjection(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
     {
+        List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
         if (query.CSV().isEmpty()) {
             for (Vertex v : verticesList) {
@@ -200,6 +201,7 @@ public class UserQuery2Gremlin {
                     else {
                         t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                     }
+                    gtList.addAll(t.toList());
                 }
             }
         }
@@ -217,7 +219,7 @@ public class UserQuery2Gremlin {
 //            }
 //        }
 
-        return t;
+        return gtList;
     }
 
     public static GraphTraversal getPaperProjectionForNetwork(GraphTraversal t, UserQuery query) throws Exception
@@ -279,6 +281,8 @@ public class UserQuery2Gremlin {
                 t = t.has(n.type, f.field, textContains(f.value));
             }
         }
+
+        LOG.info("********* Non paper nodes returned ***********");
         List<Vertex> nonPaperNodesList = t.toList();
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
@@ -293,6 +297,7 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+        LOG.info("********* Papers returned **********");
 //        t = getPaperFilter(t, query, nodeType);
 
 //        LOG.info("Query after paper filter : " + t);
