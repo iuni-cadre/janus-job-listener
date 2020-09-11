@@ -134,26 +134,21 @@ public class JanusConnection {
 
         if (query.DataSet().equals("mag")){
             magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
+            if (query.RequiresGraph()) {
+                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+            } else {
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+            }
         }else {
             wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
         }
 
-        if (query.RequiresGraph()) {
-            OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-            t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
 
-            GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
-            t2 = UserQuery2Gremlin.getPaperProjectionForNetwork(t.asAdmin().clone().outE("References"), query);
-            LOG.info("Query2 " + t2);
-
-            while (t2.hasNext()) {
-                t2Elements.addAll(t2.next(batchSize));
-            }
-            GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
-        } else {
-            t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
-            GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
-        }
 
         janusTraversal.close();
         LOG.info("Janus query complete");

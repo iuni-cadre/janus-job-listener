@@ -190,6 +190,7 @@ public class UserQuery2Gremlin {
         if (query.CSV().isEmpty()) {
             for (Vertex v : verticesList) {
                 t = traversal.V(v).valueMap();
+                gtList.addAll(t.toList());
             }
         }else {
             String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
@@ -201,8 +202,8 @@ public class UserQuery2Gremlin {
                     else {
                         t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                     }
-                    gtList.addAll(t.toList());
                 }
+                gtList.addAll(t.toList());
             }
         }
 //        if (query.CSV().isEmpty()) {
@@ -222,10 +223,15 @@ public class UserQuery2Gremlin {
         return gtList;
     }
 
-    public static GraphTraversal getPaperProjectionForNetwork(GraphTraversal t, UserQuery query) throws Exception
+    public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
     {
-        t = t.project("From", "To").by(__.outV().id()).by(__.inV().id());
-        return t;
+        List<Map> gtList = new ArrayList<>();
+        GraphTraversal t = null;
+        for (Vertex v : verticesList) {
+            t = t.V(v).outE("References").project("From", "To").by(__.outV().id()).by(__.inV().id());
+            gtList.addAll(t.toList());
+        }
+        return gtList;
     }
 
     private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
@@ -331,6 +337,10 @@ public class UserQuery2Gremlin {
                     } else {
                         t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
+                }
+
+                if (query.RequiresGraph()){
+                    t = t.outE("References").bothV().dedup();
                 }
             }
         }
