@@ -228,7 +228,7 @@ public class UserQuery2Gremlin {
         List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
         for (Vertex v : verticesList) {
-            t = t.V(v).outE("References").project("From", "To").by(__.outV().id()).by(__.inV().id());
+            t = traversal.V(v).outE("References").project("From", "To").by(__.outV().id()).by(__.inV().id());
             gtList.addAll(t.toList());
         }
         return gtList;
