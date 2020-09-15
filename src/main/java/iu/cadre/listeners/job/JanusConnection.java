@@ -126,6 +126,7 @@ public class JanusConnection {
         List<Map> t1Elements = new ArrayList<>();
         List<Map> t2Elements = new ArrayList<>();
         List<Map> t3Elements = new ArrayList<>();
+        List<Map> t4Elements = new ArrayList<>();
         GraphTraversal t1 = null;
         GraphTraversal t2 = null;
         GraphTraversal t = null;
@@ -146,10 +147,9 @@ public class JanusConnection {
             }
         }else {
             wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+            t4Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+            GremlinGraphWriter.projection_to_csv(t4Elements, verticesStream);
         }
-
-
-
         janusTraversal.close();
         LOG.info("Janus query complete");
     }
