@@ -329,6 +329,7 @@ public class UserQuery2Gremlin {
         GraphTraversal t = traversal.V();
         for (Node paperNode : query.Nodes()) {
             for (Filter f : paperNode.filters) {
+                LOG.info("******** " + paperNode.filters.size());
                 if (query.DataSet().equals("mag")){
                     if (f.field.equals("year") || f.field.equals("doi")) {
                         t = t.has(paperNode.type, f.field, f.value);
@@ -336,6 +337,7 @@ public class UserQuery2Gremlin {
                         t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }else {
+                    LOG.info(f.field);
                     if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     } else {

@@ -94,18 +94,10 @@ public class UserQuery {
                         f.operator = filterField.get("operator").getAsString();
                         n.filters.add(f);
                     }else { // WOS
-                        if (n.type.equals("Paper") && f.field.equals("year")){
-                            f.field = "publicationYear";
-                        }
-                        if (n.type.equals("Paper") && f.field.equals("title")){
-                            f.field = "articleTitle";
-                        }
-                        if (n.type.equals("Paper") && f.field.equals("author")){
-                            f.field = "authorFullNames";
-                        }
-                        if (n.type.equals("Paper") && f.field.equals("journal")){
-                            f.field = "SourceTitle";
-                        }
+                        f.value = filterField.get("value").getAsString();
+                        f.operator = filterField.get("operator").getAsString();
+                        f.field = filterField.get("field").getAsString();
+                        n.filters.add(f);
                     }
                 }
 
