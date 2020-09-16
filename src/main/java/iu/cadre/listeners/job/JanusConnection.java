@@ -126,10 +126,6 @@ public class JanusConnection {
         List<Map> t1Elements = new ArrayList<>();
         List<Map> t2Elements = new ArrayList<>();
         List<Map> t3Elements = new ArrayList<>();
-        List<Map> t4Elements = new ArrayList<>();
-        GraphTraversal t1 = null;
-        GraphTraversal t2 = null;
-        GraphTraversal t = null;
         List<Vertex> magVertices = new ArrayList();
         List<Vertex> wosVertices = new ArrayList();
 
@@ -146,9 +142,17 @@ public class JanusConnection {
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
             }
         }else {
-            wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
-            t4Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
-            GremlinGraphWriter.projection_to_csv(t4Elements, verticesStream);
+            if (query.RequiresGraph()) {
+                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+            }else {
+                wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+            }
         }
         janusTraversal.close();
         LOG.info("Janus query complete");
