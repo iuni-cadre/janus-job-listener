@@ -228,7 +228,11 @@ public class UserQuery2Gremlin {
         List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
         for (Vertex v : verticesList) {
-            t = traversal.V(v).outE("References").project("From", "To").by(__.outV().id()).by(__.inV().id());
+            if (query.DataSet().equals("mag")){
+                t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+            }else {
+                t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+            }
             gtList.addAll(t.toList());
         }
         return gtList;
