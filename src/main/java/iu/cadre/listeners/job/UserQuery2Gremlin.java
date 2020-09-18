@@ -345,7 +345,7 @@ public class UserQuery2Gremlin {
                     if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     } else {
-                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                        t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
 
