@@ -293,11 +293,11 @@ public class UserQuery2Gremlin {
         }
 
         LOG.info("********* Non paper nodes returned ***********");
-        List<Vertex> nonPaperNodesList = t.toList();
+        List<Vertex> nonPaperNodesList = t.limit(record_limit*2).toList();
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
-        for (Vertex nonPaperVertex : nonPaperNodesList){
-            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, nodeType);
+        for (int i = 0; i<nonPaperNodesList.size(); i+=100){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i, i+100)), query, nodeType);
             if (query.RequiresGraph()){
                 gt = gt.outE("References").bothV().dedup();
             }
@@ -305,10 +305,12 @@ public class UserQuery2Gremlin {
                 if (papers.size() < (record_limit - 100)){
                     papers.addAll(gt.next(batchSize));
                 }
-                else
+                else {
                     break;
+                }
             }
-            if (papers.size() >= record_limit)
+            LOG.info("Paper count now " + papers.size());
+            if (papers.size() >= record_limit - 100)
                 break;
         }
         LOG.info("********* Papers returned **********");
