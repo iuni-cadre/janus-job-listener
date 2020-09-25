@@ -297,7 +297,7 @@ public class UserQuery2Gremlin {
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
         for (int i = 0; i<nonPaperNodesList.size(); i+=100){
-            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i, i+100)), query, nodeType);
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i,  Math.min(i+100, nonPaperNodesList.size()))), query, nodeType);
             if (query.RequiresGraph()){
                 gt = gt.outE("References").bothV().dedup();
             }
