@@ -273,7 +273,7 @@ public class UserQuery2Gremlin {
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
             return getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
         } else {
-            return getProjectionForPaperQuery(traversal, query);
+            return getProjectionForPaperQueryMAG(traversal, query);
         }
     }
 
@@ -327,6 +327,65 @@ public class UserQuery2Gremlin {
 
 //        LOG.info("Query: " + t);
         return papers;
+    }
+
+    private static List<Vertex> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
+            throw new UnexpectedException("Can't filter non-paper nodes");
+        GraphTraversal t = traversal.V();
+        for (Node paperNode : query.Nodes()) {
+//          Get all the papers with one filters first
+            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                for (Filter f : paperNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("DOI")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    }
+                }
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
+                for (Filter f : paperNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("paperTitle")) {
+                        t = t.has(paperNode.type, f.field, textContains(f.value));
+                    }
+                }
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
+                for (Filter f : paperNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("year")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    }
+                }
+            }
+        }
+        LOG.info("Query: " + t);
+        List<Vertex> filteredPapers = new ArrayList<>();
+        int batchSize = 100;
+        while (t.hasNext()) {
+            Vertex next = (Vertex) t.next();
+            GraphTraversal gt = traversal.V(next);
+            for (Node paperNode : query.Nodes()) {
+                for (Filter f : paperNode.filters) {
+                    if (f.field.equals("year") || f.field.equals("doi")) {
+                        gt  = gt.has(paperNode.type, f.field, f.value);
+                    } else {
+                        gt  = gt.has(paperNode.type, f.field, textContains(f.value));
+                    }
+                }
+            }
+            if (query.RequiresGraph()){
+                gt = gt.outE("References").bothV().dedup();
+            }
+
+            if (filteredPapers.size() < (record_limit)){
+                while (gt.hasNext()) {
+                    filteredPapers.addAll(gt.next(batchSize));
+                }
+            }
+            else
+                break;
+        }
+        return filteredPapers;
     }
 
     private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
@@ -412,7 +471,7 @@ public class UserQuery2Gremlin {
             GraphTraversal gt = traversal.V(next);
             for (Node paperNode : query.Nodes()) {
                 for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year") || f.field.equals("doi")) {
+                    if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
                         gt  = gt.has(paperNode.type, f.field, f.value);
                     } else {
                         gt  = gt.has(paperNode.type, f.field, textContains(f.value));
