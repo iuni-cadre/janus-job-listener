@@ -337,8 +337,7 @@ public class UserQuery2Gremlin {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
                 for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("DOI")) {
+                    if (f.field.equals("doi")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     }
                 }
@@ -364,19 +363,21 @@ public class UserQuery2Gremlin {
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
-            for (Node paperNode : query.Nodes()) {
+            List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+            for (Node paperNode : paperNodes) {
                 for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year") || f.field.equals("doi")) {
-                        gt  = gt.has(paperNode.type, f.field, f.value);
+                    if (f.field.equals("year")) {
+                        gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
+                    } else if (f.field.equals("doi")) {
+                        gt = gt.has(paperNode.type, f.field, f.value);
                     } else {
-                        gt  = gt.has(paperNode.type, f.field, textContains(f.value));
+                        gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
             }
             if (query.RequiresGraph()){
                 gt = gt.outE("References").bothV().dedup();
             }
-
             if (filteredPapers.size() < (record_limit)){
                 while (gt.hasNext()) {
                     filteredPapers.addAll(gt.next(batchSize));
@@ -385,6 +386,8 @@ public class UserQuery2Gremlin {
             else
                 break;
         }
+        LOG.info("size ****** " + filteredPapers.size());
+
         return filteredPapers;
     }
 
