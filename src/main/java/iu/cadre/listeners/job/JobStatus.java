@@ -77,11 +77,11 @@ public class JobStatus {
         connection.close();
     }
 
-    public void AddQueryResult(String jobId, String userId, String csvPath, String csvChecksum) throws SQLException {
+    public void AddQueryResult(String jobId, String userId, String csvPath, String csvChecksum, String dataType) throws SQLException {
         fileInfoPreparedStatement.setString(1, jobId);
         fileInfoPreparedStatement.setString(2, csvPath);
         fileInfoPreparedStatement.setString(3, csvChecksum);
-        fileInfoPreparedStatement.setString(4, "MAG");
+        fileInfoPreparedStatement.setString(4, dataType);
         fileInfoPreparedStatement.setBoolean(5, true);
         fileInfoPreparedStatement.setInt(6, Integer.parseInt(userId));
         fileInfoPreparedStatement.executeUpdate();

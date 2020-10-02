@@ -91,15 +91,19 @@ public class JobListener {
                     String edgesCSVPath = userQueryResultDir + File.separator + fileName + "_edges.csv";
 
                     JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
+                    String dataType = "MAG";
+                    if (query.DataSet().equals("wos")){
+                        dataType = "WOS";
+                    }
 
                     if (new File(verticesCSVPath).exists()) {
                         String csvChecksum = ListenerUtils.getChecksum(verticesCSVPath);
-                        status.AddQueryResult(query.JobId(), query.UserId(), verticesCSVPath, csvChecksum);
+                        status.AddQueryResult(query.JobId(), query.UserId(), verticesCSVPath, csvChecksum, dataType);
                     }
 
                     if (new File(edgesCSVPath).exists()) {
                         String graphMLChecksum = ListenerUtils.getChecksum(edgesCSVPath);
-                        status.AddQueryResult(query.JobId(), query.UserId(), edgesCSVPath, graphMLChecksum);
+                        status.AddQueryResult(query.JobId(), query.UserId(), edgesCSVPath, graphMLChecksum, dataType);
                     }
 
                     status.Update(query.JobId(), "COMPLETED", "");

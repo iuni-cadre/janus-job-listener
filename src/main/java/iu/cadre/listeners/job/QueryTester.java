@@ -47,7 +47,7 @@ public class QueryTester {
         int batchSize = 100;
         for (Vertex journal : journals) {
             // loop over each journal node and run the following query
-            GraphTraversal<Vertex, Vertex> gt = traversal.V(journal).in().has("year", 2002).limit(10000);
+            GraphTraversal<Vertex, Vertex> gt = traversal.V(journal).both("PublishedInFixed").has("year", 2013).has("paperTitle", textContains("climate")).limit(10000);
             while (gt.hasNext()) {
                 papers.addAll(gt.next(batchSize));
             }
