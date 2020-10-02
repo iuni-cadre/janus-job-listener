@@ -25,6 +25,8 @@ public class UserQuery2Gremlin {
     public static final String AUTHOR_OF_FIELD = "AuthorOf";
     public static final String CONFERENCE_INSTANCE_FIELD = "ConferenceInstance";
     public static final String PRESENTED_AT_FIELD = "PresentedAt";
+    public static final String FIELD_OF_STUDY_FIELD = "FieldOfStudy";
+    public static final String BELONGS_TO_FIELD = "BelongsTo";
 
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
@@ -179,6 +181,12 @@ public class UserQuery2Gremlin {
 
         if (source.equals(CONFERENCE_INSTANCE_FIELD) && target.equals(PAPER_FIELD))
             return PRESENTED_AT_FIELD;
+
+        if (source.equals(PAPER_FIELD) && target.equals(FIELD_OF_STUDY_FIELD))
+            return BELONGS_TO_FIELD;
+
+        if (source.equals(FIELD_OF_STUDY_FIELD) && target.equals(PAPER_FIELD))
+            return BELONGS_TO_FIELD;
 
         throw new Exception("No edge between " + source + " and " + target);
     }
