@@ -246,14 +246,15 @@ public class UserQuery2Gremlin {
             t = t.both(edgeLabel(edgeType, PAPER_FIELD));
         }
         else {
+            t = t.both(edgeLabel(edgeType, PAPER_FIELD));
             for (Node paperNode : paperNodes) {
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
-                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, Integer.parseInt(f.value));
+                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
                     } else if (f.field.equals("doi")) {
-                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, f.value);
+                        t = t.has(paperNode.type, f.field, f.value);
                     } else {
-                        t = t.both(edgeLabel(edgeType, PAPER_FIELD)).has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
             }

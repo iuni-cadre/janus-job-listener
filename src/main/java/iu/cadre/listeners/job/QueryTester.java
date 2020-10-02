@@ -11,10 +11,10 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.janusgraph.core.attribute.Text.textContains;
+import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 public class QueryTester {
     protected static final Log LOG = LogFactory.getLog(QueryTester.class);
@@ -45,11 +45,24 @@ public class QueryTester {
         LOG.info("Time to return journals : " + timeForJournals);
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
+        Map<String, String> filters = new HashMap<>();
+        filters.put("year", "2013");
+        filters.put("paperTitle", "climate");
         for (Vertex journal : journals) {
             // loop over each journal node and run the following query
-            GraphTraversal<Vertex, Vertex> gt = traversal.V(journal).both("PublishedInFixed").has("year", 2013).has("paperTitle", textContains("climate")).limit(10000);
-            while (gt.hasNext()) {
-                papers.addAll(gt.next(batchSize));
+            GraphTraversal<Vertex, Vertex> t = traversal.V(journal);
+            t = t.both("PublishedInFixed");
+            for (String filtername : filters.keySet()){
+                if (filtername.equals("year")) {
+                    t = t.has("Paper", filtername, Integer.parseInt(filters.get(filtername)));
+                } else {
+                    t = t.has("Paper", filtername, textContainsFuzzy(filters.get(filtername)));
+                }
+            }
+            LOG.info("Query " + t);
+
+            while (t.hasNext()) {
+                papers.addAll(t.next(batchSize));
             }
         }
 
