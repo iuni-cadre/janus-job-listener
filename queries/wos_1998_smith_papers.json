@@ -1,0 +1,48 @@
+{
+    "csv_output": [{
+            "field": "wosId",
+            "vertexType": "Paper"
+        }, {
+            "field": "publicationYear",
+            "vertexType": "Paper"
+        }, {
+            "field": "authorFullNames",
+            "vertexType": "Paper"
+        }, {
+            "field": "sourceTitle",
+            "vertexType": "Paper"
+        }, {
+            "field": "articleTitle",
+            "vertexType": "Paper"
+        }
+    ],
+    "dataset": "wos",
+    "graph": {
+        "edges": [{
+                "relation": "References",
+                "source": "Paper",
+                "target": "Paper"
+            }
+        ],
+        "nodes": [{
+                "filters": [{
+                        "field": "publicationYear",
+                        "filterType": "is",
+                        "operator": "AND",
+                        "value": "1998"
+                    }, {
+                        "field": "authorFullNames",
+                        "filterType": "is",
+                        "operator": "",
+                        "value": "smith"
+                    }
+                ],
+                "vertexType": "Paper"
+            }
+        ]
+    },
+    "job_id": "a2d9627c-8c1e-480f-8423-fd3e4a3e1ec9",
+    "job_name": "Test",
+    "user_id": 77,
+    "username": "mjzwk4tsmv2hi"
+}
