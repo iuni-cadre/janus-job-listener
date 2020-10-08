@@ -402,7 +402,7 @@ public class UserQuery2Gremlin {
 
     private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
-            throw new UnexpectedException("Can't filter non-paper nodes hernone");
+            throw new UnexpectedException("Can't filter non-paper nodes here");
         GraphTraversal t = traversal.V();
         for (Node paperNode : query.Nodes()) {
             for (Filter f : paperNode.filters) {
@@ -470,7 +470,7 @@ public class UserQuery2Gremlin {
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("publicationYear")) {
-                        t = t.has(paperNode.type, f.field, f.value);
+                        t = t.has(paperNode.type, f.field, Integer.valueOf(f.value));
                     }
                 }
             }
@@ -483,8 +483,8 @@ public class UserQuery2Gremlin {
             GraphTraversal gt = traversal.V(next);
             for (Node paperNode : query.Nodes()) {
                 for (Filter f : paperNode.filters) {
-                    if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
-                        gt  = gt.has(paperNode.type, f.field, f.value);
+                    if (f.field.equals("year")) {
+                        gt  = gt.has(paperNode.type, f.field, Integer.valueOf(f.value));
                     } else {
                         gt  = gt.has(paperNode.type, f.field, textContains(f.value));
                     }

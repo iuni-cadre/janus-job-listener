@@ -38,6 +38,12 @@ public class QueryTester {
 
         GraphTraversalSource traversal = graphTransaction.traversal();
 
+        long count1 = traversal.V().has("JournalFixed", "displayName", textContains("nature")).count().next();
+        LOG.info(count1);
+        long count2 = traversal.V().has("Paper", "year", 2000).count().next();
+        LOG.info(count2);
+        long count3 = traversal.V().has("Paper", "paperTitle", textContains("social")).count().next();
+        LOG.info(count3);
         List<Vertex> journals = traversal.V().has("JournalFixed", "displayName", textContains("nature")).toList();
         long time2 = System.currentTimeMillis();
         LOG.info("Journals with nature returned");
