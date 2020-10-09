@@ -277,10 +277,10 @@ public class UserQuery2Gremlin {
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
             return getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
-            return getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
             return getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
+            return getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
         } else {
             return getProjectionForPaperQueryMAG(traversal, query);
         }
@@ -292,24 +292,127 @@ public class UserQuery2Gremlin {
         return getProjectionForPaperQueryWOS(traversal, query);
     }
 
+//    public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
+//        List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
+//        GraphTraversal t = traversal.V();
+//        for (Node n : nonPaperNodes) {
+//            for (Filter f : n.filters) {
+//                t = t.has(n.type, f.field, textContains(f.value));
+//            }
+//        }
+//
+//        LOG.info("********* Non paper nodes returned ***********");
+//        List<Vertex> nonPaperNodesList = t.limit(record_limit*2).toList();
+//        List<Vertex> papers = new ArrayList<>();
+//        int batchSize = 100;
+//        for (int i = 0; i<nonPaperNodesList.size(); i+=100){
+//            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i,  Math.min(i+100, nonPaperNodesList.size()))), query, nodeType);
+//            if (query.RequiresGraph()){
+//                gt = gt.outE("References").bothV().dedup();
+//            }
+//            while (gt.hasNext()) {
+//                if (papers.size() < (record_limit - 100)){
+//                    papers.addAll(gt.next(batchSize));
+//                }
+//                else {
+//                    break;
+//                }
+//            }
+//            LOG.info("Paper count now " + papers.size());
+//            if (papers.size() >= record_limit - 100)
+//                break;
+//        }
+//        LOG.info("********* Papers returned **********");
+//        return papers;
+//    }
+
     public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
-        List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
-        GraphTraversal t = traversal.V();
-        for (Node n : nonPaperNodes) {
-            for (Filter f : n.filters) {
-                t = t.has(n.type, f.field, textContains(f.value));
+        // Apply other filters
+        List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
+        List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
+        List<Node> confInstanceNodes = query.Nodes().stream().filter(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD)).collect(Collectors.toList());
+
+        GraphTraversal t1 = traversal.V();
+        GraphTraversal t2 = traversal.V();
+        GraphTraversal t3 = traversal.V();
+        List<Vertex> nonPaperNodesList1 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList2 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList3 = new ArrayList<>();
+        if (!authorNodes.isEmpty()){
+            for (Node n : authorNodes) {
+                for (Filter f : n.filters) {
+                    t1 = t1.has(n.type, f.field, textContains(f.value));
+                    if (nodeType.equals(AUTHOR_FIELD)){
+                        nonPaperNodesList1 = t1.limit(record_limit*2).toList();
+                    }else {
+                        nonPaperNodesList1 = t1.toList();
+                    }
+                }
+            }
+        }
+        if (!journalNodes.isEmpty()){
+            for (Node n : journalNodes) {
+                for (Filter f : n.filters) {
+                    t2 = t2.has(n.type, f.field, textContains(f.value));
+                    nonPaperNodesList2 = t2.limit(record_limit*2).toList();
+                }
+            }
+        }
+        if (!confInstanceNodes.isEmpty()){
+            for (Node n : confInstanceNodes) {
+                for (Filter f : n.filters) {
+                    t3 = t3.has(n.type, f.field, textContains(f.value));
+                    nonPaperNodesList3 = t3.limit(record_limit*2).toList();
+                }
             }
         }
 
         LOG.info("********* Non paper nodes returned ***********");
-        List<Vertex> nonPaperNodesList = t.limit(record_limit*2).toList();
+        LOG.info("********* size authornodes ***********" + nonPaperNodesList1.size());
+        LOG.info("********* size journalnodes *********** " + nonPaperNodesList2.size());
+        LOG.info("********* size confInstanceNodes *********** " + nonPaperNodesList3.size());
+
+        List<Vertex> paperFiltersWithAuthor = new ArrayList<>();
+        List<Vertex> paperFiltersWithJournal = new ArrayList<>();
+        List<Vertex> paperFiltersWithConfInst = new ArrayList<>();
+        Set<Vertex> paperFilters = new HashSet<>();
         List<Vertex> papers = new ArrayList<>();
         int batchSize = 100;
-        for (int i = 0; i<nonPaperNodesList.size(); i+=100){
-            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i,  Math.min(i+100, nonPaperNodesList.size()))), query, nodeType);
+        for (Vertex nonPaperVertex : nonPaperNodesList1){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, AUTHOR_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithAuthor.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPaperNodesList2){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, JOURNAL_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithJournal.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPaperNodesList3){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, CONFERENCE_INSTANCE_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithConfInst.addAll(gt.next(batchSize));
+            }
+        }
+
+        LOG.info("Size authorPaperFilters " + paperFiltersWithAuthor.size());
+        LOG.info("Size journalPaperFilters " + paperFiltersWithJournal.size());
+        LOG.info("Size confPaperFilters " + paperFiltersWithConfInst.size());
+
+        Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
+        paperFilters = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+
+        LOG.info("size " + paperFilters.size());
+        for (Vertex paper : paperFilters){
+            GraphTraversal gt  = traversal.V(paper);
             if (query.RequiresGraph()){
                 gt = gt.outE("References").bothV().dedup();
             }
+
             while (gt.hasNext()) {
                 if (papers.size() < (record_limit - 100)){
                     papers.addAll(gt.next(batchSize));
@@ -318,24 +421,31 @@ public class UserQuery2Gremlin {
                     break;
                 }
             }
-            LOG.info("Paper count now " + papers.size());
             if (papers.size() >= record_limit - 100)
                 break;
+
         }
         LOG.info("********* Papers returned **********");
-//        t = getPaperFilter(t, query, nodeType);
-
-//        LOG.info("Query after paper filter : " + t);
-        /// now we have a list of papers. Do we need to do any more filtering?
-//        List<Node> moreFilters = query.Nodes().stream().filter(n -> !n.type.equals(nodeType) && !n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-//        for (Node n : moreFilters) {
-//            for (Filter f : n.filters) {
-//                t = t.where(__.both(edgeLabel(PAPER_FIELD, n.type)).has(n.type, f.field, textContains(f.value)));
-//            }
-//        }
-
-//        LOG.info("Query: " + t);
         return papers;
+    }
+
+
+    public static <T> Set<T> intersection(List<T> list1, List<T> list2) {
+        Set<T> list = new HashSet<>();
+        if (list1.isEmpty()){
+            return new HashSet<>(list2);
+        }else if (list2.isEmpty()){
+            return new HashSet<>(list1);
+        }
+
+        Set<T> first = new HashSet<>(list1);
+
+        for (T t : list2) {
+            if(first.contains(t)) {
+                list.add(t);
+            }
+        }
+        return list;
     }
 
     private static List<Vertex> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
