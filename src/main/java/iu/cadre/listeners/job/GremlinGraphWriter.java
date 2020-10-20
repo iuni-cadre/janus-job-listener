@@ -141,16 +141,17 @@ public class GremlinGraphWriter {
     }
 
     public static void projection_to_csv(List<Map> projection, OutputStream stream) throws IOException {
-        if (projection.isEmpty())
-            return;
-
-        ArrayList<String> headers = new ArrayList<String>(projection.get(0).keySet());
         PrintStream ps = new PrintStream(stream);
-        CSVPrinter csvPrinter = new CSVPrinter(ps, CSVFormat.DEFAULT.withHeader(headers.stream()
-                .toArray(String[]::new)));
-        for (Map m : projection)
-        {
-            csvPrinter.printRecord(headers.stream().map(k -> m.get(k).toString()).collect(Collectors.toList()));
+        if (projection.isEmpty()) {
+            ps.println("There are no results for the query.");
+            ps.flush();
+        }else {
+            ArrayList<String> headers = new ArrayList<String>(projection.get(0).keySet());
+            CSVPrinter csvPrinter = new CSVPrinter(ps, CSVFormat.DEFAULT.withHeader(headers.stream()
+                    .toArray(String[]::new)));
+            for (Map m : projection) {
+                csvPrinter.printRecord(headers.stream().map(k -> m.get(k).toString()).collect(Collectors.toList()));
+            }
         }
     }
 }
