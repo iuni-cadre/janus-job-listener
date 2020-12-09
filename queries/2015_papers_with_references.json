@@ -1,0 +1,43 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Author"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }
+  ],
+  "dataset": "mag",
+  "graph": {
+    "edges": [{
+      "relation": "References",
+      "source": "Paper",
+      "target": "Paper"
+    }
+    ],
+    "nodes": [{
+      "filters": [{
+        "field": "year",
+        "filterType": "is",
+        "operator": "",
+        "value": "2015"
+      }
+      ],
+      "vertexType": "Paper"
+    }
+    ]
+  },
+  "job_id": "d98205d9-b151-4ea2-a620-b383b3b1fceb",
+  "job_name": "",
+  "user_id": 78,
+  "username": "mjswm5lmorxw4"
+}

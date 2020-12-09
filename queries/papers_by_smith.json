@@ -1,0 +1,39 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Author"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }
+  ],
+  "dataset": "mag",
+  "graph": {
+    "edges": [
+    ],
+    "nodes": [{
+      "filters": [{
+        "field": "name",
+        "filterType": "is",
+        "operator": "",
+        "value": "smith"
+      }
+      ],
+      "vertexType": "Author"
+    }
+    ]
+  },
+  "job_id": "93c8ef52-d7ec-4ede-b8bb-4528bfbc1cd9",
+  "job_name": "athota-test4",
+  "user_id": 82,
+  "username": "mf2gq33ume"
+}

@@ -1,0 +1,38 @@
+{
+  "csv_output": [{
+    "field": "wosId",
+    "vertexType": "Paper"
+  }, {
+    "field": "publicationYear",
+    "vertexType": "Paper"
+  }, {
+    "field": "articleTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "authorFullNames",
+    "vertexType": "Paper"
+  }, {
+    "field": "conferenceTitle",
+    "vertexType": "Paper"
+  }
+  ],
+  "dataset": "wos",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+      "filters": [{
+        "field": "articleTitle",
+        "filterType": "is",
+        "operator": "",
+        "value": "Unicorns"
+      }
+      ],
+      "vertexType": "Paper"
+    }
+    ]
+  },
+  "job_id": "336074bb-8071-4d5b-a448-1d0673f6f4a8",
+  "job_name": "",
+  "user_id": 78,
+  "username": "mjswm5lmorxw4"
+}

@@ -8,7 +8,10 @@ public class Constants {
     public static final String AWS_SECRET_KEY = "aws.secret.access.key";
     public static final String AWS_REGION_NAME = "region.name";
     public static final String JOB_QUEUE_URL = "job.queue";
-    public static final String JANUS_PROPERTIES_FILE = "janus.config";
+    public static final String JANUS_MAG_PROPERTIES_FILE = "janus.mag.config";
+    public static final String JANUS_WOS_PROPERTIES_FILE = "janus.wos.config";
+    public static final String JANUS_HOST = "janus.host";
+    public static final String JANUS_RECORD_LIMIT = "janus.recordlimit";
     public static final String WOS_DATABASE_HOST = "wos.database.host";
     public static final String WOS_DATABASE_PORT = "wos.database.port";
     public static final String WOS_DATABASE_NAME = "wos.database.name";
@@ -23,6 +26,7 @@ public class Constants {
     public static final String META_DATABASE_NAME = "meta.database.name";
     public static final String META_DATABASE_USERNAME = "meta.database.username";
     public static final String META_DATABASE_PASSWORD = "meta.database.password";
+    public static final String META_DATABASE_INMEMORY = "meta.database.inmemory";
     public static final String EFS_ROOT_QUERY_RESULTS_DIR = "efs.root.query.results.listener";
     public static final String EFS_SUBPATH_QUERY_RESULTS_DIR = "efs.subpath.query.results.listener";
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";

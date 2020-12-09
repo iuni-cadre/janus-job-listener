@@ -10,17 +10,22 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.apache.tinkerpop.gremlin.structure.io.IoCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GremlinGraphWriter {
     public static void main(String[] args) {
         try {
+            Logger logger = LoggerFactory.getLogger(GremlinGraphWriter.class);
+
+            logger.info("Hello World");
+
             TinkerIoRegistryV3d0 v = TinkerIoRegistryV3d0.instance();
 
             GraphTraversalSource g = EmptyGraph.instance().traversal().withRemote("conf/remote-graph.properties");
@@ -57,8 +62,8 @@ public class GremlinGraphWriter {
             ps.printf("id: %s\n", v.id());
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             ps.printf("Edge %s: ", e.label());
             for (Iterator<Property<Object>> it2 = e.properties(); it2.hasNext(); ) {
                 Property<Object> p = it2.next();
@@ -83,16 +88,17 @@ public class GremlinGraphWriter {
             }
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             for (Iterator<Property<Object>> it2 = e.properties(); it2.hasNext(); ) {
                 Property<Object> p = it2.next();
                 result.add(p.key());
             }
         }
-        Collections.sort(result);
-
-        return result;
+        return result.stream()
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     public static void graph_to_csv(TinkerGraph sg, OutputStream stream) throws IOException {
@@ -112,8 +118,8 @@ public class GremlinGraphWriter {
             csvPrinter.printRecord(values);
         }
 
-        for (Iterator<Edge> it = sg.edges(); it.hasNext(); ) {
-            Edge e = it.next();
+        for (Iterator<org.apache.tinkerpop.gremlin.structure.Edge> it = sg.edges(); it.hasNext(); ) {
+            org.apache.tinkerpop.gremlin.structure.Edge e = it.next();
             List<String> base_values = new ArrayList<String>(Arrays.asList("Edge",
                     e.id().toString(), e.label(), e.inVertex().id().toString(), e.outVertex().id().toString()));
             List<String> values = ListUtils.union(base_values, gather_property_values(properties, e));
@@ -132,5 +138,20 @@ public class GremlinGraphWriter {
                 result.add("");
         }
         return result;
+    }
+
+    public static void projection_to_csv(List<Map> projection, OutputStream stream) throws IOException {
+        PrintStream ps = new PrintStream(stream);
+        if (projection.isEmpty()) {
+            ps.println("There are no results for the query.");
+            ps.flush();
+        }else {
+            ArrayList<String> headers = new ArrayList<String>(projection.get(0).keySet());
+            CSVPrinter csvPrinter = new CSVPrinter(ps, CSVFormat.DEFAULT.withHeader(headers.stream()
+                    .toArray(String[]::new)));
+            for (Map m : projection) {
+                csvPrinter.printRecord(headers.stream().map(k -> m.get(k).toString()).collect(Collectors.toList()));
+            }
+        }
     }
 }

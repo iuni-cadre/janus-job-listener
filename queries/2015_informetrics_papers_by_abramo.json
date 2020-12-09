@@ -1,0 +1,65 @@
+{
+    "csv_output": [{
+            "field": "paperId",
+            "vertexType": "Paper"
+        }, {
+            "field": "year",
+            "vertexType": "Paper"
+        }, {
+            "field": "originalTitle",
+            "vertexType": "Paper"
+        }, {
+            "field": "displayName",
+            "vertexType": "Author"
+        }, {
+            "field": "displayName",
+            "vertexType": "JournalFixed"
+        }
+    ],
+    "dataset": "mag",
+    "graph": {
+        "edges": [{
+                "relation": "PublishedInFixed",
+                "source": "Paper",
+                "target": "JournalFixed"
+            }, {
+                "relation": "AuthorOf",
+                "source": "Author",
+                "target": "Paper"
+            }
+        ],
+        "nodes": [{
+                "filters": [{
+                        "field": "name",
+                        "filterType": "is",
+                        "operator": "AND",
+                        "value": "Informetrics"
+                    }
+                ],
+                "vertexType": "JournalFixed"
+            }, {
+                "filters": [{
+                        "field": "year",
+                        "filterType": "is",
+                        "operator": "AND",
+                        "value": "2015"
+                    }
+                ],
+                "vertexType": "Paper"
+            }, {
+                "filters": [{
+                        "field": "name",
+                        "filterType": "is",
+                        "operator": "",
+                        "value": "Abramo"
+                    }
+                ],
+                "vertexType": "Author"
+            }
+        ]
+    },
+    "job_id": "a08c8c8d-fbcf-4c73-93f1-e56f00caa3d4",
+    "job_name": "",
+    "user_id": 78,
+    "username": "mjswm5lmorxw4"
+}

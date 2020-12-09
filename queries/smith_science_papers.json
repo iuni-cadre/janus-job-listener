@@ -1,0 +1,47 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Author"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }
+  ],
+  "dataset": "mag",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+      "filters": [{
+        "field": "name",
+        "filterType": "is",
+        "operator": "AND",
+        "value": "science"
+      }
+      ],
+      "vertexType": "JournalFixed"
+    }, {
+      "filters": [{
+        "field": "name",
+        "filterType": "is",
+        "operator": "",
+        "value": "smith"
+      }
+      ],
+      "vertexType": "Author"
+    }
+    ]
+  },
+  "job_id": "a3b5a501-0338-4e20-aaf9-338ee3da5403",
+  "job_name": "",
+  "user_id": 78,
+  "username": "mjswm5lmorxw4"
+}

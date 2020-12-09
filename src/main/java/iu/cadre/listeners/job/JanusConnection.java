@@ -1,111 +1,162 @@
 package iu.cadre.listeners.job;
 
+import com.google.gson.JsonParser;
+import iu.cadre.listeners.job.util.ConfigReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tinkerpop.gremlin.driver.Cluster;
+import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.as;
-import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.has;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
+
 
 public class JanusConnection {
     protected static final Log LOG = LogFactory.getLog(JanusConnection.class);
+
     public static void main(String[] args) {
-        try {
-//            JanusGraphFactory.
-//            GraphTraversalSource g = traversal().withRemote(DriverRemoteConnection.using("conf/remote-objects.yaml", "mag_traversal"));
-//            GraphTraversal<Vertex, Map<Object, Object>> valueMap = g.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
-//                    .valueMap("year", "paperTitle", "referenceCount", "rank", "citationCount", "createdDate", "paperId",
-//                            "originalTitle", "date", "estimatedCitation", "languageCodes", "urls");
-//            valueMap.forEachRemaining(
-//                    System.out::println
-//            );
-//            g.close();
-
-            if (null == args || args.length != 1) {
-                System.err.println(
-                        "Usage: JanusGraphConnSample <janusgraph-config-file>");
-                System.exit(1);
-            }
-
-            final JanusGraph graph = JanusGraphFactory.open(args[0]);
-
-            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
-
-            // get graph management
-            JanusGraphManagement mgmt = standardGraph.openManagement();
-
-            // you code using 'mgmt' to perform any management related operations
-            // bla bla bla
-
-            // using graph to do traversal
-            JanusGraphTransaction graphTransaction = graph.newTransaction();
-
-            GraphTraversalSource traversal = graphTransaction.traversal();
-
-
-//            g.V().and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).valueMap()
-            String vertexLabel = "Paper";
-            String fieldName = "paperTitle";
-            String fieldValue = "unicorns";
-
-            GraphTraversal<Vertex, Vertex> v = traversal.V();
-
-            int count = traversal.V().and(has("Paper", "paperTitle", textContainsFuzzy("unicorns")), has("year", 1990)).toList().size();
-            System.out.println("************ COUNT ******** : " + count);
-
-//            v.and(has('Paper','paperTitle', textContainsFuzzy('unicorns')), has('year', 1990)).inE().subgraph('unicorn').cap('unicorn').next()
-            TinkerGraph tg = (TinkerGraph)traversal.V().and(has("Paper", "paperTitle", textContainsFuzzy("unicorns")), has(vertexLabel, "year", 1990)).inE("AuthorOf").subgraph("org_auth2").cap("org_auth2").next();
-            GraphTraversalSource sg = tg.traversal();
-            sg.io("/home/ubuntu/unicorn_chathuri_2.xml").write().iterate();
-//            int count = 0;
-//            while (nodes.hasNext()){
-//                count++;
-//                Vertex vertex = nodes.next();
-//                System.out.println("Paper Title : " + vertex.property("paperTitle").value().toString());
-//                System.out.println("Reference Count : " + vertex.property("referenceCount").value().toString());
-//                System.out.println("Year : " + vertex.property("year").value().toString());
-//                System.out.println("paperId : " + vertex.property("paperId").value().toString());
-//            }
-//            System.out.println("******** COUNT : **********" + count);
-
-//            GraphTraversal<Vertex, Map<Object, Object>> vertexMapGraphTraversal = traversal.V().has("Paper", "paperTitle", "full case study report upplandsbondens sweden")
-//                    .valueMap("year", "paperTitle", "referenceCount", "rank", "citationCount", "createdDate", "paperId",
-//                            "originalTitle", "date", "estimatedCitation", "languageCodes", "urls");
-//
-//            int count = 0;
-//            while (nodes.hasNext()) {
-//                System.out.println("********** count ********** : " + count);
-//                Vertex v = nodes.next();
-//                System.out.println("************ TITLE ************ : " + v.property("paperTitle").value());
-//                count++;
-//                // use apis on Vertex to explore the node, below is the API link
-//                // http://tinkerpop.apache.org/javadocs/3.2.3/full/org/apache/tinkerpop/gremlin/structure/Vertex.html#properties-java.lang.String...-
-//            }
-//            System.out.println("********** count ********** : " + count);
-
-
-            // if you modify anything, always commit, for read only query, it is not needed
-            // graphTransaction.commit();
-
-            // close transaction when finishing using it
-            graphTransaction.close();
-            graph.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (null == args || args.length != 2) {
+            System.err.println(
+                    "Usage: JanusConnection config.properties file.json");
+            System.exit(1);
         }
 
-        // Reuse 'g' across the application
-        // and close it on shut-down to close open connections with g.close()
+        try (Reader reader = Files.newBufferedReader(Paths.get(args[1]),
+                StandardCharsets.UTF_8)) {
+
+            ConfigReader.loadProperties(args[0]);
+            JsonParser parser = new JsonParser();
+            UserQuery query = new UserQuery(parser.parse(reader).getAsJsonObject());
+            LOG.info("Read query: " + query.toString());
+
+            String fileNameWithOutExtension = FilenameUtils.removeExtension(args[1]);
+            Request(query, fileNameWithOutExtension + ".csv", fileNameWithOutExtension + "_edges.csv");
+            System.exit(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(-1);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
     }
+
+    public static GraphTraversalSource getJanusMAGTraversal() throws Exception{
+        try {
+            String janusConfig = ConfigReader.getJanusMAGPropertiesFile();
+            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
+            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
+            // get graph management
+            JanusGraphManagement mgmt = standardGraph.openManagement();
+            // you code using 'mgmt' to perform any management related operations
+            // using graph to do traversal
+            JanusGraphTransaction graphTransaction = graph.newTransaction();
+            return graphTransaction.traversal();
+        }catch (Exception e){
+            LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
+            throw new Exception("Unable to create graph traversal object.", e);
+        }
+    }
+
+    public static GraphTraversalSource getJanusWOSTraversal() throws Exception{
+        try {
+            String janusConfig = ConfigReader.getJanusWOSPropertiesFile();
+            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
+            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
+            // get graph management
+            JanusGraphManagement mgmt = standardGraph.openManagement();
+            // you code using 'mgmt' to perform any management related operations
+            // using graph to do traversal
+            JanusGraphTransaction graphTransaction = graph.newTransaction();
+            return graphTransaction.traversal();
+        }catch (Exception e){
+            LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
+            throw new Exception("Unable to create graph traversal object.", e);
+        }
+    }
+
+    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws Exception {
+        LOG.info("Connecting to Janus server");
+        String server = ConfigReader.getJanusHost();
+        int port = 8182;
+        GraphTraversalSource janusTraversal = null;
+        if (query.DataSet().equals("mag")){
+            janusTraversal = getJanusMAGTraversal();
+
+        }else {
+            janusTraversal = getJanusWOSTraversal();
+        }
+        Cluster cluster = Cluster.build()
+                .addContactPoint(server)
+                .port(port)
+                .maxContentLength(100000000)
+                .serializer(new GryoMessageSerializerV3d0(GryoMapper.build()
+                        .addRegistry(JanusGraphIoRegistry.instance())
+                        .addRegistry(TinkerIoRegistryV3d0.instance())))
+                .create();
+
+
+
+        record_limit = ConfigReader.getJanusRecordLimit();
+        OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
+
+        int batchSize = 100; // we need some test to figure out the best batchSize to use, I just make up a number here
+        List<Map> t1Elements = new ArrayList<>();
+        List<Map> t2Elements = new ArrayList<>();
+        List<Map> t3Elements = new ArrayList<>();
+        List<Vertex> magVertices = new ArrayList();
+        List<Vertex> wosVertices = new ArrayList();
+
+        if (query.DataSet().equals("mag")){
+            magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
+            if (query.RequiresGraph()) {
+                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+            } else {
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
+                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+            }
+        }else {
+            wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+            if (query.RequiresGraph()) {
+                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+            }else {
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+            }
+        }
+        janusTraversal.close();
+        LOG.info("Janus query complete");
+    }
+
+
 }
