@@ -64,7 +64,7 @@ public class JobStatus {
     }
 
     public void Update(String jobId, String status, String description) throws SQLException {
-        LOG.info("Updating job status in metadb to " + status   );
+        LOG.info("Updating job status in metadb to " + status + " for job id " + jobId);
         jobStatusPreparedStatement.setString(1, status);
         jobStatusPreparedStatement.setString(2, StringUtils.abbreviate(description, 240));
         jobStatusPreparedStatement.setString(3, jobId);

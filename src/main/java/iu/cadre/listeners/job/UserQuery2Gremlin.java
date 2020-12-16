@@ -27,6 +27,8 @@ public class UserQuery2Gremlin {
     public static final String PRESENTED_AT_FIELD = "PresentedAt";
     public static final String FIELD_OF_STUDY_FIELD = "FieldOfStudy";
     public static final String BELONGS_TO_FIELD = "BelongsTo";
+    public static final String AFFILIATION_FIELD = "Affiliation";
+    public static final String AFFILIATED__WITH_FIELD = "AffiliatedWith";
 
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
@@ -188,6 +190,12 @@ public class UserQuery2Gremlin {
         if (source.equals(FIELD_OF_STUDY_FIELD) && target.equals(PAPER_FIELD))
             return BELONGS_TO_FIELD;
 
+        if (source.equals(AUTHOR_FIELD) && target.equals(AFFILIATION_FIELD))
+            return AFFILIATED__WITH_FIELD;
+
+        if (source.equals(AFFILIATION_FIELD) && target.equals(AUTHOR_FIELD))
+            return AFFILIATED__WITH_FIELD;
+
         throw new Exception("No edge between " + source + " and " + target);
     }
 
@@ -207,7 +215,9 @@ public class UserQuery2Gremlin {
                 for (CSVOutput c : query.CSV()) {
                     if (c.vertexType.equals(PAPER_FIELD))
                         t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                    else {
+                    else if (c.vertexType.equals(AFFILIATION_FIELD)) {
+                        t = t.by(__.both(edgeLabel(AFFILIATION_FIELD, AUTHOR_FIELD)).values(c.field).fold());
+                    }else{
                         t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                     }
                 }
