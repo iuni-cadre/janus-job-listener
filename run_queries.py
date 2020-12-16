@@ -21,7 +21,7 @@ for entry in os.scandir("queries"):
         if test_process.returncode != 0:
             print("Failure at %s" % entry.name)
             print(test_error)
-        outfile = pathlib.PurePath(entry).with_suffix('.csv')
+        outfile = "queries/" + str(pathlib.PurePath(entry.name).with_suffix('')) + "_edges.csv"
         linecount = int(subprocess.check_output(["wc", "-l", outfile]).decode("utf8").split()[0])
         print("%s results returned in %s seconds" % (linecount, time.time() - t0))
 
