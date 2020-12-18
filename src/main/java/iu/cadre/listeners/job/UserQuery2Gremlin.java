@@ -216,10 +216,12 @@ public class UserQuery2Gremlin {
                     if (c.vertexType.equals(PAPER_FIELD))
                         t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                     else if (c.vertexType.equals(AFFILIATION_FIELD)) {
-                        t = t.by(__.both(edgeLabel(AFFILIATION_FIELD, AUTHOR_FIELD)).values(c.field).fold());
+//                        g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
+                        t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
                     }else{
                         t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                     }
+
                 }
                 gtList.addAll(t.toList());
             }
