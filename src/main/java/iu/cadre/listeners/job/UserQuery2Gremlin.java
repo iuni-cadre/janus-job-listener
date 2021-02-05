@@ -249,9 +249,17 @@ public class UserQuery2Gremlin {
         GraphTraversal t = null;
         for (Vertex v : verticesList) {
             if (query.DataSet().equals("mag")){
-                t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+                if (query.RequiresCitationGraph()) {
+                    t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+                } else if (query.RequiresReferencesGraph()) {
+                    t = traversal.V(v).outE("References").project("From", "To").by(__.inV().values("paperId")).by(__.outV().values("paperId"));
+                }
             }else {
-                t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+                if (query.RequiresCitationGraph()) {
+                    t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+                } else if (query.RequiresReferencesGraph()) {
+                    t = traversal.V(v).outE("References").project("From", "To").by(__.inV().values("wosId")).by(__.outV().values("wosId"));
+                }
             }
             gtList.addAll(t.toList());
         }

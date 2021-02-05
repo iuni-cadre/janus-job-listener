@@ -136,7 +136,17 @@ public class UserQuery {
 
     public boolean RequiresGraph()
     {
-        return Edges().stream().anyMatch(e -> e.relation.equals("References"));
+        return Edges().stream().anyMatch(e -> e.relation.matches("Citations|References"));
+    }
+
+    public boolean RequiresCitationGraph()
+    {
+        return Edges().stream().anyMatch(e -> e.relation.matches("Citations"));
+    }
+
+    public boolean RequiresReferencesGraph()
+    {
+        return Edges().stream().anyMatch(e -> e.relation.matches("References"));
     }
 
     public boolean HasAbstractSearch() {
