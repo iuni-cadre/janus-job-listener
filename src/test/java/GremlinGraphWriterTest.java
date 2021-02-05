@@ -232,7 +232,7 @@ class GremlinGraphWriterTest {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             GremlinGraphWriter.projection_to_csv(new ArrayList<Map>(), stream);
-            assertEquals( "", stream.toString());
+            assertEquals( "There are no results for the query.\n", stream.toString());
         } catch (IOException e) {
             fail(e.getMessage());
         }
