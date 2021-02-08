@@ -247,18 +247,27 @@ public class UserQuery2Gremlin {
     {
         List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
+        boolean isCitationsGraph = query.RequiresCitationsGraph();
+        boolean isReferencesGraph = query.RequiresReferencesGraph();
+
+        if (isCitationsGraph && isReferencesGraph) {
+            throw new UnsupportedOperationException("Citations graph and references graph are not supported in the same projection.");
+        } else if (!isCitationsGraph && !isReferencesGraph) {
+            throw new Exception("A citation or reference paper projection was not specified for requested network.");
+        }
+
         for (Vertex v : verticesList) {
             if (query.DataSet().equals("mag")){
-                if (query.RequiresCitationGraph()) {
+                if (isCitationsGraph) {
                     t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
-                } else if (query.RequiresReferencesGraph()) {
-                    t = traversal.V(v).outE("References").project("From", "To").by(__.inV().values("paperId")).by(__.outV().values("paperId"));
+                } else if (isReferencesGraph) {
+                    t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
                 }
             }else {
-                if (query.RequiresCitationGraph()) {
+                if (isCitationsGraph) {
                     t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
-                } else if (query.RequiresReferencesGraph()) {
-                    t = traversal.V(v).outE("References").project("From", "To").by(__.inV().values("wosId")).by(__.outV().values("wosId"));
+                } else if (isReferencesGraph) {
+                    t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
                 }
             }
             gtList.addAll(t.toList());

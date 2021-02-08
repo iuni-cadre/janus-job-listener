@@ -139,7 +139,7 @@ public class UserQuery {
         return Edges().stream().anyMatch(e -> e.relation.matches("Citations|References"));
     }
 
-    public boolean RequiresCitationGraph()
+    public boolean RequiresCitationsGraph()
     {
         return Edges().stream().anyMatch(e -> e.relation.matches("Citations"));
     }
