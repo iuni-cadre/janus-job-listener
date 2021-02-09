@@ -438,8 +438,11 @@ public class UserQuery2Gremlin {
         LOG.info("size " + paperFilters.size());
         for (Vertex paper : paperFilters){
             GraphTraversal gt  = traversal.V(paper);
-            if (query.RequiresGraph()){
+
+            if (query.RequiresCitationsGraph()) {
                 gt = gt.outE("References").bothV().dedup();
+            } else if (query.RequiresReferencesGraph()) {
+                gt = gt.inE("References").bothV().dedup();
             }
 
             while (gt.hasNext()) {
@@ -523,9 +526,13 @@ public class UserQuery2Gremlin {
                     }
                 }
             }
-            if (query.RequiresGraph()){
+
+            if (query.RequiresCitationsGraph()) {
                 gt = gt.outE("References").bothV().dedup();
+            } else if (query.RequiresReferencesGraph()) {
+                gt = gt.inE("References").bothV().dedup();
             }
+
             if (filteredPapers.size() < (record_limit)){
                 while (gt.hasNext()) {
                     filteredPapers.addAll(gt.next(batchSize));
@@ -629,8 +636,11 @@ public class UserQuery2Gremlin {
                     }
                 }
             }
-            if (query.RequiresGraph()){
+
+            if (query.RequiresCitationsGraph()) {
                 gt = gt.outE("References").bothV().dedup();
+            } else if (query.RequiresReferencesGraph()) {
+                gt = gt.inE("References").bothV().dedup();
             }
 
             if (filteredPapers.size() < (record_limit)){
