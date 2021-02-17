@@ -199,31 +199,37 @@ public class UserQuery2Gremlin {
         throw new Exception("No edge between " + source + " and " + target);
     }
 
-    public static List getPaperProjection(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
+    public static List getPaperProjection(GraphTraversalSource traversal, List<List<Vertex>> levels, UserQuery query) throws Exception
     {
         List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
-        if (query.CSV().isEmpty()) {
-            for (Vertex v : verticesList) {
-                t = traversal.V(v).valueMap();
-                gtList.addAll(t.toList());
-            }
-        }else {
-            String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
-            for (Vertex v : verticesList) {
-                t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
-                for (CSVOutput c : query.CSV()) {
-                    if (c.vertexType.equals(PAPER_FIELD))
-                        t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                    else if (c.vertexType.equals(AFFILIATION_FIELD)) {
-//                        g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
-                        t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
-                    }else{
-                        t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
-                    }
 
+        if (query.CSV().isEmpty()) {
+            for (List<Vertex> verticesList : levels) {
+                for (Vertex v : verticesList) {
+                    t = traversal.V(v).valueMap();
+                    gtList.addAll(t.toList());
                 }
-                gtList.addAll(t.toList());
+            }
+        } else {
+            String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
+
+            for (List<Vertex> verticesList : levels) {
+                for (Vertex v : verticesList) {
+                    t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
+                    for (CSVOutput c : query.CSV()) {
+                        if (c.vertexType.equals(PAPER_FIELD))
+                            t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+                        else if (c.vertexType.equals(AFFILIATION_FIELD)) {
+//                        g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
+                            t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                        } else {
+                            t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                        }
+
+                    }
+                    gtList.addAll(t.toList());
+                }
             }
         }
 //        if (query.CSV().isEmpty()) {
@@ -243,7 +249,7 @@ public class UserQuery2Gremlin {
         return gtList;
     }
 
-    public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, List<Vertex> verticesList, UserQuery query) throws Exception
+    public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, List<List<Vertex>> levels, UserQuery query) throws Exception
     {
         List<Map> gtList = new ArrayList<>();
         GraphTraversal t = null;
@@ -256,22 +262,25 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
-        for (Vertex v : verticesList) {
-            if (query.DataSet().equals("mag")){
-                if (isCitationsGraph) {
-                    t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
-                } else if (isReferencesGraph) {
-                    t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+        for (List<Vertex> verticesList : levels) {
+            for (Vertex v : verticesList) {
+                if (query.DataSet().equals("mag")) {
+                    if (isCitationsGraph) {
+                        t = traversal.V(v).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+                    } else if (isReferencesGraph) {
+                        t = traversal.V(v).inE("References").project("From (Referenced)", "To (Referencing)").by(__.inV().values("paperId")).by(__.outV().values("paperId"));
+                    }
+                } else {
+                    if (isCitationsGraph) {
+                        t = traversal.V(v).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+                    } else if (isReferencesGraph) {
+                        t = traversal.V(v).inE("References").project("From (Referenced)", "To (Referencing)").by(__.inV().values("wosId")).by(__.outV().values("wosId"));
+                    }
                 }
-            }else {
-                if (isCitationsGraph) {
-                    t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
-                } else if (isReferencesGraph) {
-                    t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
-                }
+                gtList.addAll(t.toList());
             }
-            gtList.addAll(t.toList());
         }
+
         return gtList;
     }
 
@@ -300,7 +309,7 @@ public class UserQuery2Gremlin {
         return t;
     }
 
-    public static List<Vertex> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static List<List<Vertex>> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
 
@@ -315,7 +324,7 @@ public class UserQuery2Gremlin {
         }
     }
 
-    public static List<Vertex> getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static List<List<Vertex>> getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
         return getProjectionForPaperQueryWOS(traversal, query);
@@ -355,7 +364,7 @@ public class UserQuery2Gremlin {
 //        return papers;
 //    }
 
-    public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
+    public static List<List<Vertex>> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         // Apply other filters
         List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
         List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
@@ -404,9 +413,10 @@ public class UserQuery2Gremlin {
         List<Vertex> paperFiltersWithAuthor = new ArrayList<>();
         List<Vertex> paperFiltersWithJournal = new ArrayList<>();
         List<Vertex> paperFiltersWithConfInst = new ArrayList<>();
-        Set<Vertex> paperFilters = new HashSet<>();
-        List<Vertex> papers = new ArrayList<>();
+        Set<Vertex> filteredPapers = new HashSet<>();
+        List<List<Vertex>> papers = new ArrayList<>();
         int batchSize = 100;
+
         for (Vertex nonPaperVertex : nonPaperNodesList1){
             GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, AUTHOR_FIELD);
             while (gt.hasNext()) {
@@ -433,30 +443,41 @@ public class UserQuery2Gremlin {
         LOG.info("Size confPaperFilters " + paperFiltersWithConfInst.size());
 
         Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
-        paperFilters = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+        filteredPapers = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
 
-        LOG.info("size " + paperFilters.size());
-        for (Vertex paper : paperFilters){
-            GraphTraversal gt  = traversal.V(paper);
+        LOG.info("size " + filteredPapers.size());
 
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").bothV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").bothV().dedup();
-            }
+        // Add filtered papers to zeroth level (query papers) of vertices
+        papers.add(new ArrayList<Vertex>(filteredPapers));
+        // Allocate list of papers for first level (cited/referencing) of vertices
+        papers.add(new ArrayList<Vertex>());
 
-            while (gt.hasNext()) {
-                if (papers.size() < (record_limit - 100)){
-                    papers.addAll(gt.next(batchSize));
+        if (query.RequiresGraph()) {
+            for (Vertex paper : papers.get(0)) {
+                GraphTraversal gt = traversal.V(paper);
+
+                if (query.RequiresCitationsGraph()) {
+                    gt = gt.outE("References").inV().dedup();
+                    //gt = gt.outE("References").bothV().dedup();
+                } else if (query.RequiresReferencesGraph()) {
+                    gt = gt.inE("References").outV().dedup();
+                    //gt = gt.inE("References").bothV().dedup();
                 }
-                else {
+
+                while (gt.hasNext()) {
+                    if (papers.get(0).size() + papers.get(1).size() < (record_limit - 100)) {
+                        papers.get(1).addAll(gt.next(batchSize));
+                    } else {
+                        break;
+                    }
+                }
+
+                if (papers.get(0).size() + papers.get(1).size() >= record_limit - 100)
                     break;
-                }
-            }
-            if (papers.size() >= record_limit - 100)
-                break;
 
+            }
         }
+
         LOG.info("********* Papers returned **********");
         return papers;
     }
@@ -480,10 +501,12 @@ public class UserQuery2Gremlin {
         return list;
     }
 
-    private static List<Vertex> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    private static List<List<Vertex>> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes");
+
         GraphTraversal t = traversal.V();
+
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
@@ -508,13 +531,18 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+
         LOG.info("Query: " + t);
-        List<Vertex> filteredPapers = new ArrayList<>();
+        List<List<Vertex>> papers = new ArrayList<>();
+        // Allocate list of papers for zeroth level (query papers) of vertices
+        papers.add(new ArrayList<Vertex>());
+
         int batchSize = 100;
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
             List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+
             for (Node paperNode : paperNodes) {
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
@@ -527,25 +555,44 @@ public class UserQuery2Gremlin {
                 }
             }
 
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").bothV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").bothV().dedup();
-            }
-
-            if (filteredPapers.size() < (record_limit)){
+            if (papers.get(0).size() < (record_limit)) {
                 while (gt.hasNext()) {
-                    filteredPapers.addAll(gt.next(batchSize));
+                    papers.get(0).addAll(gt.next(batchSize));
                 }
-            }
-            else
+            } else
                 break;
         }
-        LOG.info("size ****** " + filteredPapers.size());
 
-        return filteredPapers;
+        // Generate the cited/referencing papers
+        if (query.RequiresGraph()) {
+            // Allocate list of papers for first level (cited/referencing) of vertices
+            papers.add(new ArrayList<Vertex>());
+
+            for (Vertex paper : papers.get(0)) {
+                GraphTraversal gt = traversal.V(paper);
+
+                if (query.RequiresCitationsGraph()) {
+                    gt = gt.outE("References").inV().dedup();
+                    //gt = gt.outE("References").bothV().dedup();
+                } else if (query.RequiresReferencesGraph()) {
+                    gt = gt.inE("References").outV().dedup();
+                    //gt = gt.inE("References").bothV().dedup();
+                }
+
+                if (papers.get(0).size() + papers.get(1).size() < (record_limit)) {
+                    while (gt.hasNext()) {
+                        papers.get(1).addAll(gt.next(batchSize));
+                    }
+                } else
+                    break;
+            }
+        }
+
+        LOG.info("size ****** " + papers.get(0).size());
+        return papers;
     }
 
+    /*
     private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes here");
@@ -577,8 +624,9 @@ public class UserQuery2Gremlin {
         LOG.info("Query: " + t);
         return t.toList();
     }
+     */
 
-    private static List<Vertex> getProjectionForPaperQueryWOS(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    private static List<List<Vertex>> getProjectionForPaperQueryWOS(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes");
         GraphTraversal t = traversal.V();
@@ -622,35 +670,51 @@ public class UserQuery2Gremlin {
             }
         }
         LOG.info("Query: " + t);
-        List<Vertex> filteredPapers = new ArrayList<>();
+        List<List<Vertex>> papers = new ArrayList<>();
+        // Allocate list of papers for zeroth level (query papers) of vertices
+        papers.add(new ArrayList<Vertex>());
+        // Allocate list of papers for first level (cited/referencing papers) of vertices
         int batchSize = 100;
+
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
+
             for (Node paperNode : query.Nodes()) {
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
-                        gt  = gt.has(paperNode.type, f.field, Integer.valueOf(f.value));
+                        gt = gt.has(paperNode.type, f.field, Integer.valueOf(f.value));
                     } else {
-                        gt  = gt.has(paperNode.type, f.field, textContains(f.value));
+                        gt = gt.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
             }
 
+            if (papers.get(0).size() < (record_limit)) {
+                while (gt.hasNext()) {
+                    papers.get(0).addAll(gt.next(batchSize));
+                }
+            } else
+                break;
+        }
+
+        for (Vertex paper : papers.get(0)) {
+            GraphTraversal gt = traversal.V(paper);
+
             if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").bothV().dedup();
+                gt = gt.outE("References").inV().dedup();
             } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").bothV().dedup();
+                gt = gt.inE("References").outV().dedup();
             }
 
-            if (filteredPapers.size() < (record_limit)){
+            if (papers.get(0).size() + papers.get(1).size() < (record_limit)){
                 while (gt.hasNext()) {
-                    filteredPapers.addAll(gt.next(batchSize));
+                    papers.get(1).addAll(gt.next(batchSize));
                 }
             }
             else
                 break;
         }
-        return filteredPapers;
+        return papers;
     }
 }
