@@ -93,7 +93,12 @@ public class UserQuery {
                         f.value = filterField.get("value").getAsString();
                         f.operator = filterField.get("operator").getAsString();
                         n.filters.add(f);
-                    }else { // WOS
+                    }else if(DataSet().equals("wos")) { // WOS
+                        f.value = filterField.get("value").getAsString();
+                        f.operator = filterField.get("operator").getAsString();
+                        f.field = filterField.get("field").getAsString();
+                        n.filters.add(f);
+                    }else {
                         f.value = filterField.get("value").getAsString();
                         f.operator = filterField.get("operator").getAsString();
                         f.field = filterField.get("field").getAsString();

@@ -94,6 +94,8 @@ public class JobListener {
                     String dataType = "MAG";
                     if (query.DataSet().equals("wos")){
                         dataType = "WOS";
+                    }else if (query.DataSet().equals("uspto")){
+                        dataType = "USPTO";
                     }
 
                     if (new File(verticesCSVPath).exists()) {

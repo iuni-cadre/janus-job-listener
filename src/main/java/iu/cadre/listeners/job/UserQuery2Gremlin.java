@@ -13,23 +13,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.rmi.UnexpectedException;
 
+import static iu.cadre.listeners.job.util.Constants.*;
 import static org.janusgraph.core.attribute.Text.textContains;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
 
 public class UserQuery2Gremlin {
     public static final String PAPER_FIELD = "Paper";
     private static final Logger LOG = LoggerFactory.getLogger(UserQuery2Gremlin.class);
-    public static final String JOURNAL_FIELD = "JournalFixed";
-    public static final String PUBLISHED_IN_FIELD = "PublishedInFixed";
-    public static final String AUTHOR_FIELD = "Author";
-    public static final String AUTHOR_OF_FIELD = "AuthorOf";
-    public static final String CONFERENCE_INSTANCE_FIELD = "ConferenceInstance";
-    public static final String PRESENTED_AT_FIELD = "PresentedAt";
-    public static final String FIELD_OF_STUDY_FIELD = "FieldOfStudy";
-    public static final String BELONGS_TO_FIELD = "BelongsTo";
-    public static final String AFFILIATION_FIELD = "Affiliation";
-    public static final String AFFILIATED__WITH_FIELD = "AffiliatedWith";
-
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
 
@@ -196,6 +186,30 @@ public class UserQuery2Gremlin {
         if (source.equals(AFFILIATION_FIELD) && target.equals(AUTHOR_FIELD))
             return AFFILIATED__WITH_FIELD;
 
+        if (source.equals(PATENT_FIELD) && target.equals(INVENTOR_FIELD))
+            return INVENTOR_OF_FIELD;
+
+        if (source.equals(INVENTOR_FIELD) && target.equals(PATENT_FIELD))
+            return INVENTOR_OF_FIELD;
+
+        if (source.equals(INVENTOR_FIELD) && target.equals(LOCATION_FIELD))
+            return INVENTOR_LOCATED_IN_FIELD;
+
+        if (source.equals(LOCATION_FIELD) && target.equals(INVENTOR_FIELD))
+            return INVENTOR_LOCATED_IN_FIELD;
+
+        if (source.equals(PATENT_FIELD) && target.equals(CPC_FIELD))
+            return CPC_CATEGORY_OF_FIELD;
+
+        if (source.equals(CPC_FIELD) && target.equals(PATENT_FIELD))
+            return CPC_CATEGORY_OF_FIELD;
+
+        if (source.equals(PATENT_FIELD) && target.equals(USPC_FIELD))
+            return USPC_CATEGORY_OF_FIELD;
+
+        if (source.equals(USPC_FIELD) && target.equals(PATENT_FIELD))
+            return USPC_CATEGORY_OF_FIELD;
+
         throw new Exception("No edge between " + source + " and " + target);
     }
 
@@ -300,6 +314,31 @@ public class UserQuery2Gremlin {
         return t;
     }
 
+    private static GraphTraversal getPatentFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
+        List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
+        if (patentNodes.isEmpty())
+        {
+            /// even if we don't filter by paper, we still probably want to return a list of papers
+            t = t.both(edgeLabel(edgeType, PATENT_FIELD));
+        }
+        else {
+            t = t.both(edgeLabel(edgeType, PATENT_FIELD));
+            for (Node paperNode : patentNodes) {
+                for (Filter f : paperNode.filters) {
+                    if (f.field.equals("type")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    } else if (f.field.equals("date")) {
+                        t = t.has(paperNode.type, f.field, f.value);
+                    } else {
+                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                    }
+                }
+            }
+        }
+
+        return t;
+    }
+
     public static List<Vertex> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
@@ -321,39 +360,126 @@ public class UserQuery2Gremlin {
         return getProjectionForPaperQueryWOS(traversal, query);
     }
 
-//    public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
-//        List<Node> nonPaperNodes = query.Nodes().stream().filter(n -> n.type.equals(nodeType)).collect(Collectors.toList());
-//        GraphTraversal t = traversal.V();
-//        for (Node n : nonPaperNodes) {
-//            for (Filter f : n.filters) {
-//                t = t.has(n.type, f.field, textContains(f.value));
-//            }
-//        }
-//
-//        LOG.info("********* Non paper nodes returned ***********");
-//        List<Vertex> nonPaperNodesList = t.limit(record_limit*2).toList();
-//        List<Vertex> papers = new ArrayList<>();
-//        int batchSize = 100;
-//        for (int i = 0; i<nonPaperNodesList.size(); i+=100){
-//            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperNodesList.subList(i,  Math.min(i+100, nonPaperNodesList.size()))), query, nodeType);
-//            if (query.RequiresGraph()){
-//                gt = gt.outE("References").bothV().dedup();
-//            }
-//            while (gt.hasNext()) {
-//                if (papers.size() < (record_limit - 100)){
-//                    papers.addAll(gt.next(batchSize));
-//                }
-//                else {
-//                    break;
-//                }
-//            }
-//            LOG.info("Paper count now " + papers.size());
-//            if (papers.size() >= record_limit - 100)
-//                break;
-//        }
-//        LOG.info("********* Papers returned **********");
-//        return papers;
-//    }
+    public static List<Vertex> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, INVENTOR_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(LOCATION_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, LOCATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, USPC_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, CPC_FIELD);
+        } else {
+            return getProjectionForPaperQueryMAG(traversal, query);
+        }
+    }
+
+
+    public static List<Vertex> getProjectionForNonPatentQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
+        // Apply other filters
+        List<Node> inventorNodes = query.Nodes().stream().filter(n -> n.type.equals(INVENTOR_FIELD)).collect(Collectors.toList());
+        List<Node> cpcNodes = query.Nodes().stream().filter(n -> n.type.equals(CPC_FIELD)).collect(Collectors.toList());
+        List<Node> uspcNodes = query.Nodes().stream().filter(n -> n.type.equals(USPC_FIELD)).collect(Collectors.toList());
+        List<Node> locationNodes = query.Nodes().stream().filter(n -> n.type.equals(LOCATION_FIELD)).collect(Collectors.toList());
+
+        GraphTraversal t1 = traversal.V();
+        GraphTraversal t2 = traversal.V();
+        GraphTraversal t3 = traversal.V();
+        GraphTraversal t4 = traversal.V();
+        List<Vertex> nonPatentNodesList1 = new ArrayList<>();
+        List<Vertex> nonPatentNodesList2 = new ArrayList<>();
+        List<Vertex> nonPatentNodesList3 = new ArrayList<>();
+        List<Vertex> nonPatentNodesList4 = new ArrayList<>();
+        if (!inventorNodes.isEmpty()){
+            for (Node n : inventorNodes) {
+                for (Filter f : n.filters) {
+                    t1 = t1.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList1 = t1.toList();
+                }
+            }
+        }
+        if (!cpcNodes.isEmpty()){
+            for (Node n : cpcNodes) {
+                for (Filter f : n.filters) {
+                    t2 = t2.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList2 = t2.limit(record_limit*2).toList();
+                }
+            }
+        }
+        if (!uspcNodes.isEmpty()){
+            for (Node n : uspcNodes) {
+                for (Filter f : n.filters) {
+                    t3 = t3.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList3 = t3.limit(record_limit*2).toList();
+                }
+            }
+        }
+
+        LOG.info("********* Non paper nodes returned ***********");
+        LOG.info("********* size inventor nodes ***********" + nonPatentNodesList1.size());
+        LOG.info("********* size cpc nodes *********** " + nonPatentNodesList2.size());
+        LOG.info("********* size uspc nodes *********** " + nonPatentNodesList3.size());
+
+        List<Vertex> patentFiltersWithInventor = new ArrayList<>();
+        List<Vertex> patentFiltersWithCPC = new ArrayList<>();
+        List<Vertex> patentFiltersWithUSPC = new ArrayList<>();
+        Set<Vertex> patentFilters = new HashSet<>();
+        List<Vertex> patents = new ArrayList<>();
+        int batchSize = 100;
+        for (Vertex nonPaperVertex : nonPatentNodesList1){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, INVENTOR_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithInventor.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPatentNodesList2){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, CPC_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithCPC.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPatentNodesList3){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, USPC_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithUSPC.addAll(gt.next(batchSize));
+            }
+        }
+
+        LOG.info("Size authorPaperFilters " + patentFiltersWithInventor.size());
+        LOG.info("Size journalPaperFilters " + patentFiltersWithCPC.size());
+        LOG.info("Size confPaperFilters " + patentFiltersWithUSPC.size());
+
+        Set<Vertex> intersection1 = intersection(patentFiltersWithInventor, patentFiltersWithCPC);
+        patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection1));
+
+        LOG.info("size " + patentFilters.size());
+        for (Vertex paper : patentFilters){
+            GraphTraversal gt  = traversal.V(paper);
+
+            if (query.RequiresCitationsGraph()) {
+                gt = gt.outE("Citation").bothV().dedup();
+            } else if (query.RequiresReferencesGraph()) {
+                gt = gt.inE("Citation").bothV().dedup();
+            }
+
+            while (gt.hasNext()) {
+                if (patents.size() < (record_limit - 100)){
+                    patents.addAll(gt.next(batchSize));
+                }
+                else {
+                    break;
+                }
+            }
+            if (patents.size() >= record_limit - 100)
+                break;
+
+        }
+        LOG.info("********* Patents returned **********");
+        return patents;
+    }
+
 
     public static List<Vertex> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         // Apply other filters
@@ -504,6 +630,72 @@ public class UserQuery2Gremlin {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
                         t = t.has(paperNode.type, f.field, f.value);
+                    }
+                }
+            }
+        }
+        LOG.info("Query: " + t);
+        List<Vertex> filteredPapers = new ArrayList<>();
+        int batchSize = 100;
+        while (t.hasNext()) {
+            Vertex next = (Vertex) t.next();
+            GraphTraversal gt = traversal.V(next);
+            List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+            for (Node paperNode : paperNodes) {
+                for (Filter f : paperNode.filters) {
+                    if (f.field.equals("year")) {
+                        gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
+                    } else if (f.field.equals("doi")) {
+                        gt = gt.has(paperNode.type, f.field, f.value);
+                    } else {
+                        gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                    }
+                }
+            }
+
+            if (query.RequiresCitationsGraph()) {
+                gt = gt.outE("References").bothV().dedup();
+            } else if (query.RequiresReferencesGraph()) {
+                gt = gt.inE("References").bothV().dedup();
+            }
+
+            if (filteredPapers.size() < (record_limit)){
+                while (gt.hasNext()) {
+                    filteredPapers.addAll(gt.next(batchSize));
+                }
+            }
+            else
+                break;
+        }
+        LOG.info("size ****** " + filteredPapers.size());
+
+        return filteredPapers;
+    }
+
+    private static List<Vertex> getProjectionForPatentQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PATENT_FIELD)))
+            throw new UnexpectedException("Can't filter non-patent nodes");
+        GraphTraversal t = traversal.V();
+        for (Node patentNode : query.Nodes()) {
+//          Get all the papers with one filters first
+            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                for (Filter f : patentNode.filters) {
+                    if (f.field.equals("doi")) {
+                        t = t.has(patentNode.type, f.field, f.value);
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
+                for (Filter f : patentNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("paperTitle")) {
+                        t = t.has(patentNode.type, f.field, textContains(f.value));
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
+                for (Filter f : patentNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("year")) {
+                        t = t.has(patentNode.type, f.field, f.value);
                     }
                 }
             }

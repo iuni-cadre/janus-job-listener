@@ -1,5 +1,9 @@
 package iu.cadre.listeners.job.util;
 
+import iu.cadre.listeners.job.UserQuery2Gremlin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +14,7 @@ public class Constants {
     public static final String JOB_QUEUE_URL = "job.queue";
     public static final String JANUS_MAG_PROPERTIES_FILE = "janus.mag.config";
     public static final String JANUS_WOS_PROPERTIES_FILE = "janus.wos.config";
+    public static final String JANUS_USPTO_PROPERTIES_FILE = "janus.uspto.config";
     public static final String JANUS_HOST = "janus.host";
     public static final String JANUS_RECORD_LIMIT = "janus.recordlimit";
     public static final String WOS_DATABASE_HOST = "wos.database.host";
@@ -32,4 +37,28 @@ public class Constants {
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";
 
     public static final Map<String, String> vertexLableMap = new HashMap<String, String>();
+
+    // Vertices and edges for MAG and WOS
+    public static final String PAPER_FIELD = "Paper";
+    public static final String JOURNAL_FIELD = "JournalFixed";
+    public static final String PUBLISHED_IN_FIELD = "PublishedInFixed";
+    public static final String AUTHOR_FIELD = "Author";
+    public static final String AUTHOR_OF_FIELD = "AuthorOf";
+    public static final String CONFERENCE_INSTANCE_FIELD = "ConferenceInstance";
+    public static final String PRESENTED_AT_FIELD = "PresentedAt";
+    public static final String FIELD_OF_STUDY_FIELD = "FieldOfStudy";
+    public static final String BELONGS_TO_FIELD = "BelongsTo";
+    public static final String AFFILIATION_FIELD = "Affiliation";
+    public static final String AFFILIATED__WITH_FIELD = "AffiliatedWith";
+
+    // Vertices and Edges for USPTO
+    public static final String PATENT_FIELD = "Patent";
+    public static final String INVENTOR_FIELD = "Inventor";
+    public static final String INVENTOR_OF_FIELD = "Inventor_Of";
+    public static final String LOCATION_FIELD = "Location";
+    public static final String INVENTOR_LOCATED_IN_FIELD = "Inventor_Located_In";
+    public static final String USPC_FIELD = "USPC";
+    public static final String USPC_CATEGORY_OF_FIELD = "USPC_Category_Of";
+    public static final String CPC_FIELD = "CPC";
+    public static final String CPC_CATEGORY_OF_FIELD = "CPC_Category_Of";
 }

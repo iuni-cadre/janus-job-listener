@@ -114,6 +114,18 @@ public class ConfigReader {
         }
     }
 
+    public static String getJanusUSPTOPropertiesFile() throws Exception{
+        try {
+            if (properties != null){
+                return properties.getProperty(Constants.JANUS_USPTO_PROPERTIES_FILE);
+            }
+            return null;
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.JANUS_USPTO_PROPERTIES_FILE);
+            throw new Exception("Error reading config file", e);
+        }
+    }
+
     public static String getJanusHost() throws Exception{
         try {
             if (properties != null){
