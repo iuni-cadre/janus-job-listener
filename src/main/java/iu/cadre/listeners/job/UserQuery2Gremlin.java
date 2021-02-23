@@ -262,7 +262,9 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
-        for (List<Vertex> verticesList : levels) {
+        for (int i = 0; i < levels.size()-1; i++) {
+            List<Vertex> verticesList = levels.get(i);
+        
             for (Vertex v : verticesList) {
                 if (query.DataSet().equals("mag")) {
                     if (isCitationsGraph) {
