@@ -528,7 +528,7 @@ public class UserQuery2Gremlin {
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
-                        t = t.has(paperNode.type, f.field, f.value);
+                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
                     }
                 }
             }
