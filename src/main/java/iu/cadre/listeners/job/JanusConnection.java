@@ -134,9 +134,9 @@ public class JanusConnection {
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
                 t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
-                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
                 t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, magVertices, query);
-                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
             } else {
                 t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, magVertices, query);
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
@@ -146,9 +146,9 @@ public class JanusConnection {
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
                 t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
-                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
+                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
                 t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,wosVertices, query);
-                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
             }else {
                 t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
