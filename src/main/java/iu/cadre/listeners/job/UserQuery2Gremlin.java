@@ -700,22 +700,24 @@ public class UserQuery2Gremlin {
                 break;
         }
 
-        for (Vertex paper : papers.get(0)) {
-            GraphTraversal gt = traversal.V(paper);
+        if (query.RequiresGraph()) {
+            papers.add(new ArrayList<Vertex>());
+            for (Vertex paper : papers.get(0)) {
+                GraphTraversal gt = traversal.V(paper);
 
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").inV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").outV().dedup();
-            }
-
-            if (papers.get(0).size() + papers.get(1).size() < (record_limit)){
-                while (gt.hasNext()) {
-                    papers.get(1).addAll(gt.next(batchSize));
+                if (query.RequiresCitationsGraph()) {
+                    gt = gt.outE("References").inV().dedup();
+                } else if (query.RequiresReferencesGraph()) {
+                    gt = gt.inE("References").outV().dedup();
                 }
+
+                if (papers.get(0).size() + papers.get(1).size() < (record_limit)) {
+                    while (gt.hasNext()) {
+                        papers.get(1).addAll(gt.next(batchSize));
+                    }
+                } else
+                    break;
             }
-            else
-                break;
         }
         return papers;
     }
