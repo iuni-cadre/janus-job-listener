@@ -508,6 +508,7 @@ public class UserQuery2Gremlin {
             throw new UnexpectedException("Can't filter non-paper nodes");
 
         GraphTraversal t = traversal.V();
+        
 
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
@@ -557,12 +558,18 @@ public class UserQuery2Gremlin {
                 }
             }
 
-            if (papers.get(0).size() < (record_limit)) {
-                while (gt.hasNext()) {
+            while (gt.hasNext()) {
+                if (papers.get(0).size() < record_limit) {
                     papers.get(0).addAll(gt.next(batchSize));
+                } else {
+                    break;
                 }
-            } else
+            }
+
+            if (papers.get(0).size() >= record_limit) {
                 break;
+            }
+
         }
 
         // Generate the cited/referencing papers
@@ -581,12 +588,17 @@ public class UserQuery2Gremlin {
                     //gt = gt.inE("References").bothV().dedup();
                 }
 
-                if (papers.get(0).size() + papers.get(1).size() < (record_limit)) {
-                    while (gt.hasNext()) {
+                while (gt.hasNext()) {
+                    if (papers.get(1).size() < record_limit) {
                         papers.get(1).addAll(gt.next(batchSize));
+                    } else {
+                        break;
                     }
-                } else
+                }
+
+                if (papers.get(1).size() >= record_limit) {
                     break;
+                }
             }
         }
 
