@@ -731,6 +731,21 @@ public class UserQuery2Gremlin {
                     break;
             }
         }
-        return papers;
+
+        return removeDuplicateVertices(papers);
+    }
+
+    private static List<List<Vertex>> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
+        Set<Object> uniqueIds = new HashSet<Object>();
+
+        for (List<Vertex> verticesList : levels) {
+            for (int i = 0; i < verticesList.size(); i++) {
+                if (!uniqueIds.add(verticesList.get(i).id())) {
+                    verticesList.remove(i);
+                }
+            }
+        }
+
+        return levels;
     }
 }
