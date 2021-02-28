@@ -32,6 +32,7 @@ public class UserQuery2Gremlin {
 
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
+    private static String QUERY_PAPER_HEADER = "isQueryPaper";
 
     public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (!query.DataSet().equals("mag"))
@@ -232,6 +233,18 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+
+        // Mark the query papers.  All query papers were
+        // are at the front of the list, so add the mark there.
+        for (int i = 0; i < levels.get(0).size(); i++) {
+            gtList.get(i).put(QUERY_PAPER_HEADER, "true");
+        }
+
+        // Mark the non-query papers
+        for (int i = levels.get(0).size(); i < gtList.size(); i++) {
+            gtList.get(i).put(QUERY_PAPER_HEADER, "false");
+        }
+
 //        if (query.CSV().isEmpty()) {
 //            return t.valueMap();
 //        } else {
@@ -711,6 +724,9 @@ public class UserQuery2Gremlin {
             } else
                 break;
         }
+
+        // Free this
+        t = null;
 
         if (query.RequiresGraph()) {
             papers.add(new ArrayList<Vertex>());
