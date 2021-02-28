@@ -746,9 +746,10 @@ public class UserQuery2Gremlin {
                 } else
                     break;
             }
+            papers=removeDuplicateVertices(papers);
         }
 
-        return removeDuplicateVertices(papers);
+        return papers;
     }
 
     private static List<List<Vertex>> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
