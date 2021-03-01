@@ -33,6 +33,7 @@ public class UserQuery2Gremlin {
     public static Integer record_limit = 100000;
     public static Boolean support_fuzzy_queries = true;
     private static String QUERY_PAPER_HEADER = "isQueryPaper";
+    private static int maxBatchSize = 100;
 
     public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (!query.DataSet().equals("mag"))
@@ -283,13 +284,13 @@ public class UserQuery2Gremlin {
                     if (isCitationsGraph) {
                         t = traversal.V(v).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
                     } else if (isReferencesGraph) {
-                        t = traversal.V(v).inE("References").project("From (Referenced)", "To (Referencing)").by(__.inV().values("paperId")).by(__.outV().values("paperId"));
+                        t = traversal.V(v).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
                     }
                 } else {
                     if (isCitationsGraph) {
                         t = traversal.V(v).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
                     } else if (isReferencesGraph) {
-                        t = traversal.V(v).inE("References").project("From (Referenced)", "To (Referencing)").by(__.inV().values("wosId")).by(__.outV().values("wosId"));
+                        t = traversal.V(v).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
                     }
                 }
                 gtList.addAll(t.toList());
@@ -552,8 +553,9 @@ public class UserQuery2Gremlin {
         List<List<Vertex>> papers = new ArrayList<>();
         // Allocate list of papers for zeroth level (query papers) of vertices
         papers.add(new ArrayList<Vertex>());
+        int batchSize;
+        int totalAccruedPapers = 0;
 
-        int batchSize = 100;
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
@@ -572,18 +574,23 @@ public class UserQuery2Gremlin {
             }
 
             while (gt.hasNext()) {
-                if (papers.get(0).size() < record_limit) {
+                totalAccruedPapers = papers.get(0).size();
+                if (totalAccruedPapers < record_limit) {
+                    batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
                     papers.get(0).addAll(gt.next(batchSize));
                 } else {
                     break;
                 }
             }
 
-            if (papers.get(0).size() >= record_limit) {
+            if (totalAccruedPapers >= record_limit) {
                 break;
             }
 
         }
+
+        // Mark this for deallocation
+        t = null;
 
         // Generate the cited/referencing papers
         if (query.RequiresGraph()) {
@@ -602,17 +609,20 @@ public class UserQuery2Gremlin {
                 }
 
                 while (gt.hasNext()) {
-                    if (papers.get(1).size() < record_limit) {
+                    totalAccruedPapers = papers.get(0).size() + papers.get(1).size();
+                    if (totalAccruedPapers < record_limit) {
+                        batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
                         papers.get(1).addAll(gt.next(batchSize));
                     } else {
                         break;
                     }
                 }
 
-                if (papers.get(1).size() >= record_limit) {
+                if (totalAccruedPapers >= record_limit) {
                     break;
                 }
             }
+            papers = removeDuplicateVertices(papers);
         }
 
         LOG.info("size ****** " + papers.get(0).size());
@@ -701,7 +711,8 @@ public class UserQuery2Gremlin {
         // Allocate list of papers for zeroth level (query papers) of vertices
         papers.add(new ArrayList<Vertex>());
         // Allocate list of papers for first level (cited/referencing papers) of vertices
-        int batchSize = 100;
+        int batchSize;
+        int totalAccruedPapers = 0;
 
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
@@ -717,18 +728,26 @@ public class UserQuery2Gremlin {
                 }
             }
 
-            if (papers.get(0).size() < (record_limit)) {
-                while (gt.hasNext()) {
+            while (gt.hasNext()) {
+                totalAccruedPapers = papers.get(0).size();
+                if (totalAccruedPapers < record_limit) {
+                    batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
                     papers.get(0).addAll(gt.next(batchSize));
+                } else {
+                    break;
                 }
-            } else
+            }
+
+            if (totalAccruedPapers >= record_limit) {
                 break;
+            }
         }
 
         // Free this
         t = null;
 
         if (query.RequiresGraph()) {
+
             papers.add(new ArrayList<Vertex>());
             for (Vertex paper : papers.get(0)) {
                 GraphTraversal gt = traversal.V(paper);
@@ -739,12 +758,19 @@ public class UserQuery2Gremlin {
                     gt = gt.inE("References").outV().dedup();
                 }
 
-                if (papers.get(0).size() + papers.get(1).size() < (record_limit)) {
-                    while (gt.hasNext()) {
+                while (gt.hasNext()) {
+                    totalAccruedPapers = papers.get(0).size() + papers.get(1).size();
+                    if (totalAccruedPapers < record_limit) {
+                        batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
                         papers.get(1).addAll(gt.next(batchSize));
+                    } else {
+                        break;
                     }
-                } else
+                }
+
+                if (totalAccruedPapers >= record_limit) {
                     break;
+                }
             }
             papers=removeDuplicateVertices(papers);
         }
