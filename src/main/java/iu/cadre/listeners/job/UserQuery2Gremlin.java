@@ -280,14 +280,10 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
+        paperVertices = removeDuplicateVertices(paperVertices);
         // Allocate array for cited/referencing papers
         paperVertices.add(new ArrayList<Vertex>());
-
-        for (Vertex qv : paperVertices.get(0)) {
-            uniqueVertexIds.add(qv.id());
-        }
         
-
         if (query.DataSet().equals("mag")) {
             paperIdProperty = "paperId";
         } else if (query.DataSet().equals("wos")) {
