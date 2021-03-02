@@ -758,7 +758,7 @@ public class UserQuery2Gremlin {
     }
 
     private static Set<Object> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
-        Set<Object> uniqueIds = new HashSet<Object>();
+        Set<Object> uniqueIds = new HashSet<Object>(record_limit);
 
         for (List<Vertex> verticesList : levels) {
             for (int i = 0; i < verticesList.size(); i++) {
