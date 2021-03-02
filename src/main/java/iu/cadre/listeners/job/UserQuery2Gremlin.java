@@ -282,7 +282,11 @@ public class UserQuery2Gremlin {
 
         // Allocate array for cited/referencing papers
         paperVertices.add(new ArrayList<Vertex>());
-        uniqueVertexIds.addAll(paperVertices.get(0));
+
+        for (Vertex qv : paperVertices.get(0)) {
+            uniqueVertexIds.add(qv.id());
+        }
+        
 
         if (query.DataSet().equals("mag")) {
             paperIdProperty = "paperId";
