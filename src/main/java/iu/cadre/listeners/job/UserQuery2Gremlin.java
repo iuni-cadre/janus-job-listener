@@ -267,7 +267,7 @@ public class UserQuery2Gremlin {
     {
         // paperVertices is modified on return
         List<Map> gtList = new ArrayList<>();
-        Set<Object> uniqueVertexIds = new HashSet<Object>();
+        Set<Object> uniqueVertexIds = null;
         GraphTraversal t = null;
         String paperIdProperty = null;
         int totalAccruedPapers = 0;
@@ -280,10 +280,10 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
-        paperVertices = removeDuplicateVertices(paperVertices);
+        uniqueVertexIds = removeDuplicateVertices(paperVertices);
         // Allocate array for cited/referencing papers
         paperVertices.add(new ArrayList<Vertex>());
-        
+
         if (query.DataSet().equals("mag")) {
             paperIdProperty = "paperId";
         } else if (query.DataSet().equals("wos")) {
@@ -757,7 +757,7 @@ public class UserQuery2Gremlin {
         return papers;
     }
 
-    private static List<List<Vertex>> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
+    private static Set<Object> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
         Set<Object> uniqueIds = new HashSet<Object>();
 
         for (List<Vertex> verticesList : levels) {
@@ -769,6 +769,6 @@ public class UserQuery2Gremlin {
             }
         }
 
-        return levels;
+        return uniqueIds;
     }
 }
