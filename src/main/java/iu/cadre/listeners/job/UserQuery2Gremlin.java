@@ -263,11 +263,12 @@ public class UserQuery2Gremlin {
         return gtList;
     }
 
-    public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, UserQuery query, List<List<Vertex>> paperVertices) throws Exception
+    public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, UserQuery query,
+                                                    Set<Object> uniqueVertexIds,
+                                                    List<List<Vertex>> paperVertices) throws Exception
     {
         // paperVertices is modified on return
         List<Map> gtList = new ArrayList<>();
-        Set<Object> uniqueVertexIds = null;
         GraphTraversal t = null;
         String paperIdProperty = null;
         int totalAccruedPapers = 0;
@@ -280,7 +281,6 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
-        uniqueVertexIds = removeDuplicateVertices(paperVertices);
         // Allocate array for cited/referencing papers
         paperVertices.add(new ArrayList<Vertex>());
 
@@ -374,18 +374,22 @@ public class UserQuery2Gremlin {
     }
 
     public static List<List<Vertex>> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+        List<List<Vertex>> magVertices = null;
+
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
 
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
-            return getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
+            magVertices = getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
-            return getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
+            magVertices = getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
-            return getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
+            magVertices = getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
         } else {
-            return getProjectionForPaperQueryMAG(traversal, query);
+            magVertices = getProjectionForPaperQueryMAG(traversal, query);
         }
+
+        return magVertices;
     }
 
     public static List<List<Vertex>> getWOSProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
@@ -757,9 +761,7 @@ public class UserQuery2Gremlin {
         return papers;
     }
 
-    private static Set<Object> removeDuplicateVertices(List<List<Vertex>> levels) throws Exception {
-        Set<Object> uniqueIds = new HashSet<Object>(record_limit);
-
+    public static void removeDuplicateVertices(Set<Object> uniqueIds, List<List<Vertex>> levels) throws Exception {
         for (List<Vertex> verticesList : levels) {
             for (int i = 0; i < verticesList.size(); i++) {
                 if (!uniqueIds.add(verticesList.get(i).id())) {
@@ -768,7 +770,5 @@ public class UserQuery2Gremlin {
                 }
             }
         }
-
-        return uniqueIds;
     }
 }

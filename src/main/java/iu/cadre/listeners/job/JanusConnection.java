@@ -29,6 +29,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
 
@@ -126,14 +128,17 @@ public class JanusConnection {
         List<Map> t1Elements = new ArrayList<>();
         List<Map> t2Elements = new ArrayList<>();
         List<Map> t3Elements = new ArrayList<>();
-        List<List<Vertex>> magVertices = new ArrayList();
-        List<List<Vertex>> wosVertices = new ArrayList();
+        List<List<Vertex>> magVertices = null;
+        List<List<Vertex>> wosVertices = null;
+        Set<Object> uniqueVertexIds = new HashSet<Object>(Math.max(16, record_limit));
 
         if (query.DataSet().equals("mag")){
             magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
+            // For some reason some of the query papers are duplicated
+            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, magVertices);
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, magVertices);
+                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, magVertices);
                 GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
                 t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, magVertices);
                 GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
@@ -143,9 +148,11 @@ public class JanusConnection {
             }
         }else {
             wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+            // For some reason some of the query papers are duplicated
+            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, wosVertices);
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, wosVertices);
+                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, wosVertices);
                 GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
                 t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, wosVertices);
                 GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
