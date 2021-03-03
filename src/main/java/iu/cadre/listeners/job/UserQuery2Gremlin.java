@@ -295,7 +295,7 @@ public class UserQuery2Gremlin {
 
             totalAccruedPapers = paperVertices.get(0).size() + paperVertices.get(1).size();
 
-            if (totalAccruedPapers > record_limit) {
+            if (totalAccruedPapers >= record_limit) {
                 break;
             }
 
@@ -517,34 +517,6 @@ public class UserQuery2Gremlin {
 
         // Add filtered papers to zeroth level (query papers) of vertices
         papers.add(new ArrayList<Vertex>(filteredPapers));
-        // Allocate list of papers for first level (cited/referencing) of vertices
-        papers.add(new ArrayList<Vertex>());
-
-        if (query.RequiresGraph()) {
-            for (Vertex paper : papers.get(0)) {
-                GraphTraversal gt = traversal.V(paper);
-
-                if (query.RequiresCitationsGraph()) {
-                    gt = gt.outE("References").inV().dedup();
-                    //gt = gt.outE("References").bothV().dedup();
-                } else if (query.RequiresReferencesGraph()) {
-                    gt = gt.inE("References").outV().dedup();
-                    //gt = gt.inE("References").bothV().dedup();
-                }
-
-                while (gt.hasNext()) {
-                    if (papers.get(0).size() + papers.get(1).size() < (record_limit - 100)) {
-                        papers.get(1).addAll(gt.next(batchSize));
-                    } else {
-                        break;
-                    }
-                }
-
-                if (papers.get(0).size() + papers.get(1).size() >= record_limit - 100)
-                    break;
-
-            }
-        }
 
         LOG.info("********* Papers returned **********");
         return papers;
