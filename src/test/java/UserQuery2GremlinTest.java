@@ -562,7 +562,6 @@ public class UserQuery2GremlinTest {
         }
 
         List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
-        actual.addAll(papers.get(1));
 
         assertEquals(5, actual.size());
         List titles = actual.stream().map(r -> r.value("paperTitle")).collect( Collectors.toList() );
@@ -592,7 +591,6 @@ public class UserQuery2GremlinTest {
         }
 
         List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
-        actual.addAll(papers.get(1));
 
         assertEquals(21, actual.size());
         List titles = actual.stream().map(r -> r.value("paperTitle")).sorted().collect( Collectors.toList() );
@@ -660,7 +658,7 @@ public class UserQuery2GremlinTest {
             fail(e.getMessage());
         }
 
-        assertEquals(2, actual.size());
+        assertEquals(1, actual.size());
         assertEquals(1, actual.get(0).size());
         assertEquals("Art imitating high-energy physics", actual.get(0).get(0).value("paperTitle"));
         assertEquals("Marla Schneider", actual.get(0).get(0).edges(Direction.IN, "AuthorOf").next()
