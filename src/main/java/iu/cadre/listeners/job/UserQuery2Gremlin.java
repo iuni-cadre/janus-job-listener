@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +44,11 @@ public class UserQuery2Gremlin {
         GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
 
 
-        List<Edge> edges = query.Edges();
+        List<iu.cadre.listeners.job.Edge> edges = query.Edges();
         LOG.info("egde size " + edges.size());
 
         if (edges.isEmpty()) {
-            Edge e = new Edge();
+            iu.cadre.listeners.job.Edge e = new iu.cadre.listeners.job.Edge();
             e.source = PAPER_FIELD;
             e.target = AUTHOR_FIELD;
             e.relation = AUTHOR_OF_FIELD;
@@ -69,7 +70,7 @@ public class UserQuery2Gremlin {
             LOG.info("has filter count for vertex : " + vertexType + " is : " + hasFilterListPerVertex.size());
             allMatchClauses.addAll(hasFilterListPerVertex);
 
-            for (Edge edge : edges) {
+            for (iu.cadre.listeners.job.Edge edge : edges) {
                 LOG.info(edge.toString());
                 if (edge.source.equals(vertexType)) {
                     if (edge.source.equals(PAPER_FIELD) && edge.target.equals(JOURNAL_FIELD)) {
@@ -106,7 +107,7 @@ public class UserQuery2Gremlin {
             }
         }
 
-        for (Edge edge : edges) {
+        for (iu.cadre.listeners.job.Edge edge : edges) {
             if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
                 LOG.info("paper -> paper");
                 LOG.info(lastLable1 + " " + lastLable2);
@@ -269,9 +270,10 @@ public class UserQuery2Gremlin {
     {
         // paperVertices is modified on return
         List<Map> gtList = new ArrayList<>();
-        GraphTraversal t = null;
-        String paperIdProperty = null;
-        int totalAccruedPapers = 0;
+        String paperIdKey = null;
+        String fromHeader = null;
+        String toHeader = null;
+        int totalGatheredPapers = 0;
         boolean isCitationsGraph = query.RequiresCitationsGraph();
         boolean isReferencesGraph = query.RequiresReferencesGraph();
 
@@ -281,68 +283,93 @@ public class UserQuery2Gremlin {
             throw new Exception("A citation or reference paper projection was not specified for requested network.");
         }
 
+        if (query.DataSet().equals("mag")) {
+            paperIdKey = "paperId";
+        } else if (query.DataSet().equals("wos")) {
+            paperIdKey = "wosId";
+        } else {
+            throw new Exception("Provided data set must be 'mag' or 'wos'.");
+        }
+
+        if (isCitationsGraph) {
+            fromHeader = "From (Citing)";
+            toHeader = "To (Cited)";
+        } else {
+            fromHeader = "From (Referencing)";
+            toHeader = "To (Referenced)";
+        }
+
         // Allocate array for cited/referencing papers
         paperVertices.add(new ArrayList<Vertex>());
-
-        if (query.DataSet().equals("mag")) {
-            paperIdProperty = "paperId";
-        } else if (query.DataSet().equals("wos")) {
-            paperIdProperty = "wosId";
-        }
+        List<Vertex> adjacentPapers = paperVertices.get(1);
 
         for (Vertex qv : paperVertices.get(0)) {
             GraphTraversal gt = traversal.V(qv);
 
-            totalAccruedPapers = paperVertices.get(0).size() + paperVertices.get(1).size();
+            totalGatheredPapers = paperVertices.get(0).size() + paperVertices.get(1).size();
 
-            if (totalAccruedPapers >= record_limit) {
-                break;
-            }
+//            if (query.RequiresCitationsGraph()) {
+//                gt = gt.outE("References").inV().dedup();
+//            } else if (query.RequiresReferencesGraph()) {
+//                gt = gt.inE("References").outV().dedup();
+//            }
 
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").inV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").outV().dedup();
-            }
 
-            while (gt.hasNext()) {
-                Vertex nextVertex = (Vertex) gt.next();
-                if (uniqueVertexIds.add(nextVertex.id())) {
-                    paperVertices.get(1).add(nextVertex);
-                }
-            }
+//            if (query.DataSet().equals("mag")) {
+//                if (isCitationsGraph) {
+//                    t = traversal.V(qv).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+//                } else if (isReferencesGraph) {
+//                    t = traversal.V(qv).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
+//                }
+//            } else {
+//                if (isCitationsGraph) {
+//                    t = traversal.V(qv).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+//                } else if (isReferencesGraph) {
+//                    t = traversal.V(qv).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+//                }
+//            }
 
-            if (query.DataSet().equals("mag")) {
-                if (isCitationsGraph) {
-                    t = traversal.V(qv).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
-                } else if (isReferencesGraph) {
-                    t = traversal.V(qv).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
-                }
+            if (isCitationsGraph) {
+                gt = traversal.V(qv).outE("References").dedup();
             } else {
-                if (isCitationsGraph) {
-                    t = traversal.V(qv).outE("References").project("From (Citing)", "To (Cited)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
-                } else if (isReferencesGraph) {
-                    t = traversal.V(qv).inE("References").project("From (Referencing)", "To (Referenced)").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
-                }
+                gt = traversal.V(qv).inE("References").dedup();
             }
 
-            gtList.addAll(t.toList());
+            Vertex fromVertex = null;
+            Vertex toVertex = null;
+            Vertex adjacentVertex = null;
+            List<Edge> edgeList = gt.toList();
+            boolean isGatheredVertex = false;
 
-            /*
-            if (totalAccruedPapers < record_limit) {
-                gtList.addAll(t.toList());
-            } else {
-                // Only add edges for papers that are in the vertex lists
-                List<Map> maps = t.toList();
-                for (Map nextMap : maps) {
-                    Set<String> keys = nextMap.keySet();
-                    for (String key : keys) {
-                        if ()
+            for (Edge e : edgeList) {
+                LinkedHashMap<String, Object> csvEntry = new LinkedHashMap<>();
+
+                if (isCitationsGraph) {
+                    fromVertex = qv;
+                    adjacentVertex = toVertex = e.inVertex();
+                } else {
+                    adjacentVertex = fromVertex = e.outVertex();
+                    toVertex = qv;
+                }
+
+                if (totalGatheredPapers >= record_limit) {
+                    isGatheredVertex = uniqueVertexIds.contains(adjacentVertex.id());
+                } else {
+                    if (uniqueVertexIds.add(adjacentVertex.id())) {
+                        adjacentPapers.add(adjacentVertex);
                     }
+
+                    isGatheredVertex = true;
+                }
+
+                // If the adjacent vertex is in the papers list, then add the
+                // edge to the csvEntry map.
+                if (isGatheredVertex) {
+                    csvEntry.put(fromHeader, fromVertex.value(paperIdKey));
+                    csvEntry.put(toHeader, toVertex.value(paperIdKey));
+                    gtList.add(csvEntry);
                 }
             }
-            */
-
         }
 
         return gtList;
@@ -577,7 +604,7 @@ public class UserQuery2Gremlin {
         // Allocate list of papers for zeroth level (query papers) of vertices
         papers.add(new ArrayList<Vertex>());
         int batchSize;
-        int totalAccruedPapers = 0;
+        int totalGatheredPapers = 0;
 
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
@@ -597,16 +624,16 @@ public class UserQuery2Gremlin {
             }
 
             while (gt.hasNext()) {
-                totalAccruedPapers = papers.get(0).size();
-                if (totalAccruedPapers < record_limit) {
-                    batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
+                totalGatheredPapers = papers.get(0).size();
+                if (totalGatheredPapers < record_limit) {
+                    batchSize = Math.min(maxBatchSize, record_limit - totalGatheredPapers);
                     papers.get(0).addAll(gt.next(batchSize));
                 } else {
                     break;
                 }
             }
 
-            if (totalAccruedPapers >= record_limit) {
+            if (totalGatheredPapers >= record_limit) {
                 break;
             }
 
@@ -699,7 +726,7 @@ public class UserQuery2Gremlin {
         papers.add(new ArrayList<Vertex>());
         // Allocate list of papers for first level (cited/referencing papers) of vertices
         int batchSize;
-        int totalAccruedPapers = 0;
+        int totalGatheredPapers = 0;
 
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
@@ -716,16 +743,16 @@ public class UserQuery2Gremlin {
             }
 
             while (gt.hasNext()) {
-                totalAccruedPapers = papers.get(0).size();
-                if (totalAccruedPapers < record_limit) {
-                    batchSize = Math.min(maxBatchSize, record_limit - totalAccruedPapers);
+                totalGatheredPapers = papers.get(0).size();
+                if (totalGatheredPapers < record_limit) {
+                    batchSize = Math.min(maxBatchSize, record_limit - totalGatheredPapers);
                     papers.get(0).addAll(gt.next(batchSize));
                 } else {
                     break;
                 }
             }
 
-            if (totalAccruedPapers >= record_limit) {
+            if (totalGatheredPapers >= record_limit) {
                 break;
             }
         }
