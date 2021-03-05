@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.janusgraph.core.*;
 import org.janusgraph.core.schema.JanusGraphManagement;
@@ -428,14 +429,18 @@ public class UserQuery2GremlinTest {
         f.value = "1945";
         nodes.get(0).filters.add(f);
         when(q.Nodes()).thenReturn(nodes);
-        List actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(20, actual.size());
-        List titles = (List) actual.stream().map(r -> ((List)((Map)r).get("paperTitle")).get(0) ).collect( Collectors.toList() );
+        List titles = actual.stream().map(r -> (String)(r.value("paperTitle"))).collect( Collectors.toList() );
         titles.sort(String.CASE_INSENSITIVE_ORDER);
         assertEquals("Anarchy in the heart of the Sun", titles.get(0));
     }
@@ -454,15 +459,20 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(20, actual.size());
-        assertEquals(1945, actual.get(0).get("Paper_year"));
+        assertEquals(1945, (Integer)(actual.get(0).value("year")));
     }
+
 
     @Test
     void getProjectionForQuery_returns_author_if_csv()
@@ -477,17 +487,23 @@ public class UserQuery2GremlinTest {
         csv.get(1).vertexType = "Author";
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(20, actual.size());
-        assertEquals(1945, actual.get(0).get("Paper_year"));
-        String actualAuthor = (String)((List)actual.get(0).get("Author_displayName")).get(0);
+        assertEquals(1945, (Integer)(actual.get(0).value("year")));
+        String actualAuthor = (String)(actual.get(0).edges(Direction.IN, "AuthorOf").next()
+                .outVertex().value("displayName"));
         assertEquals("Elizabeth Marguerite Bowes-Lyon", actualAuthor);
     }
+
 
     @Test
     void getProjectionForQuery_returns_journal_if_csv()
@@ -504,15 +520,20 @@ public class UserQuery2GremlinTest {
         csv.get(1).vertexType = "JournalFixed";
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(1, actual.size());
-        assertEquals(2001, actual.get(0).get("Paper_year"));
-        String actualJournal = (String)((List)actual.get(0).get("JournalFixed_normalizedName")).get(0);
+        assertEquals(2001, (Integer) (actual.get(0).value("year")));
+        String actualJournal = (String)(actual.get(0).edges(Direction.OUT, "PublishedInFixed").next()
+            .inVertex().value("normalizedName"));
         assertEquals("the open acoustics journal", actualJournal);
     }
 
@@ -532,14 +553,18 @@ public class UserQuery2GremlinTest {
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
 
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(5, actual.size());
-        List titles = (List) actual.stream().map(r -> (r.get("Paper_paperTitle"))).collect( Collectors.toList() );
+        List titles = actual.stream().map(r -> r.value("paperTitle")).collect( Collectors.toList() );
         titles.sort(String.CASE_INSENSITIVE_ORDER);
         assertEquals("Art imitating high-energy physics", titles.get(0));
     }
@@ -557,14 +582,18 @@ public class UserQuery2GremlinTest {
         csv.get(1).vertexType = "Author";
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(21, actual.size());
-        List titles = (List) actual.stream().map(r -> ((r.get("Paper_paperTitle")))).sorted().collect( Collectors.toList() );
+        List titles = actual.stream().map(r -> r.value("paperTitle")).sorted().collect( Collectors.toList() );
         assertEquals("A synthetic oscillatory network of transcriptional regulators", titles.get(0));
         assertEquals("full case study report upplandsbondens sweden", titles.get(20));
     }
@@ -585,14 +614,18 @@ public class UserQuery2GremlinTest {
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
 
-        List<Map> actual = null;
+        List<List<Vertex>> papers = null;
+
         try {
-            actual = UserQuery2Gremlin.getMAGProjectionForQuery(g, q).toList();
+            papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
             fail(e.getMessage());
         }
+
+        List<Vertex> actual = new ArrayList<Vertex>(papers.get(0));
+
         assertEquals(1, actual.size());
-        assertEquals("Quantum engineering: Superconducting nanowires", actual.get(0).get("Paper_paperTitle"));
+        assertEquals("Quantum engineering: Superconducting nanowires", actual.get(0).value("paperTitle"));
     }
 
     @Test
@@ -618,17 +651,33 @@ public class UserQuery2GremlinTest {
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
 
-        List<Map> actual = null;
+        List<List<Vertex>> actual = null;
         try {
-            actual = UserQuery2Gremlin.getProjectionForNonPaperQuery(g.V(), q, UserQuery2Gremlin.JOURNAL_FIELD).toList();
+            actual = UserQuery2Gremlin.getProjectionForNonPaperQuery(g, q, UserQuery2Gremlin.JOURNAL_FIELD);
         } catch (Exception e) {
             fail(e.getMessage());
         }
-        assertEquals(1, actual.size());
-        assertEquals("Art imitating high-energy physics", actual.get(0).get("Paper_paperTitle"));
-        assertEquals("Marla Schneider", ((List)actual.get(0).get("Author_displayName")).get(0));
-        assertEquals("the open acoustics journal", ((List)actual.get(0).get("JournalFixed_normalizedName")).get(0));
 
+        assertEquals(1, actual.size());
+        assertEquals(1, actual.get(0).size());
+        assertEquals("Art imitating high-energy physics", actual.get(0).get(0).value("paperTitle"));
+        assertEquals("Marla Schneider", actual.get(0).get(0).edges(Direction.IN, "AuthorOf").next()
+                .outVertex().value("displayName"));
+        assertEquals("the open acoustics journal", actual.get(0).get(0)
+                .edges(Direction.OUT, "PublishedInFixed").next()
+                .inVertex().value("normalizedName"));
+
+    }
+
+    @Test
+    void mytest() {
+        ArrayList<List<Vertex>> l = new ArrayList<>();
+        List<Vertex> l1 = new ArrayList<Vertex>();
+        l.add(l1);
+        ArrayList<Integer> t = new ArrayList<Integer>();
+        t.add(5);
+        assertEquals(1, t.size());
+        assertEquals(5, t.get(0));
     }
 
     static String[] paperTitles = {"Proteins and the naked truth about e-commerce",
