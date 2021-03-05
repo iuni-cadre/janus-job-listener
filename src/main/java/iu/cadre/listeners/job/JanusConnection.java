@@ -131,9 +131,9 @@ public class JanusConnection {
         List<Map> t1Elements = new ArrayList<>();
         List<Map> t2Elements = new ArrayList<>();
         List<Map> t3Elements = new ArrayList<>();
-        List<Vertex> magVertices = new ArrayList();
-        List<Vertex> wosVertices = new ArrayList();
-        List<Vertex> ptoVertices = new ArrayList();
+        List<List<Vertex>> magVertices = null;
+        List<List<Vertex>> wosVertices = null;
+        List<List<Vertex>> usptoVertices = null;
         Set<Object> uniqueVertexIds = new HashSet<Object>(Math.max(16, record_limit));
 
         if (query.DataSet().equals("mag")){
@@ -165,15 +165,16 @@ public class JanusConnection {
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
             }
         }else if(query.DataSet().equals("uspto")){
-            ptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
+            usptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
+            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, usptoVertices);
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, ptoVertices, query);
-                GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
-                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,ptoVertices, query);
-                GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
+                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, usptoVertices);
+                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
+                t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
+                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
             }else {
-                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, ptoVertices, query);
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
             }
         }

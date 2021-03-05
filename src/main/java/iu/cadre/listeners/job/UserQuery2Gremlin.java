@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,135 +24,6 @@ public class UserQuery2Gremlin {
     public static Boolean support_fuzzy_queries = true;
     private static String QUERY_PAPER_HEADER = "isQueryPaper";
     private static int maxBatchSize = 100;
-
-    public static TinkerGraph getSubGraphForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (!query.DataSet().equals("mag"))
-            throw new UnsupportedOperationException("Only MAG database is supported");
-
-        LOG.info("Creating subgraph for the query");
-        GraphTraversal<Vertex, Vertex> filterTraversal = traversal.V();
-
-
-        List<iu.cadre.listeners.job.Edge> edges = query.Edges();
-        LOG.info("egde size " + edges.size());
-
-        if (edges.isEmpty()) {
-            iu.cadre.listeners.job.Edge e = new iu.cadre.listeners.job.Edge();
-            e.source = PAPER_FIELD;
-            e.target = AUTHOR_FIELD;
-            e.relation = AUTHOR_OF_FIELD;
-            edges.add(e);
-        }
-        Map<String, List<Object>> asLabelFilters = getASLabelFilters(query.Nodes());
-        int count = 1;
-        List<Object> allMatchClauses = new ArrayList<>();
-        String lastLable1 = null;
-        String lastLable2 = null;
-        for (String vertexType : asLabelFilters.keySet()) {
-            String label1 = "label" + count;
-            count++;
-            String label2 = "label" + count;
-            lastLable1 = label1;
-            lastLable2 = label2;
-            LOG.info(vertexType);
-            List<Object> hasFilterListPerVertex = asLabelFilters.get(vertexType);
-            LOG.info("has filter count for vertex : " + vertexType + " is : " + hasFilterListPerVertex.size());
-            allMatchClauses.addAll(hasFilterListPerVertex);
-
-            for (iu.cadre.listeners.job.Edge edge : edges) {
-                LOG.info(edge.toString());
-                if (edge.source.equals(vertexType)) {
-                    if (edge.source.equals(PAPER_FIELD) && edge.target.equals(JOURNAL_FIELD)) {
-                        LOG.info("paper -> journal");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals("ConferenceInstance")) {
-                        LOG.info("paper -> confInstance");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    } else if (edge.source.equals(JOURNAL_FIELD) && edge.target.equals(PAPER_FIELD)) {
-                        LOG.info("journal -> paper");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    } else if (edge.source.equals(AUTHOR_FIELD) && edge.target.equals(PAPER_FIELD)) {
-                        LOG.info("author -> paper");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).outE(edge.relation).subgraph("sg").inV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    } else if (edge.source.equals("ConferenceInstance") && edge.target.equals(PAPER_FIELD)) {
-                        LOG.info("confInstance -> paper");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    } else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(AUTHOR_FIELD)) {
-                        LOG.info("paper -> author");
-                        GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-                        allMatchClauses.add(nextAsLabel);
-                    }
-                }
-//                else if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
-//                    LOG.info("paper -> paper");
-//                    GraphTraversal<Object, Vertex> nextAsLabel = __.as(label1).inE(edge.relation).subgraph("sg").outV().as(label2);
-//                    allMatchClauses.add(nextAsLabel);
-//                }
-            }
-        }
-
-        for (iu.cadre.listeners.job.Edge edge : edges) {
-            if (edge.source.equals(PAPER_FIELD) && edge.target.equals(PAPER_FIELD)) {
-                LOG.info("paper -> paper");
-                LOG.info(lastLable1 + " " + lastLable2);
-                GraphTraversal<Object, Vertex> nextAsLabel = __.as(lastLable1).inE(edge.relation).subgraph("sg").outV().as(lastLable2).limit(record_limit);
-                allMatchClauses.add(nextAsLabel);
-            }
-        }
-        GraphTraversal<?, ?>[] temp = new GraphTraversal[allMatchClauses.size()];
-        for (int i = 0; i < allMatchClauses.size(); i++) {
-            temp[i] = (GraphTraversal<?, ?>) allMatchClauses.get(i);
-        }
-
-        LOG.info(allMatchClauses.size() + " total clauses in query");
-
-        // filterTraversal.match(temp).limit(record_limit).cap("sg").next().explain()
-        TinkerGraph tg = (TinkerGraph) filterTraversal.match(temp).limit(record_limit).cap("sg").next();
-
-        return tg;
-    }
-
-    public static Map<String, List<Object>> getASLabelFilters(List<Node> nodes) {
-        Map<String, List<Object>> hasFilterMap = new LinkedHashMap<>();
-        int i = 0;
-        for (Node node : nodes) {
-            String label = "label" + (i + 1);
-            if (node.filters.isEmpty()) {
-                LOG.warn("Node without filters requested, rejecting");
-                continue;
-            }
-            String vertexType = node.type;
-            List<Object> hasFilters = new ArrayList<>();
-            for (Filter filterField : node.filters) {
-                LOG.info(filterField.field + " = " + filterField.value);
-                if (!filterField.field.equals("year") && !filterField.field.equals("doi")) {
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label).has(vertexType, filterField.field, textContains(filterField.value));
-                    hasFilters.add(asLabelWithFilters);
-                } else {
-                    GraphTraversal<Object, Object> asLabelWithFilters = __.as(label)
-                            .has(vertexType, filterField.field, Integer.valueOf(filterField.value));
-                    hasFilters.add(asLabelWithFilters);
-                }
-
-                if (filterField.operator.equals("or")) {
-                    int n = hasFilters.size() - 1;
-                    GraphTraversal gt1 = (GraphTraversal<Object, Object>) hasFilters.get(n);
-                    GraphTraversal gt2 = (GraphTraversal<Object, Object>) hasFilters.get(n - 1);
-                    hasFilters.remove(gt1);
-                    hasFilters.remove(gt2);
-                    hasFilters.add(__.as(label).or(gt1, gt2));
-                }
-            }
-            hasFilterMap.put(vertexType, hasFilters);
-            i++;
-        }
-        return hasFilterMap;
-    }
 
     static String edgeLabel(String source, String target) throws Exception {
         if (source.equals(PAPER_FIELD) && target.equals(AUTHOR_FIELD))
@@ -317,8 +187,10 @@ public class UserQuery2Gremlin {
             paperIdKey = "paperId";
         } else if (query.DataSet().equals("wos")) {
             paperIdKey = "wosId";
-        } else {
-            throw new Exception("Provided data set must be 'mag' or 'wos'.");
+        } else if (query.DataSet().equals("uspto")) {
+            paperIdKey = "patent_id";
+        }else {
+            throw new Exception("Provided data set must be 'mag' or 'wos' or 'uspto'.");
         }
 
         if (isCitationsGraph) {
@@ -359,11 +231,20 @@ public class UserQuery2Gremlin {
 //                }
 //            }
 
-            if (isCitationsGraph) {
-                gt = traversal.V(qv).outE("References").dedup();
-            } else {
-                gt = traversal.V(qv).inE("References").dedup();
+            if (!query.DataSet().equals("uspto")){
+                if (isCitationsGraph) {
+                    gt = traversal.V(qv).outE("References").dedup();
+                } else {
+                    gt = traversal.V(qv).inE("References").dedup();
+                }
+            }else {
+                if (isCitationsGraph) {
+                    gt = traversal.V(qv).outE("Cites").dedup();
+                } else {
+                    gt = traversal.V(qv).inE("Cites").dedup();
+                }
             }
+
 
             Vertex fromVertex = null;
             Vertex toVertex = null;
@@ -489,7 +370,7 @@ public class UserQuery2Gremlin {
         return getProjectionForPaperQueryWOS(traversal, query);
     }
 
-    public static List<Vertex> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    public static List<List<Vertex>> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, INVENTOR_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(LOCATION_FIELD))) {
@@ -501,12 +382,12 @@ public class UserQuery2Gremlin {
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, CPC_FIELD);
         } else {
-            return getProjectionForPaperQueryMAG(traversal, query);
+            return getProjectionForPatentQuery(traversal, query);
         }
     }
 
 
-    public static List<Vertex> getProjectionForNonPatentQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
+    public static List<List<Vertex>> getProjectionForNonPatentQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         // Apply other filters
         List<Node> inventorNodes = query.Nodes().stream().filter(n -> n.type.equals(INVENTOR_FIELD)).collect(Collectors.toList());
         List<Node> cpcNodes = query.Nodes().stream().filter(n -> n.type.equals(CPC_FIELD)).collect(Collectors.toList());
@@ -578,7 +459,7 @@ public class UserQuery2Gremlin {
         List<Vertex> patentFiltersWithLocation = new ArrayList<>();
         List<Vertex> patentFiltersWithAssignee = new ArrayList<>();
         Set<Vertex> patentFilters = new HashSet<>();
-        List<Vertex> patents = new ArrayList<>();
+        List<List<Vertex>> patents = new ArrayList<>();
         int batchSize = 100;
         for (Vertex nonPatentVertex : nonPatentNodesList1){
             GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, INVENTOR_FIELD);
@@ -624,27 +505,7 @@ public class UserQuery2Gremlin {
         patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection1));
 
         LOG.info("size " + patentFilters.size());
-        for (Vertex paper : patentFilters){
-            GraphTraversal gt  = traversal.V(paper);
-
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("Citation").bothV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("Citation").bothV().dedup();
-            }
-
-            while (gt.hasNext()) {
-                if (patents.size() < (record_limit - 100)){
-                    patents.addAll(gt.next(batchSize));
-                }
-                else {
-                    break;
-                }
-            }
-            if (patents.size() >= record_limit - 100)
-                break;
-
-        }
+        patents.add(new ArrayList<Vertex>(patentFilters));
         LOG.info("********* Patents returned **********");
         return patents;
     }
@@ -834,7 +695,7 @@ public class UserQuery2Gremlin {
         return papers;
     }
 
-    private static List<Vertex> getProjectionForPatentQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
+    private static List<List<Vertex>> getProjectionForPatentQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PATENT_FIELD)))
             throw new UnexpectedException("Can't filter non-patent nodes");
         GraphTraversal t = traversal.V();
@@ -863,8 +724,10 @@ public class UserQuery2Gremlin {
             }
         }
         LOG.info("Query: " + t);
-        List<Vertex> filteredPatents = new ArrayList<>();
-        int batchSize = 100;
+        List<List<Vertex>> filteredPatents = new ArrayList<>();
+        filteredPatents.add(new ArrayList<Vertex>());
+        int batchSize;
+        int totalGatheredPatents = 0;
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
@@ -881,22 +744,21 @@ public class UserQuery2Gremlin {
                 }
             }
 
-            if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("Cites").bothV().dedup();
-            } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("Cites").bothV().dedup();
-            }
-
-            if (filteredPatents.size() < (record_limit)){
-                while (gt.hasNext()) {
-                    filteredPatents.addAll(gt.next(batchSize));
+            while (gt.hasNext()) {
+                totalGatheredPatents = filteredPatents.get(0).size();
+                if (totalGatheredPatents < record_limit) {
+                    batchSize = Math.min(maxBatchSize, record_limit - totalGatheredPatents);
+                    filteredPatents.get(0).addAll(gt.next(batchSize));
+                } else {
+                    break;
                 }
             }
-            else
-                break;
-        }
-        LOG.info("size ****** " + filteredPatents.size());
 
+            if (totalGatheredPatents >= record_limit) {
+                break;
+            }
+        }
+        LOG.info("size ****** " + filteredPatents.get(0).size());
         return filteredPatents;
     }
 
