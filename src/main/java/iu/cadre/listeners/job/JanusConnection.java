@@ -5,19 +5,13 @@ import iu.cadre.listeners.job.util.ConfigReader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tinkerpop.gremlin.driver.Cluster;
-import org.apache.tinkerpop.gremlin.driver.ser.GryoMessageSerializerV3d0;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -137,6 +131,7 @@ public class JanusConnection {
         List<Map> t3Elements = new ArrayList<>();
         List<Vertex> magVertices = new ArrayList();
         List<Vertex> wosVertices = new ArrayList();
+        List<Vertex> ptoVertices = new ArrayList();
 
         if (query.DataSet().equals("mag")){
             magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
@@ -163,15 +158,15 @@ public class JanusConnection {
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
             }
         }else if(query.DataSet().equals("uspto")){
-            wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+            ptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
             if (query.RequiresGraph()) {
                 OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                t1Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, ptoVertices, query);
                 GremlinGraphWriter.projection_to_csv(t1Elements, verticesStream);
-                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,wosVertices, query);
+                t2Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal,ptoVertices, query);
                 GremlinGraphWriter.projection_to_csv(t2Elements, edgesStream);
             }else {
-                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, wosVertices, query);
+                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, ptoVertices, query);
                 GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
             }
         }

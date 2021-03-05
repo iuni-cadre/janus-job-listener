@@ -61,4 +61,6 @@ public class Constants {
     public static final String USPC_CATEGORY_OF_FIELD = "USPC_Category_Of";
     public static final String CPC_FIELD = "CPC";
     public static final String CPC_CATEGORY_OF_FIELD = "CPC_Category_Of";
+    public static final String ASSIGNEE_FIELD = "Assignee";
+    public static final String ASSIGN_TO_FIELD = "Assigned_To";
 }

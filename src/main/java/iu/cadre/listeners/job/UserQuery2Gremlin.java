@@ -210,6 +210,12 @@ public class UserQuery2Gremlin {
         if (source.equals(USPC_FIELD) && target.equals(PATENT_FIELD))
             return USPC_CATEGORY_OF_FIELD;
 
+        if (source.equals(PATENT_FIELD) && target.equals(ASSIGNEE_FIELD))
+            return ASSIGN_TO_FIELD;
+
+        if (source.equals(ASSIGNEE_FIELD) && target.equals(PATENT_FIELD))
+            return ASSIGN_TO_FIELD;
+
         throw new Exception("No edge between " + source + " and " + target);
     }
 
@@ -227,15 +233,24 @@ public class UserQuery2Gremlin {
             for (Vertex v : verticesList) {
                 t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
                 for (CSVOutput c : query.CSV()) {
-                    if (c.vertexType.equals(PAPER_FIELD))
-                        t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                    else if (c.vertexType.equals(AFFILIATION_FIELD)) {
+                    if (!query.DataSet().equals("uspto")){
+                        if (c.vertexType.equals(PAPER_FIELD))
+                            t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+                        else if (c.vertexType.equals(AFFILIATION_FIELD)) {
 //                        g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
-                        t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
-                    }else{
-                        t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                            t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                        }else{
+                            t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                        }
+                    }else {
+                        if (c.vertexType.equals(PATENT_FIELD))
+                            t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+                        else if (c.vertexType.equals(LOCATION_FIELD)) {
+                            t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                        }else{
+                            t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
+                        }
                     }
-
                 }
                 gtList.addAll(t.toList());
             }
@@ -277,11 +292,17 @@ public class UserQuery2Gremlin {
                 } else if (isReferencesGraph) {
                     t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("paperId")).by(__.inV().values("paperId"));
                 }
-            }else {
+            }else if(query.DataSet().equals("wos")) {
                 if (isCitationsGraph) {
                     t = traversal.V(v).outE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
                 } else if (isReferencesGraph) {
                     t = traversal.V(v).inE("References").project("From", "To").by(__.outV().values("wosId")).by(__.inV().values("wosId"));
+                }
+            }else {
+                if (isCitationsGraph) {
+                    t = traversal.V(v).outE("Cites").project("From", "To").by(__.outV().values("patent_id")).by(__.inV().values("patent_id"));
+                } else if (isReferencesGraph) {
+                    t = traversal.V(v).inE("Cites").project("From", "To").by(__.outV().values("patent_id")).by(__.inV().values("patent_id"));
                 }
             }
             gtList.addAll(t.toList());
@@ -322,18 +343,27 @@ public class UserQuery2Gremlin {
             t = t.both(edgeLabel(edgeType, PATENT_FIELD));
         }
         else {
-            t = t.both(edgeLabel(edgeType, PATENT_FIELD));
-            for (Node paperNode : patentNodes) {
-                for (Filter f : paperNode.filters) {
-                    if (f.field.equals("type")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    } else if (f.field.equals("date")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    } else {
-                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+            if (edgeType.equals(LOCATION_FIELD)){
+                for (Node patentNode : patentNodes) {
+                    for (Filter f : patentNode.filters) {
+//                        t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().has(LOCATION_FIELD, ));
+                    }
+                }
+            }else {
+                t = t.both(edgeLabel(edgeType, PATENT_FIELD));
+                for (Node patentNode : patentNodes) {
+                    for (Filter f : patentNode.filters) {
+                        if (f.field.equals("number")) {
+                            t = t.has(patentNode.type, f.field, f.value);
+                        } else if (f.field.equals("year")) {
+                            t = t.has(patentNode.type, f.field, f.value);
+                        } else {
+                            t = t.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                        }
                     }
                 }
             }
+
         }
 
         return t;
@@ -365,6 +395,8 @@ public class UserQuery2Gremlin {
             return getProjectionForNonPatentQuery(traversal, query, INVENTOR_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(LOCATION_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, LOCATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, ASSIGNEE_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, USPC_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD))) {
@@ -381,15 +413,18 @@ public class UserQuery2Gremlin {
         List<Node> cpcNodes = query.Nodes().stream().filter(n -> n.type.equals(CPC_FIELD)).collect(Collectors.toList());
         List<Node> uspcNodes = query.Nodes().stream().filter(n -> n.type.equals(USPC_FIELD)).collect(Collectors.toList());
         List<Node> locationNodes = query.Nodes().stream().filter(n -> n.type.equals(LOCATION_FIELD)).collect(Collectors.toList());
+        List<Node> assigneeNodes = query.Nodes().stream().filter(n -> n.type.equals(ASSIGNEE_FIELD)).collect(Collectors.toList());
 
         GraphTraversal t1 = traversal.V();
         GraphTraversal t2 = traversal.V();
         GraphTraversal t3 = traversal.V();
         GraphTraversal t4 = traversal.V();
+        GraphTraversal t5 = traversal.V();
         List<Vertex> nonPatentNodesList1 = new ArrayList<>();
         List<Vertex> nonPatentNodesList2 = new ArrayList<>();
         List<Vertex> nonPatentNodesList3 = new ArrayList<>();
         List<Vertex> nonPatentNodesList4 = new ArrayList<>();
+        List<Vertex> nonPatentNodesList5 = new ArrayList<>();
         if (!inventorNodes.isEmpty()){
             for (Node n : inventorNodes) {
                 for (Filter f : n.filters) {
@@ -415,6 +450,24 @@ public class UserQuery2Gremlin {
             }
         }
 
+        if (!locationNodes.isEmpty()){
+            for (Node n : locationNodes) {
+                for (Filter f : n.filters) {
+                    t4 = t4.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList4 = t4.limit(record_limit*2).toList();
+                }
+            }
+        }
+
+        if (!assigneeNodes.isEmpty()){
+            for (Node n : assigneeNodes) {
+                for (Filter f : n.filters) {
+                    t5 = t5.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList5 = t5.limit(record_limit*2).toList();
+                }
+            }
+        }
+
         LOG.info("********* Non paper nodes returned ***********");
         LOG.info("********* size inventor nodes ***********" + nonPatentNodesList1.size());
         LOG.info("********* size cpc nodes *********** " + nonPatentNodesList2.size());
@@ -423,29 +476,46 @@ public class UserQuery2Gremlin {
         List<Vertex> patentFiltersWithInventor = new ArrayList<>();
         List<Vertex> patentFiltersWithCPC = new ArrayList<>();
         List<Vertex> patentFiltersWithUSPC = new ArrayList<>();
+        List<Vertex> patentFiltersWithLocation = new ArrayList<>();
+        List<Vertex> patentFiltersWithAssignee = new ArrayList<>();
         Set<Vertex> patentFilters = new HashSet<>();
         List<Vertex> patents = new ArrayList<>();
         int batchSize = 100;
-        for (Vertex nonPaperVertex : nonPatentNodesList1){
-            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, INVENTOR_FIELD);
+        for (Vertex nonPatentVertex : nonPatentNodesList1){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, INVENTOR_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithInventor.addAll(gt.next(batchSize));
             }
         }
 
-        for (Vertex nonPaperVertex : nonPatentNodesList2){
-            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, CPC_FIELD);
+        for (Vertex nonPatentVertex : nonPatentNodesList2){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, CPC_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithCPC.addAll(gt.next(batchSize));
             }
         }
 
-        for (Vertex nonPaperVertex : nonPatentNodesList3){
-            GraphTraversal gt  = getPatentFilter(traversal.V(nonPaperVertex), query, USPC_FIELD);
+        for (Vertex nonPatentVertex : nonPatentNodesList3){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, USPC_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithUSPC.addAll(gt.next(batchSize));
             }
         }
+
+        for (Vertex nonPatentVertex : nonPatentNodesList4){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, LOCATION_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithUSPC.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPatentVertex : nonPatentNodesList5){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, ASSIGNEE_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithAssignee.addAll(gt.next(batchSize));
+            }
+        }
+
 
         LOG.info("Size authorPaperFilters " + patentFiltersWithInventor.size());
         LOG.info("Size journalPaperFilters " + patentFiltersWithCPC.size());
@@ -678,16 +748,16 @@ public class UserQuery2Gremlin {
         GraphTraversal t = traversal.V();
         for (Node patentNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))){
                 for (Filter f : patentNode.filters) {
-                    if (f.field.equals("doi")) {
+                    if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
                     }
                 }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))){
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
-                    if (f.field.equals("paperTitle")) {
+                    if (f.field.equals("title")) {
                         t = t.has(patentNode.type, f.field, textContains(f.value));
                     }
                 }
@@ -695,47 +765,47 @@ public class UserQuery2Gremlin {
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
-                        t = t.has(patentNode.type, f.field, f.value);
+                        t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     }
                 }
             }
         }
         LOG.info("Query: " + t);
-        List<Vertex> filteredPapers = new ArrayList<>();
+        List<Vertex> filteredPatents = new ArrayList<>();
         int batchSize = 100;
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
-            List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-            for (Node paperNode : paperNodes) {
-                for (Filter f : paperNode.filters) {
+            List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
+            for (Node patentNode : patentNodes) {
+                for (Filter f : patentNode.filters) {
                     if (f.field.equals("year")) {
-                        gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    } else if (f.field.equals("doi")) {
-                        gt = gt.has(paperNode.type, f.field, f.value);
+                        gt = gt.has(patentNode.type, f.field, Integer.parseInt(f.value));
+                    } else if (f.field.equals("number")) {
+                        gt = gt.has(patentNode.type, f.field, f.value);
                     } else {
-                        gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
+                        gt = gt.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
             }
 
             if (query.RequiresCitationsGraph()) {
-                gt = gt.outE("References").bothV().dedup();
+                gt = gt.outE("Cites").bothV().dedup();
             } else if (query.RequiresReferencesGraph()) {
-                gt = gt.inE("References").bothV().dedup();
+                gt = gt.inE("Cites").bothV().dedup();
             }
 
-            if (filteredPapers.size() < (record_limit)){
+            if (filteredPatents.size() < (record_limit)){
                 while (gt.hasNext()) {
-                    filteredPapers.addAll(gt.next(batchSize));
+                    filteredPatents.addAll(gt.next(batchSize));
                 }
             }
             else
                 break;
         }
-        LOG.info("size ****** " + filteredPapers.size());
+        LOG.info("size ****** " + filteredPatents.size());
 
-        return filteredPapers;
+        return filteredPatents;
     }
 
     private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
