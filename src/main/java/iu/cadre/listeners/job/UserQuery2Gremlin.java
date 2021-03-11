@@ -239,9 +239,9 @@ public class UserQuery2Gremlin {
                 }
             }else {
                 if (isCitationsGraph) {
-                    gt = traversal.V(qv).outE("Cites").dedup();
+                    gt = traversal.V(qv).outE("Citation").dedup();
                 } else {
-                    gt = traversal.V(qv).inE("Cites").dedup();
+                    gt = traversal.V(qv).inE("Citation").dedup();
                 }
             }
 
