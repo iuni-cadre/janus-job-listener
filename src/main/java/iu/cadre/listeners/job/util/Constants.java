@@ -35,6 +35,7 @@ public class Constants {
     public static final String EFS_ROOT_QUERY_RESULTS_DIR = "efs.root.query.results.listener";
     public static final String EFS_SUBPATH_QUERY_RESULTS_DIR = "efs.subpath.query.results.listener";
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";
+    public static final String USPTO_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz";
 
     public static final Map<String, String> vertexLableMap = new HashMap<String, String>();
 
