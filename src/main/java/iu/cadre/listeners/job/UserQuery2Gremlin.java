@@ -4,14 +4,18 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.rmi.UnexpectedException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 import static iu.cadre.listeners.job.util.Constants.*;
 import static org.janusgraph.core.attribute.Text.textContains;
@@ -704,24 +708,51 @@ public class UserQuery2Gremlin {
         GraphTraversal t = traversal.V();
         for (Node patentNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))){
+            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("type"))){
+                for (Filter f : patentNode.filters) {
+                    if (f.field.equals("type")) {
+                        t = t.has(patentNode.type, f.field, f.value);
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))) {
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("date"))) {
+                for (Filter f : patentNode.filters) {
+                    if (f.field.equals("date")) {
+                        DateFormat dateFormatter = new SimpleDateFormat(USPTO_DATE_FORMAT);
+                        Date startDate = dateFormatter.parse(f.lowerBound);
+                        Date endDate = dateFormatter.parse(f.upperBound);
+
+                        if (startDate == null || endDate == null) {
+                            throw new Exception("Parse of USPTO date filters failed");
+                        }
+
+                        t = t.has(patentNode.type, f.field, P.within(startDate, endDate));
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))) {
+                for (Filter f : patentNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("year")) {
+                        t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
+                    }
+                }
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("abstract"))) {
+                for (Filter f : patentNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("abstract")) {
+                        t = t.has(patentNode.type, f.field, textContains(f.value));
                     }
                 }
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))){
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("title")) {
-                        t = t.has(patentNode.type, f.field, textContains(f.value));
-                    }
-                }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
-                for (Filter f : patentNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("year")) {
-                        t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
+                        t = t.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
             }
@@ -737,10 +768,24 @@ public class UserQuery2Gremlin {
             List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
             for (Node patentNode : patentNodes) {
                 for (Filter f : patentNode.filters) {
-                    if (f.field.equals("year")) {
-                        gt = gt.has(patentNode.type, f.field, Integer.parseInt(f.value));
-                    } else if (f.field.equals("number")) {
+                    if (f.field.equals("type")) {
                         gt = gt.has(patentNode.type, f.field, f.value);
+                    }else if (f.field.equals("number")) {
+                        gt = gt.has(patentNode.type, f.field, f.value);
+                    }else if (f.field.equals("date")) {
+                        DateFormat dateFormatter = new SimpleDateFormat(USPTO_DATE_FORMAT);
+                        Date startDate = dateFormatter.parse(f.lowerBound);
+                        Date endDate = dateFormatter.parse(f.upperBound);
+
+                        if (startDate == null || endDate == null) {
+                            throw new Exception("Parse of USPTO date filters failed");
+                        }
+
+                        gt = gt.has(patentNode.type, f.field, P.within(startDate, endDate));
+                    }else if (f.field.equals("year")) {
+                        gt = gt.has(patentNode.type, f.field, Integer.valueOf(f.value));
+                    } else if (f.field.equals("abstract")) {
+                        gt = gt.has(patentNode.type, f.field, textContains(f.value));
                     } else {
                         gt = gt.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }

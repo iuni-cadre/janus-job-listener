@@ -117,7 +117,6 @@ public class JanusConnection {
         GraphTraversalSource janusTraversal = null;
         if (query.DataSet().equals("mag")){
             janusTraversal = getJanusMAGTraversal();
-
         }else if(query.DataSet().equals("wos")){
             janusTraversal = getJanusWOSTraversal();
         }else {
