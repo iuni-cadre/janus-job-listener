@@ -110,13 +110,12 @@ public class UserQuery {
                             f.operator = filterField.get("operator").getAsString();
                             f.lowerBound = filterField.get("lowerBound").getAsString();
                             f.upperBound = filterField.get("upperBound").getAsString();
-                            n.filters.add(f);
                         } else {
                             f.value = filterField.get("value").getAsString();
                             f.operator = filterField.get("operator").getAsString();
                             f.field = filterField.get("field").getAsString();
-                            n.filters.add(f);
                         }
+                        n.filters.add(f);
                     }else {
                         f.value = filterField.get("value").getAsString();
                         f.operator = filterField.get("operator").getAsString();

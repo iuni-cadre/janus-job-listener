@@ -748,7 +748,7 @@ public class UserQuery2Gremlin {
                         t = t.has(patentNode.type, f.field, textContains(f.value));
                     }
                 }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))){
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))) {
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("title")) {
