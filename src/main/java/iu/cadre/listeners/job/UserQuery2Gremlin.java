@@ -731,7 +731,7 @@ public class UserQuery2Gremlin {
                             throw new Exception("Parse of USPTO date filters failed");
                         }
 
-                        t = t.has(patentNode.type, f.field, P.within(startDate, endDate));
+                        t = t.has(patentNode.type, f.field, P.between(startDate, endDate));
                     }
                 }
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))) {
@@ -781,7 +781,7 @@ public class UserQuery2Gremlin {
                             throw new Exception("Parse of USPTO date filters failed");
                         }
 
-                        gt = gt.has(patentNode.type, f.field, P.within(startDate, endDate));
+                        gt = gt.has(patentNode.type, f.field, P.between(startDate, endDate));
                     }else if (f.field.equals("year")) {
                         gt = gt.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     } else if (f.field.equals("abstract")) {
