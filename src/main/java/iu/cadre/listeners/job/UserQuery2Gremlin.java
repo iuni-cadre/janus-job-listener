@@ -708,13 +708,7 @@ public class UserQuery2Gremlin {
         GraphTraversal t = traversal.V();
         for (Node patentNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("type"))){
-                for (Filter f : patentNode.filters) {
-                    if (f.field.equals("type")) {
-                        t = t.has(patentNode.type, f.field, f.value);
-                    }
-                }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))) {
+            if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))) {
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
@@ -741,18 +735,24 @@ public class UserQuery2Gremlin {
                         t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     }
                 }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("abstract"))) {
+            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("type"))){
+                for (Filter f : patentNode.filters) {
+                    if (f.field.equals("type")) {
+                        t = t.has(patentNode.type, f.field, f.value);
+                    }
+                }
+            } else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))) {
+                for (Filter f : patentNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("title")) {
+                        t = t.has(patentNode.type, f.field, textContains(f.value));
+                    }
+                }
+            } else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("abstract"))) {
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("abstract")) {
                         t = t.has(patentNode.type, f.field, textContains(f.value));
-                    }
-                }
-            }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))) {
-                for (Filter f : patentNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("title")) {
-                        t = t.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
             }
@@ -785,7 +785,7 @@ public class UserQuery2Gremlin {
                     }else if (f.field.equals("year")) {
                         gt = gt.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     } else if (f.field.equals("abstract")) {
-                        gt = gt.has(patentNode.type, f.field, textContains(f.value));
+                        gt = gt.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     } else {
                         gt = gt.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
