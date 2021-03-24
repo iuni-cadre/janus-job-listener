@@ -324,7 +324,7 @@ public class UserQuery2Gremlin {
         }
         else {
             if (vertexType.equals(LOCATION_FIELD)) {
-                t = t.by(__.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD));
+                t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
                 //t = t.by(__.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
             } else {
                 t = t.both(edgeLabel(vertexType, PATENT_FIELD));
