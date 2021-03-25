@@ -57,11 +57,14 @@ public class Constants {
     public static final String INVENTOR_FIELD = "Inventor";
     public static final String INVENTOR_OF_FIELD = "Inventor_Of";
     public static final String LOCATION_FIELD = "Location";
-    public static final String INVENTOR_LOCATED_IN_FIELD = "Inventor_Located_In";
+    public static final String INVENTOR_LOCATION_FIELD = "InventorLocation";
+    public static final String ASSIGNEE_LOCATION_FIELD = "AssigneeLocation";
+    public static final String INVENTOR_LOCATED_IN_FIELD = "Inventor_Located_In"; // Alias for special case of Location
+    public static final String ASSIGNEE_LOCATED_IN_FIELD = "Assignee_Located_In"; // Alias for special case of Location
     public static final String USPC_FIELD = "USPC";
     public static final String USPC_CATEGORY_OF_FIELD = "USPC_Category_Of";
     public static final String CPC_FIELD = "CPC";
     public static final String CPC_CATEGORY_OF_FIELD = "CPC_Category_Of";
     public static final String ASSIGNEE_FIELD = "Assignee";
-    public static final String ASSIGN_TO_FIELD = "Assigned_To";
+    public static final String ASSIGNED_TO_FIELD = "Assigned_To";
 }

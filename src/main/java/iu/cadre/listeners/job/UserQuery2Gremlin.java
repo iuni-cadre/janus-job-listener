@@ -88,10 +88,10 @@ public class UserQuery2Gremlin {
             return USPC_CATEGORY_OF_FIELD;
 
         if (source.equals(PATENT_FIELD) && target.equals(ASSIGNEE_FIELD))
-            return ASSIGN_TO_FIELD;
+            return ASSIGNED_TO_FIELD;
 
         if (source.equals(ASSIGNEE_FIELD) && target.equals(PATENT_FIELD))
-            return ASSIGN_TO_FIELD;
+            return ASSIGNED_TO_FIELD;
 
         throw new Exception("No edge between " + source + " and " + target);
     }
@@ -116,20 +116,22 @@ public class UserQuery2Gremlin {
                     t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
                     for (CSVOutput c : query.CSV()) {
                         if (!query.DataSet().equals("uspto")) {
-                            if (c.vertexType.equals(PAPER_FIELD))
+                            if (c.vertexType.equals(PAPER_FIELD)) {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                            else if (c.vertexType.equals(AFFILIATION_FIELD)) {
+                            } else if (c.vertexType.equals(AFFILIATION_FIELD)) {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
                                 t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
                             } else {
                                 t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                             }
                         }else {
-                            if (c.vertexType.equals(PATENT_FIELD))
+                            if (c.vertexType.equals(PATENT_FIELD)) {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                            else if (c.vertexType.equals(LOCATION_FIELD)) {
+                            } else if (c.vertexType.equals(INVENTOR_LOCATION_FIELD)) {
                                 t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
-                            }else{
+                            } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
+                                t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                            } else {
                                 t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
                             }
                         }
@@ -323,9 +325,12 @@ public class UserQuery2Gremlin {
             t = t.both(edgeLabel(vertexType, PATENT_FIELD));
         }
         else {
-            if (vertexType.equals(LOCATION_FIELD)) {
+            if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
                 t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-                //t = t.by(__.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
+                //t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
+            } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
+                t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+                //t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV());
             } else {
                 t = t.both(edgeLabel(vertexType, PATENT_FIELD));
             }
@@ -389,8 +394,10 @@ public class UserQuery2Gremlin {
     public static List<List<Vertex>> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, INVENTOR_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(LOCATION_FIELD))) {
-            return getProjectionForNonPatentQuery(traversal, query, LOCATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_LOCATION_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, INVENTOR_LOCATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_LOCATION_FIELD))) {
+            return getProjectionForNonPatentQuery(traversal, query, ASSIGNEE_LOCATION_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_FIELD))) {
             return getProjectionForNonPatentQuery(traversal, query, ASSIGNEE_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD))) {
@@ -406,7 +413,8 @@ public class UserQuery2Gremlin {
     public static List<List<Vertex>> getProjectionForNonPatentQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         // Apply other filters
         List<Node> inventorNodes = query.Nodes().stream().filter(n -> n.type.equals(INVENTOR_FIELD)).collect(Collectors.toList());
-        List<Node> locationNodes = query.Nodes().stream().filter(n -> n.type.equals(LOCATION_FIELD)).collect(Collectors.toList());
+        List<Node> inventorLocationNodes = query.Nodes().stream().filter(n -> n.type.equals(INVENTOR_LOCATION_FIELD)).collect(Collectors.toList());
+        List<Node> assigneeLocationNodes = query.Nodes().stream().filter(n -> n.type.equals(ASSIGNEE_LOCATION_FIELD)).collect(Collectors.toList());
         List<Node> assigneeNodes = query.Nodes().stream().filter(n -> n.type.equals(ASSIGNEE_FIELD)).collect(Collectors.toList());
         List<Node> cpcNodes = query.Nodes().stream().filter(n -> n.type.equals(CPC_FIELD)).collect(Collectors.toList());
         List<Node> uspcNodes = query.Nodes().stream().filter(n -> n.type.equals(USPC_FIELD)).collect(Collectors.toList());
@@ -416,11 +424,13 @@ public class UserQuery2Gremlin {
         GraphTraversal t3 = traversal.V();
         GraphTraversal t4 = traversal.V();
         GraphTraversal t5 = traversal.V();
+        GraphTraversal t6 = traversal.V();
         List<Vertex> nonPatentNodesList1 = new ArrayList<>();
         List<Vertex> nonPatentNodesList2 = new ArrayList<>();
         List<Vertex> nonPatentNodesList3 = new ArrayList<>();
         List<Vertex> nonPatentNodesList4 = new ArrayList<>();
         List<Vertex> nonPatentNodesList5 = new ArrayList<>();
+        List<Vertex> nonPatentNodesList6 = new ArrayList<>();
 
         if (!inventorNodes.isEmpty()){
             for (Node n : inventorNodes) {
@@ -431,8 +441,8 @@ public class UserQuery2Gremlin {
             }
         }
 
-        if (!locationNodes.isEmpty()){
-            for (Node n : locationNodes) {
+        if (!inventorLocationNodes.isEmpty()){
+            for (Node n : inventorLocationNodes) {
                 for (Filter f : n.filters) {
                     t2 = t2.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList2 = t2.limit(record_limit*2).toList();
@@ -440,8 +450,8 @@ public class UserQuery2Gremlin {
             }
         }
 
-        if (!assigneeNodes.isEmpty()){
-            for (Node n : assigneeNodes) {
+        if (!assigneeLocationNodes.isEmpty()){
+            for (Node n : assigneeLocationNodes) {
                 for (Filter f : n.filters) {
                     t3 = t3.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList3 = t3.limit(record_limit*2).toList();
@@ -449,8 +459,8 @@ public class UserQuery2Gremlin {
             }
         }
 
-        if (!cpcNodes.isEmpty()){
-            for (Node n : cpcNodes) {
+        if (!assigneeNodes.isEmpty()){
+            for (Node n : assigneeNodes) {
                 for (Filter f : n.filters) {
                     t4 = t4.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList4 = t4.limit(record_limit*2).toList();
@@ -458,24 +468,35 @@ public class UserQuery2Gremlin {
             }
         }
 
+        if (!cpcNodes.isEmpty()){
+            for (Node n : cpcNodes) {
+                for (Filter f : n.filters) {
+                    t5 = t5.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList4 = t5.limit(record_limit*2).toList();
+                }
+            }
+        }
+
         if (!uspcNodes.isEmpty()){
             for (Node n : uspcNodes) {
                 for (Filter f : n.filters) {
-                    t5 = t5.has(n.type, f.field, textContains(f.value));
-                    nonPatentNodesList5 = t5.limit(record_limit*2).toList();
+                    t6 = t6.has(n.type, f.field, textContains(f.value));
+                    nonPatentNodesList5 = t6.limit(record_limit*2).toList();
                 }
             }
         }
 
         LOG.info("********* Non paper nodes returned ***********");
         LOG.info("********* size inventor nodes ***********" + nonPatentNodesList1.size());
-        LOG.info("********* size location nodes ***********" + nonPatentNodesList2.size());
-        LOG.info("********* size assignee nodes ***********" + nonPatentNodesList3.size());
-        LOG.info("********* size cpc nodes ***********" + nonPatentNodesList4.size());
-        LOG.info("********* size uspc nodes ***********" + nonPatentNodesList5.size());
+        LOG.info("********* size inventor location nodes ***********" + nonPatentNodesList2.size());
+        LOG.info("********* size assignee location nodes ***********" + nonPatentNodesList3.size());
+        LOG.info("********* size assignee nodes ***********" + nonPatentNodesList4.size());
+        LOG.info("********* size cpc nodes ***********" + nonPatentNodesList5.size());
+        LOG.info("********* size uspc nodes ***********" + nonPatentNodesList6.size());
 
         List<Vertex> patentFiltersWithInventor = new ArrayList<>();
-        List<Vertex> patentFiltersWithLocation = new ArrayList<>();
+        List<Vertex> patentFiltersWithInventorLocation = new ArrayList<>();
+        List<Vertex> patentFiltersWithAssigneeLocation = new ArrayList<>();
         List<Vertex> patentFiltersWithAssignee = new ArrayList<>();
         List<Vertex> patentFiltersWithCPC = new ArrayList<>();
         List<Vertex> patentFiltersWithUSPC = new ArrayList<>();
@@ -490,27 +511,34 @@ public class UserQuery2Gremlin {
         }
 
         for (Vertex nonPatentVertex : nonPatentNodesList2){
-            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, LOCATION_FIELD);
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, INVENTOR_LOCATION_FIELD);
             while (gt.hasNext()) {
-                patentFiltersWithLocation.addAll(gt.next(batchSize));
+                patentFiltersWithInventorLocation.addAll(gt.next(batchSize));
             }
         }
 
         for (Vertex nonPatentVertex : nonPatentNodesList3){
+            GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, ASSIGNEE_LOCATION_FIELD);
+            while (gt.hasNext()) {
+                patentFiltersWithAssigneeLocation.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPatentVertex : nonPatentNodesList4){
             GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, ASSIGNEE_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithAssignee.addAll(gt.next(batchSize));
             }
         }
 
-        for (Vertex nonPatentVertex : nonPatentNodesList4){
+        for (Vertex nonPatentVertex : nonPatentNodesList5){
             GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, CPC_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithCPC.addAll(gt.next(batchSize));
             }
         }
 
-        for (Vertex nonPatentVertex : nonPatentNodesList5){
+        for (Vertex nonPatentVertex : nonPatentNodesList6){
             GraphTraversal gt  = getPatentFilter(traversal.V(nonPatentVertex), query, USPC_FIELD);
             while (gt.hasNext()) {
                 patentFiltersWithUSPC.addAll(gt.next(batchSize));
@@ -519,15 +547,17 @@ public class UserQuery2Gremlin {
 
 
         LOG.info("Size inventorPatentFilters " + patentFiltersWithInventor.size());
-        LOG.info("Size locationPatentFilters " + patentFiltersWithLocation.size());
+        LOG.info("Size inventorLocationPatentFilters " + patentFiltersWithInventorLocation.size());
+        LOG.info("Size assigneeLocationPatentFilters " + patentFiltersWithAssigneeLocation.size());
         LOG.info("Size assigneePatentFilters " + patentFiltersWithAssignee.size());
         LOG.info("Size cpcPatentFilters " + patentFiltersWithCPC.size());
         LOG.info("Size uspcPatentFilters " + patentFiltersWithUSPC.size());
 
-        Set<Vertex> intersection1 = intersection(patentFiltersWithInventor, patentFiltersWithLocation);
-        Set<Vertex> intersection2 = intersection(patentFiltersWithAssignee, new ArrayList<>(intersection1));
-        Set<Vertex> intersection3 = intersection(patentFiltersWithCPC, new ArrayList<>(intersection2));
-        Set<Vertex> patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection3));
+        Set<Vertex> intersection1 = intersection(patentFiltersWithInventor, patentFiltersWithInventorLocation);
+        Set<Vertex> intersection2 = intersection(patentFiltersWithAssigneeLocation, new ArrayList<>(intersection1));
+        Set<Vertex> intersection3 = intersection(patentFiltersWithAssignee, new ArrayList<>(intersection2));
+        Set<Vertex> intersection4 = intersection(patentFiltersWithCPC, new ArrayList<>(intersection3));
+        Set<Vertex> patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection4));
 
         LOG.info("size " + patentFilters.size());
         patents.add(new ArrayList<Vertex>(patentFilters));
