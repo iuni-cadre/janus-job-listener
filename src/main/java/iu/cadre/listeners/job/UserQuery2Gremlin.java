@@ -472,7 +472,7 @@ public class UserQuery2Gremlin {
             for (Node n : cpcNodes) {
                 for (Filter f : n.filters) {
                     t5 = t5.has(n.type, f.field, textContains(f.value));
-                    nonPatentNodesList4 = t5.limit(record_limit*2).toList();
+                    nonPatentNodesList5 = t5.limit(record_limit*2).toList();
                 }
             }
         }
@@ -481,7 +481,7 @@ public class UserQuery2Gremlin {
             for (Node n : uspcNodes) {
                 for (Filter f : n.filters) {
                     t6 = t6.has(n.type, f.field, textContains(f.value));
-                    nonPatentNodesList5 = t6.limit(record_limit*2).toList();
+                    nonPatentNodesList6 = t6.limit(record_limit*2).toList();
                 }
             }
         }
