@@ -444,7 +444,7 @@ public class UserQuery2Gremlin {
         if (!inventorLocationNodes.isEmpty()){
             for (Node n : inventorLocationNodes) {
                 for (Filter f : n.filters) {
-                    t2 = t2.has(n.type, f.field, textContains(f.value));
+                    t2 = t2.has(LOCATION_FIELD, f.field, textContains(f.value));
                     nonPatentNodesList2 = t2.limit(record_limit*2).toList();
                 }
             }
@@ -453,7 +453,7 @@ public class UserQuery2Gremlin {
         if (!assigneeLocationNodes.isEmpty()){
             for (Node n : assigneeLocationNodes) {
                 for (Filter f : n.filters) {
-                    t3 = t3.has(n.type, f.field, textContains(f.value));
+                    t3 = t3.has(LOCATION_FIELD, f.field, textContains(f.value));
                     nonPatentNodesList3 = t3.limit(record_limit*2).toList();
                 }
             }
