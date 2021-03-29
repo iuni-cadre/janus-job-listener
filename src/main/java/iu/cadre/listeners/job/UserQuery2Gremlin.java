@@ -340,15 +340,7 @@ public class UserQuery2Gremlin {
                     if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
                     } else if (f.field.equals("date")) {
-                        DateFormat dateFormatter = new SimpleDateFormat(USPTO_DATE_FORMAT);
-                        Date startDate = dateFormatter.parse(f.lowerBound);
-                        Date endDate = dateFormatter.parse(f.upperBound);
-
-                        if (startDate == null || endDate == null) {
-                            throw new Exception("Parse of USPTO date filters failed");
-                        }
-
-                        t = t.has(patentNode.type, f.field, P.between(startDate, endDate));
+                        t = applyDateFilter(t, USPTO_DATE_FORMAT, USPTO_TIME_ZONE, patentNode, f);
                     } else if (f.field.equals("year")) {
                         t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     } else if (f.field.equals("type")) {
@@ -765,15 +757,7 @@ public class UserQuery2Gremlin {
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("date"))) {
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("date")) {
-                        DateFormat dateFormatter = new SimpleDateFormat(USPTO_DATE_FORMAT);
-                        Date startDate = dateFormatter.parse(f.lowerBound);
-                        Date endDate = dateFormatter.parse(f.upperBound);
-
-                        if (startDate == null || endDate == null) {
-                            throw new Exception("Parse of USPTO date filters failed");
-                        }
-
-                        t = t.has(patentNode.type, f.field, P.between(startDate, endDate));
+                        t = applyDateFilter(t, USPTO_DATE_FORMAT, USPTO_TIME_ZONE, patentNode, f);
                     }
                 }
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))) {
@@ -985,5 +969,40 @@ public class UserQuery2Gremlin {
                 }
             }
         }
+    }
+
+    private static GraphTraversal applyDateFilter(GraphTraversal t, String dateFormat, String timeZone,
+                                           Node n, Filter f) throws Exception {
+        String dateRangeStr = f.value;
+        int slashIndex = dateRangeStr.indexOf('/');
+
+        if (slashIndex == -1) {
+            throw new Exception("Invalid date range format.  Missing '/'.");
+        }
+
+        DateFormat dateFormatter = new SimpleDateFormat(dateFormat);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(timeZone));
+
+        if (slashIndex == 0) {
+            String startDateStr = dateRangeStr.substring(1);
+            Date date = dateFormatter.parse(startDateStr);
+            t = t.has(n.type, f.field, date);
+
+            if (date == null) {
+                throw new Exception("Parse of date filter failed");
+            }
+        } else {
+            String startDateStr = dateRangeStr.substring(0, slashIndex);
+            String endDateStr = dateRangeStr.substring(slashIndex+1);
+            Date startDate = dateFormatter.parse(startDateStr);
+            Date endDate = dateFormatter.parse(endDateStr);
+            t = t.has(n.type, f.field, P.between(startDate, endDate));
+
+            if (startDate == null || endDate == null) {
+                throw new Exception("Parse of startDate or endDate failed");
+            }
+        }
+
+        return t;
     }
 }
