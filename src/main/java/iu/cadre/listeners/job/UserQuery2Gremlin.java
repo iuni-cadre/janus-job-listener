@@ -805,15 +805,7 @@ public class UserQuery2Gremlin {
                     }else if (f.field.equals("number")) {
                         gt = gt.has(patentNode.type, f.field, f.value);
                     }else if (f.field.equals("date")) {
-                        DateFormat dateFormatter = new SimpleDateFormat(USPTO_DATE_FORMAT);
-                        Date startDate = dateFormatter.parse(f.lowerBound);
-                        Date endDate = dateFormatter.parse(f.upperBound);
-
-                        if (startDate == null || endDate == null) {
-                            throw new Exception("Parse of USPTO date filters failed");
-                        }
-
-                        gt = gt.has(patentNode.type, f.field, P.between(startDate, endDate));
+                        gt = applyDateFilter(gt, USPTO_DATE_FORMAT, USPTO_TIME_ZONE, patentNode, f);
                     }else if (f.field.equals("year")) {
                         gt = gt.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     } else if (f.field.equals("abstract")) {
