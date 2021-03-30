@@ -39,19 +39,12 @@ class Filter {
     String field;
     String value;
     String operator;
-    String lowerBound;
-    String upperBound;
 
     Filter() {}
     Filter(String field_, String value_)
     {
         field = field_;
         value = value_;
-    }
-    Filter(String field_, String lowerBound_, String upperBound_) {
-        field = field_;
-        lowerBound = lowerBound_;
-        upperBound = upperBound_;
     }
 }
 
@@ -106,15 +99,9 @@ public class UserQuery {
                         f.field = filterField.get("field").getAsString();
                         n.filters.add(f);
                     }else if (DataSet().equals("uspto")) {
-                        if (n.type.equals("Patent") && f.field.equals("date")) { // USPTO
-                            f.operator = filterField.get("operator").getAsString();
-                            f.lowerBound = filterField.get("lowerBound").getAsString();
-                            f.upperBound = filterField.get("upperBound").getAsString();
-                        } else {
-                            f.value = filterField.get("value").getAsString();
-                            f.operator = filterField.get("operator").getAsString();
-                            f.field = filterField.get("field").getAsString();
-                        }
+                        f.value = filterField.get("value").getAsString();
+                        f.operator = filterField.get("operator").getAsString();
+                        f.field = filterField.get("field").getAsString();
                         n.filters.add(f);
                     }else {
                         f.value = filterField.get("value").getAsString();
