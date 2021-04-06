@@ -121,6 +121,7 @@ public class UserQuery2Gremlin {
                             } else if (c.vertexType.equals(AFFILIATION_FIELD)) {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
                                 t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
                             } else {
                                 t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                             }
