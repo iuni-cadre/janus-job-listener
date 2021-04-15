@@ -1,42 +1,45 @@
-{
+{               
         "csv_output": [{
+                "field": "type",
+                "vertexType": "Patent"
+        }, {    
                 "field": "number",
                 "vertexType": "Patent"
-        }, {
-                "field": "patent_id",
-                "vertexType": "Patent"
-        }, {
-                "field": "title",
-                "vertexType": "Patent"
-        }, {
+        }, {    
                 "field": "date",
                 "vertexType": "Patent"
-        }, {
+        }, {    
                 "field": "year",
                 "vertexType": "Patent"
-        }, {
-                "field": "country",
+        }, {    
+                "field": "title",
                 "vertexType": "Patent"
-        }, {
+        }, {    
                 "field": "name_first",
                 "vertexType": "Inventor"
         }, {
                 "field": "name_last",
                 "vertexType": "Inventor"
-        }, {
-                "field": "name_first",
-                "vertexType": "Assignee"
-        }, {
-                "field": "name_last",
-                "vertexType": "Assignee"
-        }, {
+        }, {            
                 "field": "city",
                 "vertexType": "InventorLocation"
-        }, {
+        }, {                    
                 "field": "state",
                 "vertexType": "InventorLocation"
-        }, {
+        }, {                    
                 "field": "country",
+                "vertexType": "InventorLocation"
+        }, {                    
+                "field": "state_fips",
+                "vertexType": "InventorLocation"
+        }, {    
+                "field": "county_fips",
+                "vertexType": "InventorLocation"
+        }, {                    
+                "field": "longitude",
+                "vertexType": "InventorLocation"
+        }, {            
+                "field": "latitude",
                 "vertexType": "InventorLocation"
         }],
                 "dataset": "uspto",
@@ -48,17 +51,30 @@
                                 "filterType": "is",
                                 "operator": "And",
                                 "value": "hydraulic"
-                        }, {
+                        },{
+                                "field": "title",
+                                "filterType": "is",
+                                "operator": "And",
+                                "value": "rod"
+                        },{
                                 "field": "date",
                                 "filterType": "is",
                                 "operator": "",
                                 "value": "2017-01-01T00:10:00/2018-01-01T00:10:00"
                         }],
                         "vertexType": "Patent"
+                }, {
+                        "filters": [{
+                                "field": "country",
+                                "filterType": "is",
+                                "operator": "And",
+                                "value": "DE"
+                        }],
+                        "vertexType": "InventorLocation"
                 }]
         },
         "job_id": "4cb6d4bd-eaf5-42dc-9a1d-0e74dd6dd05c",
-        "job_name": "hydraulic_2017_date_range_python",
+        "job_name": "hydraulic_rod_de_2017_nonpatent",
         "user_id": 300,
         "username": "mnygk3djnnqw4"
 }
