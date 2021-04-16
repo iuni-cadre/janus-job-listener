@@ -319,21 +319,19 @@ public class UserQuery2Gremlin {
 
     private static GraphTraversal getPatentFilter(GraphTraversal t, UserQuery query, String vertexType) throws Exception {
         List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
-        if (patentNodes.isEmpty())
-        {
-            /// even if we don't filter by paper, we still probably want to return a list of papers
+
+        if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
+            t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            //t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
+        } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
+            t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            //t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV());
+        } else {
             t = t.both(edgeLabel(vertexType, PATENT_FIELD));
         }
-        else {
-            if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-                t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-                //t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
-            } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-                t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-                //t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV());
-            } else {
-                t = t.both(edgeLabel(vertexType, PATENT_FIELD));
-            }
+
+        // Apply any patent filters
+        if (!patentNodes.isEmpty()) {
 
             for (Node patentNode : patentNodes) {
                 for (Filter f : patentNode.filters) {
