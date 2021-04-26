@@ -120,20 +120,24 @@ public class UserQuery2Gremlin {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                             } else if (c.vertexType.equals(AFFILIATION_FIELD)) {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
-                                t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
-                                //t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
+                                //t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                                t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
                             } else {
-                                t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                                //t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                                t = t.by(__.outE(edgeLabel(PAPER_FIELD, c.vertexType)).inV().values(c.field).fold());
                             }
                         }else {
                             if (c.vertexType.equals(PATENT_FIELD)) {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                             } else if (c.vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-                                t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                t = t.by(__.inE(INVENTOR_OF_FIELD).outV().outE(INVENTOR_LOCATED_IN_FIELD).inV().values(c.field).fold());
                             } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-                                t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(c.field).fold());
                             } else {
-                                t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
+                                //t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
+                                t = t.by(__.inE(edgeLabel(PATENT_FIELD, c.vertexType)).outV().values(c.field).fold());
                             }
                         }
 
