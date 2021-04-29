@@ -122,6 +122,8 @@ public class UserQuery2Gremlin {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
                                 //t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
                                 t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
+                            } else if (c.vertexType.equals(AUTHOR_FIELD)) {
+                                t = t.by(__.inE(edgeLabel(PAPER_FIELD, c.vertexType)).outV().values(c.field).fold());
                             } else {
                                 //t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
                                 t = t.by(__.outE(edgeLabel(PAPER_FIELD, c.vertexType)).inV().values(c.field).fold());
@@ -135,6 +137,8 @@ public class UserQuery2Gremlin {
                             } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
                                 //t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
                                 t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(c.field).fold());
+                            } else if (c.vertexType.equals(ASSIGNEE_FIELD)) {
+                                t = t.by(__.outE(edgeLabel(PATENT_FIELD, c.vertexType)).inV().values(c.field).fold());
                             } else {
                                 //t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
                                 t = t.by(__.inE(edgeLabel(PATENT_FIELD, c.vertexType)).outV().values(c.field).fold());
@@ -299,13 +303,26 @@ public class UserQuery2Gremlin {
 
     private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-        if (paperNodes.isEmpty())
-        {
-            /// even if we don't filter by paper, we still probably want to return a list of papers
+
+        if (!paperNodes.isEmpty()) {
+            if (query.DataSet().equals("mag")) {
+                if (edgeType.equals(AUTHOR_FIELD)) {
+                    t = t.outE(AUTHOR_OF_FIELD).inV();
+                } else if (edgeType.equals(JOURNAL_FIELD)) {
+                    t = t.inE(PUBLISHED_IN_FIELD).outV();
+                } else if (edgeType.equals(CONFERENCE_INSTANCE_FIELD)) {
+                    t = t.inE(PRESENTED_AT_FIELD).outV();
+                } else {
+                    t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+                }
+            } else {
+                t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+            }
+        } else {
             t = t.both(edgeLabel(edgeType, PAPER_FIELD));
         }
-        else {
-            t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+
+        if (!paperNodes.isEmpty()) {
             for (Node paperNode : paperNodes) {
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
@@ -324,27 +341,24 @@ public class UserQuery2Gremlin {
 
     private static GraphTraversal getPatentFilter(GraphTraversal t, UserQuery query, String vertexType) throws Exception {
         List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
-        if (patentNodes.isEmpty())
-        {
-            /// even if we don't filter by paper, we still probably want to return a list of papers
-            t = t.both(edgeLabel(vertexType, PATENT_FIELD));
-        }
-        else {
-            if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-                //t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-                t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV();
-            } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-                //t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-                t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV();
-            } else if (vertexType.equals(ASSIGNEE_FIELD)) {
-                t = t.inE(edgeLabel(vertexType, PATENT_FIELD)).outV();
-            } else {
-                //Edges from all other vertex types to patent vertices are outgoing edges from
-                //the non-patent vertex to the patent vertex
-                //t = t.both(edgeLabel(vertexType, PATENT_FIELD));
-                t = t.outE(edgeLabel(vertexType, PATENT_FIELD)).inV();
-            }
 
+        if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
+            //t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV();
+        } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
+            //t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV();
+        } else if (vertexType.equals(ASSIGNEE_FIELD)) {
+            t = t.inE(edgeLabel(vertexType, PATENT_FIELD)).outV();
+        } else {
+            //Edges from all other vertex types to patent vertices are outgoing edges from
+            //the non-patent vertex to the patent vertex
+            //t = t.both(edgeLabel(vertexType, PATENT_FIELD));
+            t = t.outE(edgeLabel(vertexType, PATENT_FIELD)).inV();
+        }
+
+        // Apply any patent filters
+        if (!patentNodes.isEmpty()) {
             for (Node patentNode : patentNodes) {
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("number")) {
@@ -362,7 +376,6 @@ public class UserQuery2Gremlin {
                     }
                 }
             }
-
         }
 
         return t;

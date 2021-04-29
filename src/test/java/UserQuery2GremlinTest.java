@@ -553,6 +553,9 @@ public class UserQuery2GremlinTest {
 
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
+        when(q.DataSet()).thenReturn("mag");
+
+        System.out.println("In getProjectionForQuery_handles_two_node_filters()");
 
         List<List<Vertex>> papers = null;
 
@@ -651,6 +654,7 @@ public class UserQuery2GremlinTest {
         UserQuery q = mock(UserQuery.class);
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
+        when(q.DataSet()).thenReturn("mag");
 
         List<List<Vertex>> actual = null;
         try {
