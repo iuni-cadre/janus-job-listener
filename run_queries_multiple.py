@@ -7,19 +7,21 @@ import json
 
 target = "target/janus-job-listener-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
 className = "iu.cadre.listeners.job.JanusConnection"
-config = "./test_queries/cadre_config.properties"
+config = "./test_queries_sph/cadre_config.properties"
 vertex_type = "Author"
 vertex_field_name = "name"
-vertex_field_value_list = []
+vertex_field_value_file = "./test_queries_sph/author_names"
 
 if len(sys.argv) > 1:
     config = sys.argv[1]
-    vertex_field_value_list = sys.argv[2]
+    vertex_field_value_file = sys.argv[2]
 
 for entry in os.scandir("test_queries_sph"):
     if entry.path.endswith(".json") and entry.is_file():
         print(entry.name)_
-        for filed_value in vertex_field_value_list:
+        with open('filename') as f:
+            lines = f.readlines()
+        for line in lines:
             with open(entry.path) as json_file:
                 data = json.load(json_file)
                 graph = data["graph"]
@@ -31,7 +33,7 @@ for entry in os.scandir("test_queries_sph"):
                         for filter in filters:
                             filed = filter["field"]
                             if field is vertex_field_name:
-                                filed["value"] = filed_value
+                                filed["value"] = line
 
             with open(entry.path, "w") as jsonFile:
                 json.dump(data, jsonFile)
