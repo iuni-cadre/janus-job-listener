@@ -9,8 +9,8 @@ from shutil import copyfile
 target = "target/janus-job-listener-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
 className = "iu.cadre.listeners.job.JanusConnection"
 config = "./test_queries_sph/cadre_config.properties"
-vertex_type = "Author"
-vertex_field_name = "name"
+vertex_type = "Paper"
+vertex_field_name = "authorFullNames"
 vertex_field_value_file = "./test_queries_sph/author_names"
 
 if len(sys.argv) > 1:
@@ -23,6 +23,7 @@ for entry in os.scandir("test_queries_sph"):
         with open(vertex_field_value_file) as f:
             lines = f.readlines()
         for line in lines:
+            line = line.rstrip()
             print(line)
             with open(entry.path) as json_file:
                 data = json.load(json_file)
