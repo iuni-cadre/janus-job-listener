@@ -51,7 +51,7 @@ public class JobListener {
     public static void poll_queue() throws Exception {
         Class.forName("org.postgresql.Driver");
 
-        SqsClient sqsClient = SqsClient.builder().region(Region.US_EAST_2).build();
+        SqsClient sqsClient = SqsClient.builder().region(ConfigReader.getAwsRegion()).build();
         List<String> outputFiltersSingle = new ArrayList<String>();
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(QUEUE_NAME)
@@ -94,6 +94,8 @@ public class JobListener {
                     String dataType = "MAG";
                     if (query.DataSet().equals("wos")){
                         dataType = "WOS";
+                    }else if (query.DataSet().equals("uspto")){
+                        dataType = "USPTO";
                     }
 
                     if (new File(verticesCSVPath).exists()) {

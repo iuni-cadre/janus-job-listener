@@ -1,0 +1,64 @@
+{
+        "csv_output": [{
+                "field": "number",
+                "vertexType": "Patent"
+        }, {
+                "field": "patent_id",
+                "vertexType": "Patent"
+        }, {
+                "field": "title",
+                "vertexType": "Patent"
+        }, {
+                "field": "date",
+                "vertexType": "Patent"
+        }, {
+                "field": "year",
+                "vertexType": "Patent"
+        }, {
+                "field": "country",
+                "vertexType": "Patent"
+        }, {
+                "field": "name_first",
+                "vertexType": "Inventor"
+        }, {
+                "field": "name_last",
+                "vertexType": "Inventor"
+        }, {
+                "field": "name_first",
+                "vertexType": "Assignee"
+        }, {
+                "field": "name_last",
+                "vertexType": "Assignee"
+        }, {
+                "field": "city",
+                "vertexType": "InventorLocation"
+        }, {
+                "field": "state",
+                "vertexType": "InventorLocation"
+        }, {
+                "field": "country",
+                "vertexType": "InventorLocation"
+        }],
+                "dataset": "uspto",
+        "graph": {
+                "edges": [],
+                "nodes": [{
+                        "filters": [{
+                                "field": "title",
+                                "filterType": "is",
+                                "operator": "And",
+                                "value": "hydraulic"
+                        }, {
+                                "field": "date",
+                                "filterType": "is",
+                                "operator": "",
+                                "value": "2017-01-01T00:10:00/2018-01-01T00:10:00"
+                        }],
+                        "vertexType": "Patent"
+                }]
+        },
+        "job_id": "4cb6d4bd-eaf5-42dc-9a1d-0e74dd6dd05c",
+        "job_name": "hydraulic_2017_date_range_python",
+        "user_id": 300,
+        "username": "mnygk3djnnqw4"
+}

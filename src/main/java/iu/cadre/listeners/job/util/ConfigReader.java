@@ -2,6 +2,7 @@ package iu.cadre.listeners.job.util;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import software.amazon.awssdk.regions.Region;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,12 +55,33 @@ public class ConfigReader {
         }
     }
 
-    public static String getAwsRegion() throws Exception{
+    public static String getAwsRegionAsString() throws Exception{
         try {
             if (properties != null){
                 return properties.getProperty(Constants.AWS_REGION_NAME);
             }
             return null;
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.AWS_REGION_NAME);
+            throw new Exception("Error reading config file", e);
+        }
+    }
+
+    public static Region getAwsRegion() throws Exception{
+        try {
+            Region awsRegion = null;
+            if (properties != null){
+                String regionString = properties.getProperty(Constants.AWS_REGION_NAME);
+
+                switch (regionString) {
+                    case "us-east-1": awsRegion = Region.US_EAST_1;
+                        break;
+                    case "us-east-2": awsRegion = Region.US_EAST_2;
+                        break;
+                    default: throw new Exception("Region '" + regionString + "' not supported by listener.");
+                }
+            }
+            return awsRegion;
         } catch (Exception e) {
             LOG.error("Error reading property : " + Constants.AWS_REGION_NAME);
             throw new Exception("Error reading config file", e);
@@ -110,6 +132,18 @@ public class ConfigReader {
             return null;
         } catch (Exception e) {
             LOG.error("Error reading property : " + Constants.JANUS_WOS_PROPERTIES_FILE);
+            throw new Exception("Error reading config file", e);
+        }
+    }
+
+    public static String getJanusUSPTOPropertiesFile() throws Exception{
+        try {
+            if (properties != null){
+                return properties.getProperty(Constants.JANUS_USPTO_PROPERTIES_FILE);
+            }
+            return null;
+        } catch (Exception e) {
+            LOG.error("Error reading property : " + Constants.JANUS_USPTO_PROPERTIES_FILE);
             throw new Exception("Error reading config file", e);
         }
     }
