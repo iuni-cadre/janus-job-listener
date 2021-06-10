@@ -896,6 +896,7 @@ public class UserQuery2Gremlin {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes");
         GraphTraversal t = traversal.V();
+
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("DOI"))){
@@ -906,12 +907,17 @@ public class UserQuery2Gremlin {
                     }
                 }
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("articleTitle"))){
+                // Several articleTitle filters can be OR'd together.
+                System.out.println("Calling single-filter applyFilter on articleTitle");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "articleTitle", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("articleTitle")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("sourceTitle"))){
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
@@ -927,14 +933,27 @@ public class UserQuery2Gremlin {
                     }
                 }
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationYear"))){
+                System.out.println("Calling single-filter applyFilter on publicationYear");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationYear", t);
+                
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("publicationYear")) {
                         t = t.has(paperNode.type, f.field, Integer.valueOf(f.value));
                     }
                 }
+*/
             }
         }
+
+
+/*
+        t = t.has("Paper", "publicationYear", 1985)
+                   .or(__.has("Paper", "articleTitle", textContains("Fish")), __.has("Paper", "articleTitle", textContains("Shrimp")))
+                   .has("Paper", "articleTitle", textContains("salt"));
+*/
+
         LOG.info("Query: " + t);
         List<List<Vertex>> papers = new ArrayList<>();
         // Allocate list of papers for zeroth level (query papers) of vertices
@@ -943,18 +962,40 @@ public class UserQuery2Gremlin {
         int batchSize;
         int totalGatheredPapers = 0;
 
+        System.out.println("------------------------");
+        System.out.println("Finished first traversal");
+        System.out.println("------------------------");
+
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
 
+            //gt = gt.has("Paper", "publicationYear", 1985);
+
             for (Node paperNode : query.Nodes()) {
+                System.out.println("Calling applyFilter on node " + paperNode.type);
+                gt = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, gt);
+/*
                 for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year")) {
+                    if (f.field.equals("DOI")) {
+                        gt = gt.has(paperNode.type, f.field, f.value);
+                    } else if (f.field.equals("publicationYear")) {
+                        //System.out.println("In publicationYear: " + f.field + " = " + f.value);
                         gt = gt.has(paperNode.type, f.field, Integer.valueOf(f.value));
+                    } else if (f.field.equals("articleTitle")) {
+                        //System.out.println("In articleTitle: " + f.field + " = " + f.value);
+                        gt = gt.has(paperNode.type, f.field, textContains(f.value));
+
+                        if (f.operator.contentEquals("OR")) {
+                           gt = gt.or();
+                        } else if (f.operator.contentEquals("AND")) {
+                           gt = gt.and();
+                        }
                     } else {
                         gt = gt.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }
 
             while (gt.hasNext()) {
@@ -975,16 +1016,160 @@ public class UserQuery2Gremlin {
         return papers;
     }
 
-    public static void removeDuplicateVertices(Set<Object> uniqueIds, List<List<Vertex>> levels) throws Exception {
-        for (List<Vertex> verticesList : levels) {
-            for (int i = 0; i < verticesList.size(); i++) {
-                if (!uniqueIds.add(verticesList.get(i).id())) {
-                    verticesList.remove(i);
-                    i--;
+    private static GraphTraversal applyFilters(String dataset, String nodeType, ArrayList<Filter> filters, String targetField, GraphTraversal t) throws Exception {
+       // Loop over all filters in the JSON node section
+       for (int i = 0; i < filters.size(); i++) {
+          // Find the start of a block of filters for the given field
+          if (filters.get(i).field.contentEquals(targetField)) {
+             ArrayList<Filter> filterBlock = new ArrayList<Filter>();
+             int j = i+1;
+
+             filterBlock.add(filters.get(i));
+
+             System.out.println("---------");
+             System.out.println("New block");
+             System.out.println("---------");
+             System.out.println("filterBlock(0).field   : " + filterBlock.get(0).field);
+             System.out.println("filterBlock(0).operator: " + filterBlock.get(0).operator);
+             System.out.println("filterBlock(0).value   : " + filterBlock.get(0).value);
+
+             // Determine the extent of the and/or block;
+             while (j < filters.size() && !filters.get(j-1).operator.contentEquals("")) {
+                // Get the target filters that are in the block
+                if (filters.get(j).field.contentEquals(targetField)) {
+                   filterBlock.add(filters.get(j));
+                   j++;
+
+                   System.out.println("---------");
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").field   : " + filterBlock.get(filterBlock.size()-1).field);
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").operator: " + filterBlock.get(filterBlock.size()-1).operator);
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").value   : " + filterBlock.get(filterBlock.size()-1).value);
+ 
+                   if (filters.get(j-1).operator.contentEquals("")) {
+                      break;
+                   }
+                } else {
+                   break;
                 }
-            }
-        }
+             }
+
+             i = j-1;
+             t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
+          }
+       }
+
+       return t;
     }
+
+    private static GraphTraversal applyFilters(String dataset, String nodeType, ArrayList<Filter> filters, GraphTraversal t) throws Exception {
+       // Loop over all filters in the JSON node section
+       for (int i = 0; i < filters.size(); i++) {
+          // Find the start of a block of filters
+          ArrayList<Filter> filterBlock = new ArrayList<Filter>();
+          int j = i+1;
+
+          filterBlock.add(filters.get(i));
+
+/*
+          System.out.println("New block");
+          System.out.println("---------");
+          System.out.println("filterBlock(0).field   : " + filterBlock.get(0).field);
+          System.out.println("filterBlock(0).operator: " + filterBlock.get(0).operator);
+          System.out.println("filterBlock(0).value   : " + filterBlock.get(0).value);
+*/
+
+          // Determine the extent of the and/or block;
+          while (j < filters.size() && !filters.get(j-1).operator.contentEquals("")) {
+             filterBlock.add(filters.get(j));
+             j++;
+
+/*
+             System.out.println("---------");
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").field   : " + filterBlock.get(filterBlock.size()-1).field);
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").operator: " + filterBlock.get(filterBlock.size()-1).operator);
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").value   : " + filterBlock.get(filterBlock.size()-1).value);
+*/
+ 
+             if (filters.get(j-1).operator.contentEquals("")) {
+                break;
+             }
+          }
+
+          i = j-1;
+          t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
+       }
+
+       return t;
+    }
+
+
+    private static GraphTraversal generateTraversalFromFilters(String dataset, String nodeType, ArrayList<Filter> filterBlock, GraphTraversal t) throws Exception {
+       ArrayList<Object> values = new ArrayList<>();
+
+       if (dataset.contentEquals("wos")) {
+          for (Filter f : filterBlock) {
+             if (f.field.contentEquals("DOI")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("publicationYear")) {
+                values.add(Integer.valueOf(f.value));
+             } else {
+                values.add(textContains(f.value));
+             }
+          }
+       } else {
+          throw new Exception("Only wos datasets are supported by traversal generation");
+       }
+
+       if (filterBlock.size() == 1) {
+          t = t.has(nodeType, filterBlock.get(0).field, values.get(0));
+       } else {
+          // Generate call to OR or AND method
+          if (filterBlock.get(0).operator.contentEquals("OR")) {
+             if (filterBlock.size() == 2) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)));
+             } else if (filterBlock.size() == 3) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)));
+             } else if (filterBlock.size() == 4) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+                Filter f3 = filterBlock.get(3);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)),
+                         __.has(nodeType, f3.field, values.get(3)));
+             } else if (filterBlock.size() == 5) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+                Filter f3 = filterBlock.get(3);
+                Filter f4 = filterBlock.get(4);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)),
+                         __.has(nodeType, f3.field, values.get(3)),
+                         __.has(nodeType, f3.field, values.get(4)));
+             }
+          } else {
+             throw new Exception("and() operation not supported in traversals"); 
+          }
+       }
+
+       return t;
+    }
+          
 
     private static GraphTraversal applyDateFilter(GraphTraversal t, String dateFormat, String timeZone,
                                            Node n, Filter f) throws Exception {
@@ -1020,4 +1205,16 @@ public class UserQuery2Gremlin {
 
         return t;
     }
+
+    public static void removeDuplicateVertices(Set<Object> uniqueIds, List<List<Vertex>> levels) throws Exception {
+        for (List<Vertex> verticesList : levels) {
+            for (int i = 0; i < verticesList.size(); i++) {
+                if (!uniqueIds.add(verticesList.get(i).id())) {
+                    verticesList.remove(i);
+                    i--;
+                }
+            }
+        }
+    }
+
 }
