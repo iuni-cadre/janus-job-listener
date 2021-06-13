@@ -429,6 +429,7 @@ public class UserQuery2GremlinTest {
         f.field = "year";
         f.value = "1945";
         nodes.get(0).filters.add(f);
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         List<List<Vertex>> papers = null;
 
@@ -458,6 +459,7 @@ public class UserQuery2GremlinTest {
         List<CSVOutput> csv = Collections.singletonList(new CSVOutput());
         csv.get(0).field = "year";
         csv.get(0).vertexType = "Paper";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -486,6 +488,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "displayName";
         csv.get(1).vertexType = "Author";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -519,6 +522,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
         csv.get(1).vertexType = "JournalFixed";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -526,6 +530,7 @@ public class UserQuery2GremlinTest {
         try {
             papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
+            System.out.println("********** THE EXCEPTION MESSAGE IS: " + e.getMessage());
             fail(e.getMessage());
         }
 
@@ -615,6 +620,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).field = "paperTitle";
         csv.get(0).vertexType = "Paper";
 
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
 

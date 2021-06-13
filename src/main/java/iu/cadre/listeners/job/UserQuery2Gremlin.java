@@ -699,25 +699,38 @@ public class UserQuery2Gremlin {
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                System.out.println("Calling single-filter applyFilter on doi");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+/*
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("doi")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
+                System.out.println("Calling single-filter applyFilter on paperTitle");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "paperTitle", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("paperTitle")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
+                System.out.println("Calling single-filter applyFilter on year");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "year", t);
+
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
                         t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
                     }
                 }
+*/
             }
         }
 
@@ -728,12 +741,17 @@ public class UserQuery2Gremlin {
         int batchSize;
         int totalGatheredPapers = 0;
 
+        System.out.println("Applying all filters");
+
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
             List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
 
+            System.out.println("Applying all paper node filters to next vertex");
             for (Node paperNode : paperNodes) {
+                gt = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, gt);
+/*
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
                         gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
@@ -743,6 +761,7 @@ public class UserQuery2Gremlin {
                         gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
+*/
             }
 
             while (gt.hasNext()) {
@@ -900,12 +919,16 @@ public class UserQuery2Gremlin {
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("DOI"))){
+                System.out.println("Calling single-filter applyFilter on DOI");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "DOI", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("DOI")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("articleTitle"))){
                 // Several articleTitle filters can be OR'd together.
                 System.out.println("Calling single-filter applyFilter on articleTitle");
@@ -919,12 +942,16 @@ public class UserQuery2Gremlin {
                 }
 */
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("sourceTitle"))){
+                System.out.println("Calling single-filter applyFilter on sourceTitle");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "sourceTitle", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("sourceTitle")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("authorFullNames"))){
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
@@ -1054,6 +1081,7 @@ public class UserQuery2Gremlin {
              }
 
              i = j-1;
+             System.out.println("Calling generateTraversalFromFilters\n");
              t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
           }
        }
@@ -1068,34 +1096,43 @@ public class UserQuery2Gremlin {
           ArrayList<Filter> filterBlock = new ArrayList<Filter>();
           int j = i+1;
 
+          System.out.println("Adding filter " + i);
           filterBlock.add(filters.get(i));
 
-/*
+
           System.out.println("New block");
           System.out.println("---------");
           System.out.println("filterBlock(0).field   : " + filterBlock.get(0).field);
           System.out.println("filterBlock(0).operator: " + filterBlock.get(0).operator);
           System.out.println("filterBlock(0).value   : " + filterBlock.get(0).value);
-*/
+
 
           // Determine the extent of the and/or block;
+          System.out.println("filters.size(): " + filters.size());
+          System.out.println("j             : " + j);
+          System.out.println("Before while loop");
+          System.out.println("filters.get(" + (j-1) + ").operator: " + filters.get(j-1).operator);
           while (j < filters.size() && !filters.get(j-1).operator.contentEquals("")) {
+             System.out.println("Adding filter " + j);
+             System.out.flush();
              filterBlock.add(filters.get(j));
              j++;
 
-/*
+
              System.out.println("---------");
              System.out.println("filterBlock(" + (filterBlock.size()-1) + ").field   : " + filterBlock.get(filterBlock.size()-1).field);
              System.out.println("filterBlock(" + (filterBlock.size()-1) + ").operator: " + filterBlock.get(filterBlock.size()-1).operator);
              System.out.println("filterBlock(" + (filterBlock.size()-1) + ").value   : " + filterBlock.get(filterBlock.size()-1).value);
-*/
+
  
              if (filters.get(j-1).operator.contentEquals("")) {
+                System.out.println("Found end of block");
                 break;
              }
           }
 
           i = j-1;
+          System.out.println("Generating traversal from filters");
           t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
        }
 
@@ -1116,11 +1153,23 @@ public class UserQuery2Gremlin {
                 values.add(textContains(f.value));
              }
           }
+       } else if (dataset.contentEquals("mag")) {
+          for (Filter f : filterBlock) {
+             if (f.field.contentEquals("DOI")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("year")) {
+                values.add(Integer.valueOf(f.value));
+                System.out.println("Added value of year");
+             } else {
+                values.add(textContains(f.value));
+             }
+          }
        } else {
-          throw new Exception("Only wos datasets are supported by traversal generation");
+          throw new Exception("Only WoS and MAG datasets are supported by traversal generation");
        }
 
        if (filterBlock.size() == 1) {
+          System.out.println("Applying single has");
           t = t.has(nodeType, filterBlock.get(0).field, values.get(0));
        } else {
           // Generate call to OR or AND method

@@ -45,6 +45,7 @@ class Filter {
     {
         field = field_;
         value = value_;
+        operator = new String("");
     }
 }
 
