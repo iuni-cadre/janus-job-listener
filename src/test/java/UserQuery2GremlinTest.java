@@ -589,6 +589,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "displayName";
         csv.get(1).vertexType = "Author";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
