@@ -1,0 +1,56 @@
+{
+  "csv_output": [{
+    "field": "wosId",
+    "vertexType": "Paper"
+  }, {
+    "field": "publicationYear",
+    "vertexType": "Paper"
+  }, {
+    "field": "articleTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "authorFullNames",
+    "vertexType": "Paper"
+  }, {
+    "field": "conferenceTitle",
+    "vertexType": "Paper"
+  }],
+  "dataset": "wos",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+         "filters": [{
+            "field": "articleTitle",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "Fish"
+         }, {
+            "field": "articleTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "Shrimp"
+         }],
+         "vertexType": "Paper"
+      }, {
+         "filters": [{
+            "field": "articleTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "salt"
+         }],
+         "vertexType": "Paper"
+      }, {
+         "filters": [{
+            "field": "publicationYear",
+            "filterType": "is",
+            "operator": "",
+            "value": "1985"
+         }],
+         "vertexType": "Paper"
+    }]
+  },
+  "job_id": "fish_and_shrimp",
+  "job_name": "fish_and_shrimp",
+  "user_id": 78,
+  "username": "test_bool"
+}
