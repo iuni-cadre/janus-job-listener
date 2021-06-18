@@ -1203,7 +1203,6 @@ public class UserQuery2Gremlin {
 
  
              if (filters.get(j-1).operator.contentEquals("")) {
-                System.out.println("Found end of block");
                 break;
              }
           }
