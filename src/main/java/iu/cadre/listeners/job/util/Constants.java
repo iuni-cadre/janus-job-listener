@@ -38,21 +38,27 @@ public class Constants {
     //public static final String USPTO_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz yyyy";
     public static final String USPTO_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String USPTO_TIME_ZONE = "UTC";
+    public static final String MAG_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz yyyy";
+    public static final String MAG_TIME_ZONE = "UTC";
 
     public static final Map<String, String> vertexLableMap = new HashMap<String, String>();
 
     // Vertices and edges for MAG and WOS
     public static final String PAPER_FIELD = "Paper";
-    public static final String JOURNAL_FIELD = "JournalFixed";
-    public static final String PUBLISHED_IN_FIELD = "PublishedInFixed";
+    public static final String JOURNAL_FIELD = "Journal";
+    public static final String PUBLISHED_IN_FIELD = "PublishedIn";
     public static final String AUTHOR_FIELD = "Author";
     public static final String AUTHOR_OF_FIELD = "AuthorOf";
     public static final String CONFERENCE_INSTANCE_FIELD = "ConferenceInstance";
+    public static final String CONFERENCE_SERIES_FIELD = "ConferenceSeries";
     public static final String PRESENTED_AT_FIELD = "PresentedAt";
     public static final String FIELD_OF_STUDY_FIELD = "FieldOfStudy";
     public static final String BELONGS_TO_FIELD = "BelongsTo";
     public static final String AFFILIATION_FIELD = "Affiliation";
     public static final String AFFILIATED__WITH_FIELD = "AffiliatedWith";
+    public static final String CHILD_OF_FIELD = "ChildOf";
+    public static final String INSTANCE_OF_FIELD = "InstanceOf";
+    public static final String REFERENCES_FIELD = "References";
 
     // Vertices and Edges for USPTO
     public static final String PATENT_FIELD = "Patent";

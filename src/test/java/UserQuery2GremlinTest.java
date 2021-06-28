@@ -521,7 +521,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).field = "year";
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
-        csv.get(1).vertexType = "JournalFixed";
+        csv.get(1).vertexType = "Journal";
         when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
@@ -538,7 +538,7 @@ public class UserQuery2GremlinTest {
 
         assertEquals(1, actual.size());
         assertEquals(2001, (Integer) (actual.get(0).value("year")));
-        String actualJournal = (String)(actual.get(0).edges(Direction.OUT, "PublishedInFixed").next()
+        String actualJournal = (String)(actual.get(0).edges(Direction.OUT, "PublishedIn").next()
             .inVertex().value("normalizedName"));
         assertEquals("the open acoustics journal", actualJournal);
     }
@@ -547,20 +547,18 @@ public class UserQuery2GremlinTest {
     void getProjectionForQuery_handles_two_node_filters()
     {
         UserQuery q = mock(UserQuery.class);
-        List<Node> nodes = Arrays.asList(new Node("Paper"), new Node("JournalFixed"));
+        List<Node> nodes = Arrays.asList(new Node("Paper"), new Node("Journal"));
         nodes.get(0).filters.add(new Filter("year", "2001"));
         nodes.get(1).filters.add(new Filter("normalizedName", "acoustics"));
         List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
         csv.get(0).field = "paperTitle";
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
-        csv.get(1).vertexType = "JournalFixed";
+        csv.get(1).vertexType = "Journal";
 
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         when(q.DataSet()).thenReturn("mag");
-
-        System.out.println("In getProjectionForQuery_handles_two_node_filters()");
 
         List<List<Vertex>> papers = null;
 
@@ -676,7 +674,7 @@ public class UserQuery2GremlinTest {
         assertEquals("Marla Schneider", actual.get(0).get(0).edges(Direction.IN, "AuthorOf").next()
                 .outVertex().value("displayName"));
         assertEquals("the open acoustics journal", actual.get(0).get(0)
-                .edges(Direction.OUT, "PublishedInFixed").next()
+                .edges(Direction.OUT, "PublishedIn").next()
                 .inVertex().value("normalizedName"));
 
     }
