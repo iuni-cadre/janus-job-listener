@@ -119,10 +119,19 @@ public class JobListener {
                     // the user's job failed. Exit the loop
                     throw e;
                 } catch(Exception e) {
+                    String msg = null;
                     // Unknown error. We know it's not with the metadatabase as that
                     // would have been caught above, so mark the job failed and exit
                     // the loop
-                    status.Update(query.JobId(), "FAILED", e.getMessage());
+
+                    if (e.getMessage().contains("method [POST]") &&
+                        e.getMessage().contains("No search context found")) {
+                       msg = "The system is experiencing a high volume or the query may have exceeded capacity limitations.  Please form a more specific query or try again later.";
+                    } else {
+                       msg = e.getMessage();
+                    }
+                       
+                    status.Update(query.JobId(), "FAILED", msg);
                     throw e;
                 }
            }
