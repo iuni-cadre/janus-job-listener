@@ -36,9 +36,8 @@ public class Constants {
     public static final String EFS_SUBPATH_QUERY_RESULTS_DIR = "efs.subpath.query.results.listener";
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";
     //public static final String USPTO_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz yyyy";
-    public static final String USPTO_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
+    public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String USPTO_TIME_ZONE = "UTC";
-    public static final String MAG_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz yyyy";
     public static final String MAG_TIME_ZONE = "UTC";
 
     public static final Map<String, String> vertexLableMap = new HashMap<String, String>();

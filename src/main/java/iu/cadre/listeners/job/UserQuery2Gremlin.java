@@ -312,6 +312,10 @@ public class UserQuery2Gremlin {
                     t = t.inE(PUBLISHED_IN_FIELD).outV();
                 } else if (edgeType.equals(CONFERENCE_INSTANCE_FIELD)) {
                     t = t.inE(PRESENTED_AT_FIELD).outV();
+                } else if (edgeType.equals(AFFILIATION_FIELD)) {
+                    t = t.inE(AFFILIATED__WITH_FIELD).outV().outE(AUTHOR_OF_FIELD).inV();
+                } else if (edgeType.equals(CONFERENCE_INSTANCE_FIELD)) {
+                    t = t.inE(PRESENTED_AT_FIELD).outV();
                 } else {
                     t = t.both(edgeLabel(edgeType, PAPER_FIELD));
                 }
@@ -399,7 +403,11 @@ public class UserQuery2Gremlin {
             magVertices = getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
-        } else {
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AFFILIATION_FIELD))) {
+            magVertices = getProjectionForNonPaperQuery(traversal, query, AFFILIATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(FIELD_OF_STUDY_FIELD))) {
+            magVertices = getProjectionForNonPaperQuery(traversal, query, FIELD_OF_STUDY_FIELD);
+        }else {
             magVertices = getProjectionForPaperQueryMAG(traversal, query);
         }
 
@@ -619,13 +627,19 @@ public class UserQuery2Gremlin {
         List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
         List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
         List<Node> confInstanceNodes = query.Nodes().stream().filter(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD)).collect(Collectors.toList());
+        List<Node> affiliationNodes = query.Nodes().stream().filter(n -> n.type.equals(AFFILIATION_FIELD)).collect(Collectors.toList());
+        List<Node> fieldOfStudyNodes = query.Nodes().stream().filter(n -> n.type.equals(FIELD_OF_STUDY_FIELD)).collect(Collectors.toList());
 
         GraphTraversal t1 = traversal.V();
         GraphTraversal t2 = traversal.V();
         GraphTraversal t3 = traversal.V();
+        GraphTraversal t4 = traversal.V();
+        GraphTraversal t5 = traversal.V();
         List<Vertex> nonPaperNodesList1 = new ArrayList<>();
         List<Vertex> nonPaperNodesList2 = new ArrayList<>();
         List<Vertex> nonPaperNodesList3 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList4 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList5 = new ArrayList<>();
         if (!authorNodes.isEmpty()){
             for (Node n : authorNodes) {
                 t1 = applyFilters(query.DataSet(), n.type, n.filters, false, t1);
@@ -666,15 +680,31 @@ public class UserQuery2Gremlin {
 */
             }
         }
+        if (!affiliationNodes.isEmpty()){
+            for (Node n : affiliationNodes) {
+                t4 = applyFilters(query.DataSet(), n.type, n.filters, false, t4);
+                nonPaperNodesList4 = t4.toList();
+            }
+        }
+        if (!fieldOfStudyNodes.isEmpty()){
+            for (Node n : fieldOfStudyNodes) {
+                t5 = applyFilters(query.DataSet(), n.type, n.filters, false, t5);
+                nonPaperNodesList5 = t5.toList();
+            }
+        }
 
         LOG.info("********* Non paper nodes returned ***********");
         LOG.info("********* size authornodes ***********" + nonPaperNodesList1.size());
         LOG.info("********* size journalnodes *********** " + nonPaperNodesList2.size());
         LOG.info("********* size confInstanceNodes *********** " + nonPaperNodesList3.size());
+        LOG.info("********* size affiliationNodes *********** " + nonPaperNodesList4.size());
+        LOG.info("********* size fieldOfStudyNodes *********** " + nonPaperNodesList5.size());
 
         List<Vertex> paperFiltersWithAuthor = new ArrayList<>();
         List<Vertex> paperFiltersWithJournal = new ArrayList<>();
         List<Vertex> paperFiltersWithConfInst = new ArrayList<>();
+        List<Vertex> paperFiltersWithAffiliation = new ArrayList<>();
+        List<Vertex> paperFiltersWithFieldOfStudy = new ArrayList<>();
         Set<Vertex> filteredPapers = new HashSet<>();
         List<List<Vertex>> papers = new ArrayList<>();
         int batchSize = 100;
@@ -700,12 +730,30 @@ public class UserQuery2Gremlin {
             }
         }
 
+        for (Vertex nonPaperVertex : nonPaperNodesList4){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, AFFILIATION_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithConfInst.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPaperNodesList5){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, FIELD_OF_STUDY_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithFieldOfStudy.addAll(gt.next(batchSize));
+            }
+        }
+
         LOG.info("Size authorPaperFilters " + paperFiltersWithAuthor.size());
         LOG.info("Size journalPaperFilters " + paperFiltersWithJournal.size());
         LOG.info("Size confPaperFilters " + paperFiltersWithConfInst.size());
+        LOG.info("Size affiliationFilters " + paperFiltersWithAffiliation.size());
+        LOG.info("Size fieldOfStudyFilters " + paperFiltersWithFieldOfStudy.size());
 
         Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
-        filteredPapers = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+        Set<Vertex> intersection2 = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+        Set<Vertex> intersection3 = intersection(paperFiltersWithAffiliation, new ArrayList<>(intersection2));
+        filteredPapers = intersection(paperFiltersWithFieldOfStudy, new ArrayList<>(intersection3));
 
         LOG.info("size " + filteredPapers.size());
 
@@ -761,6 +809,18 @@ public class UserQuery2Gremlin {
                     LOG.info(f.field);
                     if (f.field.equals("paperTitle")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
+                    }
+                }
+*/
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("date"))){
+                //System.out.println("Calling single-filter applyFilter on year");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "date", t);
+
+/*
+                for (Filter f : paperNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("year")) {
+                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
                     }
                 }
 */
@@ -1238,8 +1298,22 @@ public class UserQuery2Gremlin {
           for (Filter f : filterBlock) {
              if (f.field.contentEquals("doi")) {
                 values.add(f.value);
+             } else if (f.field.contentEquals("date")) {
+                values.add(applyDateFilter(DATE_FORMAT, MAG_TIME_ZONE, f.value));
              } else if (f.field.contentEquals("year")) {
                 values.add(Integer.valueOf(f.value));
+             } else if (f.field.contentEquals("affiliationId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("authorId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("journalId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("issn")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("fieldOfStudyId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("conferenceInstanceId")) {
+                values.add(Long.valueOf(f.value));
              } else {
                 values.add(textContains(f.value));
              }
@@ -1247,7 +1321,7 @@ public class UserQuery2Gremlin {
        } else if (dataset.contentEquals("uspto")) {
           for (Filter f : filterBlock) {
              if (f.field.contentEquals("date")) {
-                values.add(applyDateFilter(USPTO_DATE_FORMAT, USPTO_TIME_ZONE, f.value));
+                values.add(applyDateFilter(DATE_FORMAT, USPTO_TIME_ZONE, f.value));
              } else if (f.field.contentEquals("year")) {
                 values.add(Integer.valueOf(f.value));
              } else if (f.field.contentEquals("title")) {
@@ -1324,6 +1398,7 @@ public class UserQuery2Gremlin {
 
         DateFormat dateFormatter = new SimpleDateFormat(dateFormat);
         dateFormatter.setTimeZone(TimeZone.getTimeZone(timeZone));
+        //dateFormatter.setLenient(true);
 
         if (slashIndex == 0) {
             String startDateStr = dateRangeStr.substring(1);
