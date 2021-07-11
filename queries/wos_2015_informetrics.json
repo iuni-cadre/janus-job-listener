@@ -17,7 +17,7 @@
                 "filters": [{
                         "field": "publicationYear",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "2015"
                     }
                 ],

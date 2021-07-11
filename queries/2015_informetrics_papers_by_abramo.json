@@ -13,15 +13,15 @@
             "vertexType": "Author"
         }, {
             "field": "displayName",
-            "vertexType": "JournalFixed"
+            "vertexType": "Journal"
         }
     ],
     "dataset": "mag",
     "graph": {
         "edges": [{
-                "relation": "PublishedInFixed",
+                "relation": "PublishedIn",
                 "source": "Paper",
-                "target": "JournalFixed"
+                "target": "Journal"
             }, {
                 "relation": "AuthorOf",
                 "source": "Author",
@@ -32,16 +32,16 @@
                 "filters": [{
                         "field": "name",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "Informetrics"
                     }
                 ],
-                "vertexType": "JournalFixed"
+                "vertexType": "Journal"
             }, {
                 "filters": [{
                         "field": "year",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "2015"
                     }
                 ],

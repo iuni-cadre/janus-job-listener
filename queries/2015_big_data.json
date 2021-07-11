@@ -13,7 +13,7 @@
     "vertexType": "Author"
   }, {
     "field": "displayName",
-    "vertexType": "JournalFixed"
+    "vertexType": "Journal"
   }
   ],
   "dataset": "mag",
@@ -24,12 +24,12 @@
       "filters": [{
         "field": "year",
         "filterType": "is",
-        "operator": "AND",
+        "operator": "",
         "value": "2015"
       }, {
         "field": "abstract",
         "filterType": "is",
-        "operator": "AND",
+        "operator": "",
         "value": "big data"
       }, {
         "field": "title",

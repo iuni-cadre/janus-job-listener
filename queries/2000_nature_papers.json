@@ -13,22 +13,22 @@
                 "vertexType": "Author"
             }, {
                 "field": "displayName",
-                "vertexType": "JournalFixed"
+                "vertexType": "Journal"
             }
         ],
         "dataset": "mag",
         "graph": {
             "edges": [{
-                    "relation": "PublishedInFixed",
+                    "relation": "PublishedIn",
                     "source": "Paper",
-                    "target": "JournalFixed"
+                    "target": "Journal"
                 }
             ],
             "nodes": [{
                     "filters": [{
                             "field": "year",
                             "filterType": "is",
-                            "operator": "AND",
+                            "operator": "",
                             "value": "2000"
                         }
                     ],
@@ -41,7 +41,7 @@
                             "value": "nature"
                         }
                     ],
-                    "vertexType": "JournalFixed"
+                    "vertexType": "Journal"
                 }
             ]
         },

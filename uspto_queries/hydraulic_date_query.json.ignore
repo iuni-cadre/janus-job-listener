@@ -46,7 +46,7 @@
                         "filters": [{
                                 "field": "title",
                                 "filterType": "is",
-                                "operator": "And",
+                                "operator": "",
                                 "value": "hydraulic"
                         }, {
                                 "field": "date",

@@ -13,7 +13,7 @@
     "vertexType": "Author"
   }, {
     "field": "displayName",
-    "vertexType": "JournalFixed"
+    "vertexType": "Journal"
   }
   ],
   "dataset": "mag",
@@ -28,7 +28,7 @@
       "filters": [{
         "field": "name",
         "filterType": "is",
-        "operator": "AND",
+        "operator": "",
         "value": "Putzi"
       }
       ],
