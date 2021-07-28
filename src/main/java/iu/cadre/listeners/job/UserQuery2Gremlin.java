@@ -856,17 +856,6 @@ public class UserQuery2Gremlin {
             //System.out.println("Applying all paper node filters to next vertex");
             for (Node paperNode : paperNodes) {
                 gt = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, true, gt);
-/*
-                for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year")) {
-                        gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    } else if (f.field.equals("doi")) {
-                        gt = gt.has(paperNode.type, f.field, f.value);
-                    } else {
-                        gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
-                    }
-                }
-*/
             }
 
             while (gt.hasNext()) {
@@ -1045,67 +1034,33 @@ public class UserQuery2Gremlin {
 
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("DOI"))){
-                //System.out.println("Calling single-filter applyFilter on DOI");
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "DOI", t);
+            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaliso"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaliso", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("issn"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "issn", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("papertitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "papertitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaltitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaltitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("conferencetitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "conferencetitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("lc_standard_names"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "lc_standard_names", t);
 /*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
-                    if (f.field.equals("DOI")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    }
-                }
-*/
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("articleTitle"))){
-                // Several articleTitle filters can be OR'd together.
-                ///System.out.println("Calling single-filter applyFilter on articleTitle");
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "articleTitle", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("articleTitle")) {
+                    if (f.field.equals("lc_standard_names")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
 */
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("sourceTitle"))){
-                //System.out.println("Calling single-filter applyFilter on sourceTitle");
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "sourceTitle", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("sourceTitle")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-*/
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("authorFullNames"))){
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("authorFullNames")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationYear"))){
-                //System.out.println("Calling single-filter applyFilter on publicationYear");
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationYear", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("publicationYear")) {
-                        t = t.has(paperNode.type, f.field, Integer.valueOf(f.value));
-                    }
-                }
-*/
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationyear"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationyear", t);
             }
         }
 
-
-/*
-        t = t.has("Paper", "publicationYear", 1985)
-                   .or(__.has("Paper", "articleTitle", textContains("Fish")), __.has("Paper", "articleTitle", textContains("Shrimp")))
-                   .has("Paper", "articleTitle", textContains("salt"));
-*/
 
         LOG.info("Query: " + t);
         List<List<Vertex>> papers = new ArrayList<>();
@@ -1114,12 +1069,6 @@ public class UserQuery2Gremlin {
         // Allocate list of papers for first level (cited/referencing papers) of vertices
         int batchSize;
         int totalGatheredPapers = 0;
-
-/*
-        System.out.println("------------------------");
-        System.out.println("Finished first traversal");
-        System.out.println("------------------------");
-*/
 
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
@@ -1285,9 +1234,13 @@ public class UserQuery2Gremlin {
 
        if (dataset.contentEquals("wos")) {
           for (Filter f : filterBlock) {
-             if (f.field.contentEquals("DOI")) {
+             if (f.field.contentEquals("doi")) {
                 values.add(f.value);
-             } else if (f.field.contentEquals("publicationYear")) {
+             } else if (f.field.contentEquals("journaliso")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("issn")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("publicationyear")) {
                 values.add(Integer.valueOf(f.value));
              } else {
                 values.add(textContains(f.value));
