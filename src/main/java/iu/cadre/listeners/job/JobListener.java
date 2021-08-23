@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionException;
+import java.lang.Runtime;
 
 
 public class JobListener {
@@ -33,13 +34,13 @@ public class JobListener {
         try {
             ConfigReader.loadProperties(args[0]);
             listenerID = Integer.parseInt(args[1]);
-
+ 
             ListenerStatus listenerStatus = new ListenerStatus(listenerID,
                                                    ConfigReader.getMetaDBInMemory());
-            //listenerStatus.startUpdates();
+            Runtime.getRuntime().addShutdownHook(new Thread(
+               new JobListenerInterruptHandler(listenerStatus)));
             listenerStatus.update(ListenerStatus.CLUSTER_NONE, ListenerStatus.STATUS_IDLE);
             poll_queue(listenerStatus);
-            listenerStatus.close();
         } catch (Exception e) {
             LOG.error("FATAL ERROR, exiting", e);
             System.exit(-1);
@@ -74,6 +75,8 @@ public class JobListener {
         while (true) {
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
             JobStatus jobStatus = new JobStatus(ConfigReader.getMetaDBInMemory());
+            // The DB could have dropped the connection
+            listenerStatus.refreshConnection();
 
             // print out the messages
             for (Message m : messages) {
@@ -152,6 +155,4 @@ public class JobListener {
            jobStatus.Close();
         }
     }
-
 }
-

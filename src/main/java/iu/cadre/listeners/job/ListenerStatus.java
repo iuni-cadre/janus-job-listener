@@ -1,6 +1,7 @@
 package iu.cadre.listeners.job;
 
 import iu.cadre.listeners.job.util.ConfigReader;
+import iu.cadre.listeners.job.JobListenerInterruptHandler;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import java.lang.Thread;
 public class ListenerStatus {
     private static final Logger LOG = LoggerFactory.getLogger(ListenerStatus.class);
     private static final String statusUpdateStatement = "UPDATE listener_status SET last_cluster = ?, status = ?, last_report_time = current_timestamp WHERE listener_id = ?";
+    private static final String updateAsStoppedStatement = "UPDATE listener_status SET status = ?, last_report_time = current_timestamp WHERE listener_id = ?";
     public static final String CLUSTER_NONE = "NONE";
     public static final String CLUSTER_WOS = "WOS";
     public static final String CLUSTER_MAG = "MAG";
@@ -22,9 +24,14 @@ public class ListenerStatus {
     public static final String STATUS_STOPPED = "STOPPED";
     public static final String STATUS_IDLE = "IDLE";
     public static final String STATUS_RUNNING = "RUNNING";
+    public static final int CONNECTION_VALIDATION_TIMEOUT = 5; // sec
 
+    private ReentrantLock mutex;
+    private boolean shuttingDown;
+    private String metaDBUrl;
     private Connection connection;
     private PreparedStatement statusUpdatePreparedStatement;
+    private PreparedStatement updateAsStoppedPreparedStatement;
     private int listenerID;
 
     public ListenerStatus(int listenerID, Boolean inMemory) throws Exception {
@@ -32,12 +39,13 @@ public class ListenerStatus {
         Class.forName("org.sqlite.JDBC");
 
         this.listenerID = listenerID;
+        shuttingDown = false;
+        mutex = new ReentrantLock();
 
         if (inMemory)
         {
-            String metaDBUrl = "jdbc:sqlite::memory:";
-            connection = DriverManager.getConnection(
-                    metaDBUrl, ConfigReader.getMetaDBUsername(), ConfigReader.getMetaDBPWD());
+            metaDBUrl = "jdbc:sqlite::memory:";
+            createConnection();
             String sql = "CREATE TABLE IF NOT EXISTS listener_status (\n"
                          + "	listener_id int PRIMARY KEY,\n"
                          + "    last_cluster varchar(32),\n"
@@ -57,32 +65,78 @@ public class ListenerStatus {
         }
         else
         {
-            String metaDBUrl = "jdbc:postgresql://" + ConfigReader.getMetaDBHost() + ":" +
+            metaDBUrl = "jdbc:postgresql://" + ConfigReader.getMetaDBHost() + ":" +
                                ConfigReader.getMetaDBPort() + "/" + ConfigReader.getMetaDBName();
-            connection = DriverManager.getConnection(metaDBUrl, ConfigReader.getMetaDBUsername(),
-                    ConfigReader.getMetaDBPWD());
+            createConnection();
         }
-
-        statusUpdatePreparedStatement = connection.prepareStatement(statusUpdateStatement);
     }
 
-    public void close() throws SQLException {
+    private void createConnection() throws SQLException,Exception {
+       connection = DriverManager.getConnection(metaDBUrl, ConfigReader.getMetaDBUsername(),
+                    ConfigReader.getMetaDBPWD());
+       statusUpdatePreparedStatement = connection.prepareStatement(statusUpdateStatement);
+       updateAsStoppedPreparedStatement = connection.prepareStatement(updateAsStoppedStatement);
+    }
+
+    public void refreshConnection() throws SQLException,Exception {
+       try {
+          mutex.lock();
+          if (!connection.isValid(ListenerStatus.CONNECTION_VALIDATION_TIMEOUT)) {
+            close();
+            createConnection();
+          }
+       } finally {
+          mutex.unlock();
+       }
+    }
+
+    private void close() throws SQLException {
        statusUpdatePreparedStatement.close();
+       updateAsStoppedPreparedStatement.close();
        connection.close();
     }
 
-    public void update(String newCluster, String newStatus) throws Exception {
+    public void update(String newCluster, String newStatus) throws SQLException,Exception {
         if (!newStatus.contentEquals(STATUS_STOPPED) &&
             !newStatus.contentEquals(STATUS_IDLE) &&
             !newStatus.contentEquals(STATUS_RUNNING)) {
            throw new Exception("Invalid status given -- " + newStatus);
         }
 
-        statusUpdatePreparedStatement.setString(1, newCluster);
-        statusUpdatePreparedStatement.setString(2, newStatus);
-        statusUpdatePreparedStatement.setInt(3, listenerID);
-        statusUpdatePreparedStatement.executeUpdate();
-        LOG.info("Updated status of listener " + listenerID + " to " + newStatus);
+        try {
+           mutex.lock();
+           // If the interrupt handler is being called, don't update
+           if (!shuttingDown) {
+              statusUpdatePreparedStatement.setString(1, newCluster);
+              statusUpdatePreparedStatement.setString(2, newStatus);
+              statusUpdatePreparedStatement.setInt(3, listenerID);
+              statusUpdatePreparedStatement.executeUpdate();
+              LOG.info("Updated status of listener " + listenerID + " to " + newStatus);
+           }
+        } finally {
+           mutex.unlock();
+        }
     }
 
+    // The object is assumed not to be used anymore after this function is called
+    public void updateAsStopped() throws SQLException {
+        try {
+           mutex.lock();
+           shuttingDown = true;
+           updateAsStoppedPreparedStatement.setString(1, ListenerStatus.STATUS_STOPPED);
+           updateAsStoppedPreparedStatement.setInt(2, listenerID);
+           updateAsStoppedPreparedStatement.executeUpdate();
+           LOG.info("Updated status of listener " + listenerID + " to " + ListenerStatus.STATUS_STOPPED);
+        } finally {
+           mutex.unlock();
+        }
+    }
+
+    public void finalize() {
+       try {
+          close();
+       } catch (Exception e) {
+          ;
+       }
+    }
 }
