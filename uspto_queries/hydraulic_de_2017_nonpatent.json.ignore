@@ -52,11 +52,6 @@
                                 "operator": "",
                                 "value": "hydraulic"
                         },{
-                                "field": "title",
-                                "filterType": "is",
-                                "operator": "",
-                                "value": "rod"
-                        },{
                                 "field": "date",
                                 "filterType": "is",
                                 "operator": "",
@@ -74,7 +69,7 @@
                 }]
         },
         "job_id": "4cb6d4bd-eaf5-42dc-9a1d-0e74dd6dd05c",
-        "job_name": "hydraulic_rod_de_2017_nonpatent",
+        "job_name": "hydraulic_de_2017_nonpatent",
         "user_id": 300,
-        "username": "mnygk3djnnqw4"
+        "username": "njwwgy3pnvrhg"
 }
