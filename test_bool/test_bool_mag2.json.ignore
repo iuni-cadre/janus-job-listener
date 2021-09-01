@@ -1,0 +1,71 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }, {
+    "field": "displayName",
+    "vertexType": "ConferenceInstance"
+  }, {
+    "field": "displayName",
+    "vertexType": "Author"
+  }],
+  "dataset": "mag",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+         "filters": [{
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "finance"
+         }, {
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "options"
+         }, {
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "short"
+         }, {
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "backwardation"
+         }, {
+            "field": "year",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "2000"
+         }, {
+            "field": "year",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "2001"
+         }, {
+            "field": "year",
+            "filterType": "is",
+            "operator": "",
+            "value": "2002"
+         }],
+         "vertexType": "Paper"
+    }]
+  },
+  "job_id": "fish_and_shrimp",
+  "job_name": "fish_and_shrimp",
+  "user_id": 78,
+  "username": "test_bool"
+}

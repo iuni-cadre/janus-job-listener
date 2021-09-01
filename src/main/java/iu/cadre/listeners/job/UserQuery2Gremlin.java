@@ -120,19 +120,28 @@ public class UserQuery2Gremlin {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                             } else if (c.vertexType.equals(AFFILIATION_FIELD)) {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
-                                t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
+                                t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
+                            } else if (c.vertexType.equals(AUTHOR_FIELD)) {
+                                t = t.by(__.inE(edgeLabel(PAPER_FIELD, c.vertexType)).outV().values(c.field).fold());
                             } else {
-                                t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                                //t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
+                                t = t.by(__.outE(edgeLabel(PAPER_FIELD, c.vertexType)).inV().values(c.field).fold());
                             }
                         }else {
                             if (c.vertexType.equals(PATENT_FIELD)) {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
                             } else if (c.vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-                                t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                t = t.by(__.inE(INVENTOR_OF_FIELD).outV().outE(INVENTOR_LOCATED_IN_FIELD).inV().values(c.field).fold());
                             } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-                                t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                //t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
+                                t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(c.field).fold());
+                            } else if (c.vertexType.equals(ASSIGNEE_FIELD)) {
+                                t = t.by(__.outE(edgeLabel(PATENT_FIELD, c.vertexType)).inV().values(c.field).fold());
                             } else {
-                                t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
+                                //t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
+                                t = t.by(__.inE(edgeLabel(PATENT_FIELD, c.vertexType)).outV().values(c.field).fold());
                             }
                         }
 
@@ -294,14 +303,33 @@ public class UserQuery2Gremlin {
 
     private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
-        if (paperNodes.isEmpty())
-        {
-            /// even if we don't filter by paper, we still probably want to return a list of papers
+
+        if (!paperNodes.isEmpty()) {
+            if (query.DataSet().equals("mag")) {
+                if (edgeType.equals(AUTHOR_FIELD)) {
+                    t = t.outE(AUTHOR_OF_FIELD).inV();
+                } else if (edgeType.equals(JOURNAL_FIELD)) {
+                    t = t.inE(PUBLISHED_IN_FIELD).outV();
+                } else if (edgeType.equals(CONFERENCE_INSTANCE_FIELD)) {
+                    t = t.inE(PRESENTED_AT_FIELD).outV();
+                } else if (edgeType.equals(AFFILIATION_FIELD)) {
+                    t = t.inE(AFFILIATED__WITH_FIELD).outV().outE(AUTHOR_OF_FIELD).inV();
+                } else if (edgeType.equals(CONFERENCE_INSTANCE_FIELD)) {
+                    t = t.inE(PRESENTED_AT_FIELD).outV();
+                } else {
+                    t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+                }
+            } else {
+                t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+            }
+        } else {
             t = t.both(edgeLabel(edgeType, PAPER_FIELD));
         }
-        else {
-            t = t.both(edgeLabel(edgeType, PAPER_FIELD));
+
+        if (!paperNodes.isEmpty()) {
             for (Node paperNode : paperNodes) {
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, true, t);
+/*
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("year")) {
                         t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
@@ -311,6 +339,7 @@ public class UserQuery2Gremlin {
                         t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
+*/
             }
         }
 
@@ -321,19 +350,25 @@ public class UserQuery2Gremlin {
         List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
 
         if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-            t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-            //t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV());
+            //t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV();
         } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-            t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-            //t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV());
+            //t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
+            t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV();
+        } else if (vertexType.equals(ASSIGNEE_FIELD)) {
+            t = t.inE(edgeLabel(vertexType, PATENT_FIELD)).outV();
         } else {
-            t = t.both(edgeLabel(vertexType, PATENT_FIELD));
+            //Edges from all other vertex types to patent vertices are outgoing edges from
+            //the non-patent vertex to the patent vertex
+            //t = t.both(edgeLabel(vertexType, PATENT_FIELD));
+            t = t.outE(edgeLabel(vertexType, PATENT_FIELD)).inV();
         }
 
         // Apply any patent filters
         if (!patentNodes.isEmpty()) {
-
             for (Node patentNode : patentNodes) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, true, t);
+/*
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
@@ -349,8 +384,8 @@ public class UserQuery2Gremlin {
                         t = t.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
+*/
             }
-
         }
 
         return t;
@@ -368,7 +403,11 @@ public class UserQuery2Gremlin {
             magVertices = getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
         }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
-        } else {
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AFFILIATION_FIELD))) {
+            magVertices = getProjectionForNonPaperQuery(traversal, query, AFFILIATION_FIELD);
+        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(FIELD_OF_STUDY_FIELD))) {
+            magVertices = getProjectionForNonPaperQuery(traversal, query, FIELD_OF_STUDY_FIELD);
+        }else {
             magVertices = getProjectionForPaperQueryMAG(traversal, query);
         }
 
@@ -424,55 +463,82 @@ public class UserQuery2Gremlin {
 
         if (!inventorNodes.isEmpty()){
             for (Node n : inventorNodes) {
+                t1 = applyFilters(query.DataSet(), n.type, n.filters, false, t1);
+                nonPatentNodesList1 = t1.toList();
+/*
                 for (Filter f : n.filters) {
                     t1 = t1.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList1 = t1.toList();
                 }
+*/
             }
         }
 
         if (!inventorLocationNodes.isEmpty()){
             for (Node n : inventorLocationNodes) {
+                t2 = applyFilters(query.DataSet(), LOCATION_FIELD, n.filters, false, t2);
+                nonPatentNodesList2 = t2.toList();
+/*
                 for (Filter f : n.filters) {
                     t2 = t2.has(LOCATION_FIELD, f.field, textContains(f.value));
                     nonPatentNodesList2 = t2.limit(record_limit*2).toList();
                 }
+*/
             }
         }
 
         if (!assigneeLocationNodes.isEmpty()){
             for (Node n : assigneeLocationNodes) {
+                t3 = applyFilters(query.DataSet(), LOCATION_FIELD, n.filters, false, t3);
+                nonPatentNodesList3 = t3.toList();
+/*
                 for (Filter f : n.filters) {
                     t3 = t3.has(LOCATION_FIELD, f.field, textContains(f.value));
                     nonPatentNodesList3 = t3.limit(record_limit*2).toList();
                 }
+*/
             }
         }
 
         if (!assigneeNodes.isEmpty()){
             for (Node n : assigneeNodes) {
+                t4 = applyFilters(query.DataSet(), n.type, n.filters, false, t4);
+                nonPatentNodesList4 = t4.toList();
+                
+/*
                 for (Filter f : n.filters) {
                     t4 = t4.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList4 = t4.limit(record_limit*2).toList();
                 }
+*/
             }
         }
 
         if (!cpcNodes.isEmpty()){
             for (Node n : cpcNodes) {
+                t5 = applyFilters(query.DataSet(), n.type, n.filters, false, t5);
+                nonPatentNodesList5 = t5.toList();
+               
+/*
                 for (Filter f : n.filters) {
                     t5 = t5.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList5 = t5.limit(record_limit*2).toList();
                 }
+*/
             }
         }
 
         if (!uspcNodes.isEmpty()){
             for (Node n : uspcNodes) {
+                t6 = applyFilters(query.DataSet(), n.type, n.filters, false, t6);
+                nonPatentNodesList6 = t6.toList();
+      
+/*
                 for (Filter f : n.filters) {
                     t6 = t6.has(n.type, f.field, textContains(f.value));
                     nonPatentNodesList6 = t6.limit(record_limit*2).toList();
                 }
+*/
             }
         }
 
@@ -561,15 +627,24 @@ public class UserQuery2Gremlin {
         List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
         List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
         List<Node> confInstanceNodes = query.Nodes().stream().filter(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD)).collect(Collectors.toList());
+        List<Node> affiliationNodes = query.Nodes().stream().filter(n -> n.type.equals(AFFILIATION_FIELD)).collect(Collectors.toList());
+        List<Node> fieldOfStudyNodes = query.Nodes().stream().filter(n -> n.type.equals(FIELD_OF_STUDY_FIELD)).collect(Collectors.toList());
 
         GraphTraversal t1 = traversal.V();
         GraphTraversal t2 = traversal.V();
         GraphTraversal t3 = traversal.V();
+        GraphTraversal t4 = traversal.V();
+        GraphTraversal t5 = traversal.V();
         List<Vertex> nonPaperNodesList1 = new ArrayList<>();
         List<Vertex> nonPaperNodesList2 = new ArrayList<>();
         List<Vertex> nonPaperNodesList3 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList4 = new ArrayList<>();
+        List<Vertex> nonPaperNodesList5 = new ArrayList<>();
         if (!authorNodes.isEmpty()){
             for (Node n : authorNodes) {
+                t1 = applyFilters(query.DataSet(), n.type, n.filters, false, t1);
+                nonPaperNodesList1 = t1.toList();
+/*
                 for (Filter f : n.filters) {
                     t1 = t1.has(n.type, f.field, textContains(f.value));
                     if (nodeType.equals(AUTHOR_FIELD)){
@@ -578,22 +653,43 @@ public class UserQuery2Gremlin {
                         nonPaperNodesList1 = t1.toList();
                     }
                 }
+*/
             }
         }
         if (!journalNodes.isEmpty()){
             for (Node n : journalNodes) {
+                t2 = applyFilters(query.DataSet(), n.type, n.filters, false, t2);
+                nonPaperNodesList2 = t2.toList();
+/*
                 for (Filter f : n.filters) {
                     t2 = t2.has(n.type, f.field, textContains(f.value));
                     nonPaperNodesList2 = t2.limit(record_limit*2).toList();
                 }
+*/
             }
         }
         if (!confInstanceNodes.isEmpty()){
             for (Node n : confInstanceNodes) {
+                t3 = applyFilters(query.DataSet(), n.type, n.filters, false, t3);
+                nonPaperNodesList3 = t3.toList();
+/*
                 for (Filter f : n.filters) {
                     t3 = t3.has(n.type, f.field, textContains(f.value));
                     nonPaperNodesList3 = t3.limit(record_limit*2).toList();
                 }
+*/
+            }
+        }
+        if (!affiliationNodes.isEmpty()){
+            for (Node n : affiliationNodes) {
+                t4 = applyFilters(query.DataSet(), n.type, n.filters, false, t4);
+                nonPaperNodesList4 = t4.toList();
+            }
+        }
+        if (!fieldOfStudyNodes.isEmpty()){
+            for (Node n : fieldOfStudyNodes) {
+                t5 = applyFilters(query.DataSet(), n.type, n.filters, false, t5);
+                nonPaperNodesList5 = t5.toList();
             }
         }
 
@@ -601,10 +697,14 @@ public class UserQuery2Gremlin {
         LOG.info("********* size authornodes ***********" + nonPaperNodesList1.size());
         LOG.info("********* size journalnodes *********** " + nonPaperNodesList2.size());
         LOG.info("********* size confInstanceNodes *********** " + nonPaperNodesList3.size());
+        LOG.info("********* size affiliationNodes *********** " + nonPaperNodesList4.size());
+        LOG.info("********* size fieldOfStudyNodes *********** " + nonPaperNodesList5.size());
 
         List<Vertex> paperFiltersWithAuthor = new ArrayList<>();
         List<Vertex> paperFiltersWithJournal = new ArrayList<>();
         List<Vertex> paperFiltersWithConfInst = new ArrayList<>();
+        List<Vertex> paperFiltersWithAffiliation = new ArrayList<>();
+        List<Vertex> paperFiltersWithFieldOfStudy = new ArrayList<>();
         Set<Vertex> filteredPapers = new HashSet<>();
         List<List<Vertex>> papers = new ArrayList<>();
         int batchSize = 100;
@@ -630,12 +730,30 @@ public class UserQuery2Gremlin {
             }
         }
 
+        for (Vertex nonPaperVertex : nonPaperNodesList4){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, AFFILIATION_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithConfInst.addAll(gt.next(batchSize));
+            }
+        }
+
+        for (Vertex nonPaperVertex : nonPaperNodesList5){
+            GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, FIELD_OF_STUDY_FIELD);
+            while (gt.hasNext()) {
+                paperFiltersWithFieldOfStudy.addAll(gt.next(batchSize));
+            }
+        }
+
         LOG.info("Size authorPaperFilters " + paperFiltersWithAuthor.size());
         LOG.info("Size journalPaperFilters " + paperFiltersWithJournal.size());
         LOG.info("Size confPaperFilters " + paperFiltersWithConfInst.size());
+        LOG.info("Size affiliationFilters " + paperFiltersWithAffiliation.size());
+        LOG.info("Size fieldOfStudyFilters " + paperFiltersWithFieldOfStudy.size());
 
         Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
-        filteredPapers = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+        Set<Vertex> intersection2 = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+        Set<Vertex> intersection3 = intersection(paperFiltersWithAffiliation, new ArrayList<>(intersection2));
+        filteredPapers = intersection(paperFiltersWithFieldOfStudy, new ArrayList<>(intersection3));
 
         LOG.info("size " + filteredPapers.size());
 
@@ -674,25 +792,50 @@ public class UserQuery2Gremlin {
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                //System.out.println("Calling single-filter applyFilter on doi");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+/*
                 for (Filter f : paperNode.filters) {
                     if (f.field.equals("doi")) {
                         t = t.has(paperNode.type, f.field, f.value);
                     }
                 }
+*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
+                //System.out.println("Calling single-filter applyFilter on paperTitle");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "paperTitle", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("paperTitle")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
+*/
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("date"))){
+                //System.out.println("Calling single-filter applyFilter on year");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "date", t);
+
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
                         t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
                     }
                 }
+*/
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
+                //System.out.println("Calling single-filter applyFilter on year");
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "year", t);
+
+/*
+                for (Filter f : paperNode.filters) {
+                    LOG.info(f.field);
+                    if (f.field.equals("year")) {
+                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
+                    }
+                }
+*/
             }
         }
 
@@ -703,21 +846,16 @@ public class UserQuery2Gremlin {
         int batchSize;
         int totalGatheredPapers = 0;
 
+        //System.out.println("Applying all filters");
+
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
             List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
 
+            //System.out.println("Applying all paper node filters to next vertex");
             for (Node paperNode : paperNodes) {
-                for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year")) {
-                        gt = gt.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    } else if (f.field.equals("doi")) {
-                        gt = gt.has(paperNode.type, f.field, f.value);
-                    } else {
-                        gt = gt.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
-                    }
-                }
+                gt = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, true, gt);
             }
 
             while (gt.hasNext()) {
@@ -747,44 +885,62 @@ public class UserQuery2Gremlin {
         for (Node patentNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (patentNode.filters.stream().anyMatch(f -> f.field.equals("number"))) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "number", t);
+/*
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("number")) {
                         t = t.has(patentNode.type, f.field, f.value);
                     }
                 }
+*/
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("date"))) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "date", t);
+/*
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("date")) {
                         t = applyDateFilter(t, USPTO_DATE_FORMAT, USPTO_TIME_ZONE, patentNode, f);
                     }
                 }
+*/
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("year"))) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "year", t);
+/*
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("year")) {
                         t = t.has(patentNode.type, f.field, Integer.valueOf(f.value));
                     }
                 }
+*/
             }else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("type"))){
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "type", t);
+/*
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("type")) {
                         t = t.has(patentNode.type, f.field, f.value);
                     }
                 }
+*/
             } else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("title"))) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "title", t);
+/*
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("title")) {
                         t = t.has(patentNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             } else if (patentNode.filters.stream().anyMatch(f -> f.field.equals("abstract"))) {
+                t = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, "abstract", t);
+/*
                 for (Filter f : patentNode.filters) {
                     LOG.info(f.field);
                     if (f.field.equals("abstract")) {
                         t = t.has(patentNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }
         }
         LOG.info("Query: " + t);
@@ -796,7 +952,10 @@ public class UserQuery2Gremlin {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
             List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
+
             for (Node patentNode : patentNodes) {
+                gt = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, true, gt);
+/*
                 for (Filter f : patentNode.filters) {
                     if (f.field.equals("type")) {
                         gt = gt.has(patentNode.type, f.field, f.value);
@@ -812,6 +971,7 @@ public class UserQuery2Gremlin {
                         gt = gt.has(patentNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
                     }
                 }
+*/
             }
 
             while (gt.hasNext()) {
@@ -871,45 +1031,37 @@ public class UserQuery2Gremlin {
         if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
             throw new UnexpectedException("Can't filter non-paper nodes");
         GraphTraversal t = traversal.V();
+
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("DOI"))){
+            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaliso"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaliso", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("issn"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "issn", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("papertitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "papertitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaltitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaltitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("conferencetitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "conferencetitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("lc_standard_names"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "lc_standard_names", t);
+/*
                 for (Filter f : paperNode.filters) {
                     LOG.info(f.field);
-                    if (f.field.equals("DOI")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    }
-                }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("articleTitle"))){
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("articleTitle")) {
+                    if (f.field.equals("lc_standard_names")) {
                         t = t.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("sourceTitle"))){
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("sourceTitle")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("authorFullNames"))){
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("authorFullNames")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationYear"))){
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("publicationYear")) {
-                        t = t.has(paperNode.type, f.field, Integer.valueOf(f.value));
-                    }
-                }
+*/
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationyear"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationyear", t);
             }
         }
+
+
         LOG.info("Query: " + t);
         List<List<Vertex>> papers = new ArrayList<>();
         // Allocate list of papers for zeroth level (query papers) of vertices
@@ -922,14 +1074,32 @@ public class UserQuery2Gremlin {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
 
+            //gt = gt.has("Paper", "publicationYear", 1985);
+
             for (Node paperNode : query.Nodes()) {
+                //System.out.println("Calling applyFilter on node " + paperNode.type);
+                gt = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, true, gt);
+/*
                 for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year")) {
+                    if (f.field.equals("DOI")) {
+                        gt = gt.has(paperNode.type, f.field, f.value);
+                    } else if (f.field.equals("publicationYear")) {
+                        //System.out.println("In publicationYear: " + f.field + " = " + f.value);
                         gt = gt.has(paperNode.type, f.field, Integer.valueOf(f.value));
+                    } else if (f.field.equals("articleTitle")) {
+                        //System.out.println("In articleTitle: " + f.field + " = " + f.value);
+                        gt = gt.has(paperNode.type, f.field, textContains(f.value));
+
+                        if (f.operator.contentEquals("OR")) {
+                           gt = gt.or();
+                        } else if (f.operator.contentEquals("AND")) {
+                           gt = gt.and();
+                        }
                     } else {
                         gt = gt.has(paperNode.type, f.field, textContains(f.value));
                     }
                 }
+*/
             }
 
             while (gt.hasNext()) {
@@ -950,6 +1120,263 @@ public class UserQuery2Gremlin {
         return papers;
     }
 
+    private static GraphTraversal applyFilters(String dataset, String nodeType, ArrayList<Filter> filters, String targetField, GraphTraversal t) throws Exception {
+       // Loop over all filters in the JSON node section
+       for (int i = 0; i < filters.size(); i++) {
+          // Find the start of a block of filters for the given field
+          if (filters.get(i).field.contentEquals(targetField)) {
+             ArrayList<Filter> filterBlock = new ArrayList<Filter>();
+             int j = i+1;
+
+             filterBlock.add(filters.get(i));
+
+/*
+             System.out.println("---------");
+             System.out.println("New block");
+             System.out.println("---------");
+             System.out.println("filterBlock(0).field   : " + filterBlock.get(0).field);
+             System.out.println("filterBlock(0).operator: " + filterBlock.get(0).operator);
+             System.out.println("filterBlock(0).value   : " + filterBlock.get(0).value);
+*/
+
+             // Determine the extent of the and/or block;
+             while (j < filters.size() && !filters.get(j-1).operator.contentEquals("")) {
+                // Get the target filters that are in the block
+                if (filters.get(j).field.contentEquals(targetField)) {
+                   filterBlock.add(filters.get(j));
+                   j++;
+
+/*
+                   System.out.println("---------");
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").field   : " + filterBlock.get(filterBlock.size()-1).field);
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").operator: " + filterBlock.get(filterBlock.size()-1).operator);
+                   System.out.println("filterBlock(" + (filterBlock.size()-1) + ").value   : " + filterBlock.get(filterBlock.size()-1).value);
+*/
+ 
+                   if (filters.get(j-1).operator.contentEquals("")) {
+                      break;
+                   }
+                } else {
+                   break;
+                }
+             }
+
+             i = j-1;
+             t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
+          }
+       }
+
+       return t;
+    }
+
+    private static GraphTraversal applyFilters(String dataset, String nodeType, ArrayList<Filter> filters, boolean isPaperQuery, GraphTraversal t) throws Exception {
+       // Loop over all filters in the JSON node section
+       for (int i = 0; i < filters.size(); i++) {
+          // Find the start of a block of filters
+          ArrayList<Filter> filterBlock = new ArrayList<Filter>();
+          int j = i+1;
+
+          //System.out.println("Adding filter " + i);
+          filterBlock.add(filters.get(i));
+
+
+/*
+          System.out.println("New block");
+          System.out.println("---------");
+          System.out.println("filterBlock(0).field   : " + filterBlock.get(0).field);
+          System.out.println("filterBlock(0).operator: " + filterBlock.get(0).operator);
+          System.out.println("filterBlock(0).value   : " + filterBlock.get(0).value);
+*/
+
+          // Determine the extent of the and/or block;
+/*
+          System.out.println("filters.size(): " + filters.size());
+          System.out.println("j             : " + j);
+          System.out.println("Before while loop");
+          System.out.println("filters.get(" + (j-1) + ").operator: " + filters.get(j-1).operator);
+*/
+          while (j < filters.size() && !filters.get(j-1).operator.contentEquals("")) {
+/*
+             System.out.println("Adding filter " + j);
+*/
+             filterBlock.add(filters.get(j));
+             j++;
+
+
+/*
+             System.out.println("---------");
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").field   : " + filterBlock.get(filterBlock.size()-1).field);
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").operator: " + filterBlock.get(filterBlock.size()-1).operator);
+             System.out.println("filterBlock(" + (filterBlock.size()-1) + ").value   : " + filterBlock.get(filterBlock.size()-1).value);
+*/
+
+ 
+             if (filters.get(j-1).operator.contentEquals("")) {
+                break;
+             }
+          }
+
+          i = j-1;
+          //System.out.println("Generating traversal from filters");
+          t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
+
+          if (!isPaperQuery) {
+             t = t.limit(record_limit*2);
+          }
+       }
+
+       return t;
+    }
+
+
+    private static GraphTraversal generateTraversalFromFilters(String dataset, String nodeType, ArrayList<Filter> filterBlock, GraphTraversal t) throws Exception {
+       ArrayList<Object> values = new ArrayList<>();
+
+       if (dataset.contentEquals("wos")) {
+          for (Filter f : filterBlock) {
+             if (f.field.contentEquals("doi")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("journaliso")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("issn")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("publicationyear")) {
+                values.add(Integer.valueOf(f.value));
+             } else {
+                values.add(textContains(f.value));
+             }
+          }
+       } else if (dataset.contentEquals("mag")) {
+          for (Filter f : filterBlock) {
+             if (f.field.contentEquals("doi")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("date")) {
+                values.add(applyDateFilter(DATE_FORMAT, MAG_TIME_ZONE, f.value));
+             } else if (f.field.contentEquals("year")) {
+                values.add(Integer.valueOf(f.value));
+             } else if (f.field.contentEquals("affiliationId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("authorId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("journalId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("issn")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("fieldOfStudyId")) {
+                values.add(Long.valueOf(f.value));
+             } else if (f.field.contentEquals("conferenceInstanceId")) {
+                values.add(Long.valueOf(f.value));
+             } else {
+                values.add(textContains(f.value));
+             }
+          }
+       } else if (dataset.contentEquals("uspto")) {
+          for (Filter f : filterBlock) {
+             if (f.field.contentEquals("date")) {
+                values.add(applyDateFilter(DATE_FORMAT, USPTO_TIME_ZONE, f.value));
+             } else if (f.field.contentEquals("year")) {
+                values.add(Integer.valueOf(f.value));
+             } else if (f.field.contentEquals("title")) {
+                values.add(textContains(f.value));
+             } else if (f.field.contentEquals("abstract")) {
+                values.add(textContains(f.value));
+             } else {
+                values.add(textContains(f.value));
+             }
+          }
+     
+       } else {
+          throw new Exception("Only WoS and MAG datasets are supported by traversal generation");
+       }
+
+       if (filterBlock.size() == 1) {
+          t = t.has(nodeType, filterBlock.get(0).field, values.get(0));
+       } else {
+          // Generate call to OR or AND method
+          if (filterBlock.get(0).operator.contentEquals("OR")) {
+             if (filterBlock.size() == 2) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)));
+             } else if (filterBlock.size() == 3) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)));
+             } else if (filterBlock.size() == 4) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+                Filter f3 = filterBlock.get(3);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)),
+                         __.has(nodeType, f3.field, values.get(3)));
+             } else if (filterBlock.size() == 5) {
+                Filter f0 = filterBlock.get(0);
+                Filter f1 = filterBlock.get(1);
+                Filter f2 = filterBlock.get(2);
+                Filter f3 = filterBlock.get(3);
+                Filter f4 = filterBlock.get(4);
+
+                t = t.or(__.has(nodeType, f0.field, values.get(0)),
+                         __.has(nodeType, f1.field, values.get(1)),
+                         __.has(nodeType, f2.field, values.get(2)),
+                         __.has(nodeType, f3.field, values.get(3)),
+                         __.has(nodeType, f3.field, values.get(4)));
+             }
+          } else {
+             throw new Exception("and() operation not supported in traversals"); 
+          }
+       }
+
+       return t;
+    }
+          
+
+    private static Object applyDateFilter(String dateFormat, String timeZone, String dateRangeStr) throws Exception {
+        Object filterValue = null;
+        int slashIndex = dateRangeStr.indexOf('/');
+
+        if (slashIndex == -1) {
+            throw new Exception("Invalid date range format.  Missing '/'.");
+        }
+
+        DateFormat dateFormatter = new SimpleDateFormat(dateFormat);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(timeZone));
+        //dateFormatter.setLenient(true);
+
+        if (slashIndex == 0) {
+            String startDateStr = dateRangeStr.substring(1);
+            Date date = dateFormatter.parse(startDateStr);
+
+            if (date == null) {
+                throw new Exception("Parse of date filter failed");
+            }
+
+            filterValue = date;
+        } else {
+            String startDateStr = dateRangeStr.substring(0, slashIndex);
+            String endDateStr = dateRangeStr.substring(slashIndex+1);
+            Date startDate = dateFormatter.parse(startDateStr);
+            Date endDate = dateFormatter.parse(endDateStr);
+
+            if (startDate == null || endDate == null) {
+                throw new Exception("Parse of startDate or endDate failed");
+            }
+
+            filterValue = P.between(startDate, endDate);
+        }
+
+        return filterValue;
+    }
+
     public static void removeDuplicateVertices(Set<Object> uniqueIds, List<List<Vertex>> levels) throws Exception {
         for (List<Vertex> verticesList : levels) {
             for (int i = 0; i < verticesList.size(); i++) {
@@ -961,38 +1388,4 @@ public class UserQuery2Gremlin {
         }
     }
 
-    private static GraphTraversal applyDateFilter(GraphTraversal t, String dateFormat, String timeZone,
-                                           Node n, Filter f) throws Exception {
-        String dateRangeStr = f.value;
-        int slashIndex = dateRangeStr.indexOf('/');
-
-        if (slashIndex == -1) {
-            throw new Exception("Invalid date range format.  Missing '/'.");
-        }
-
-        DateFormat dateFormatter = new SimpleDateFormat(dateFormat);
-        dateFormatter.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-        if (slashIndex == 0) {
-            String startDateStr = dateRangeStr.substring(1);
-            Date date = dateFormatter.parse(startDateStr);
-            t = t.has(n.type, f.field, date);
-
-            if (date == null) {
-                throw new Exception("Parse of date filter failed");
-            }
-        } else {
-            String startDateStr = dateRangeStr.substring(0, slashIndex);
-            String endDateStr = dateRangeStr.substring(slashIndex+1);
-            Date startDate = dateFormatter.parse(startDateStr);
-            Date endDate = dateFormatter.parse(endDateStr);
-            t = t.has(n.type, f.field, P.between(startDate, endDate));
-
-            if (startDate == null || endDate == null) {
-                throw new Exception("Parse of startDate or endDate failed");
-            }
-        }
-
-        return t;
-    }
 }

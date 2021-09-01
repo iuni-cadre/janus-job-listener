@@ -13,40 +13,44 @@
             "vertexType": "Author"
         }, {
             "field": "displayName",
-            "vertexType": "Journal"
+            "vertexType": "JournalFixed"
         }
     ],
     "dataset": "mag",
     "graph": {
-        "edges": [{
-                "relation": "AuthorOf",
-                "source": "Author",
-                "target": "Paper"
-            }
-        ],
+        "edges": [],
         "nodes": [{
                 "filters": [{
                         "field": "name",
                         "filterType": "is",
-                        "operator": "",
-                        "value": "smith"
+                        "operator": "AND",
+                        "value": "Informetrics"
                     }
                 ],
-                "vertexType": "Author"
+                "vertexType": "JournalFixed"
             }, {
                 "filters": [{
                         "field": "year",
                         "filterType": "is",
-                        "operator": "",
+                        "operator": "AND",
                         "value": "2015"
                     }
                 ],
                 "vertexType": "Paper"
+            }, {
+                "filters": [{
+                        "field": "name",
+                        "filterType": "is",
+                        "operator": "",
+                        "value": "Abramo"
+                    }
+                ],
+                "vertexType": "Author"
             }
         ]
     },
-    "job_id": "9872e88d-0ef5-4dd4-a179-0cee173d2440",
-    "job_name": "Smith papers from 2015",
+    "job_id": "a08c8c8d-fbcf-4c73-93f1-e56f00caa3d4",
+    "job_name": "",
     "user_id": 78,
     "username": "mjswm5lmorxw4"
 }

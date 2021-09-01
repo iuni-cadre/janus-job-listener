@@ -28,7 +28,7 @@
                 "filters": [{
                         "field": "publicationYear",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "1998"
                     }, {
                         "field": "authorFullNames",

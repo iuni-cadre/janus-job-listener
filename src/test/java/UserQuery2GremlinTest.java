@@ -429,6 +429,7 @@ public class UserQuery2GremlinTest {
         f.field = "year";
         f.value = "1945";
         nodes.get(0).filters.add(f);
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         List<List<Vertex>> papers = null;
 
@@ -458,6 +459,7 @@ public class UserQuery2GremlinTest {
         List<CSVOutput> csv = Collections.singletonList(new CSVOutput());
         csv.get(0).field = "year";
         csv.get(0).vertexType = "Paper";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -486,6 +488,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "displayName";
         csv.get(1).vertexType = "Author";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -518,7 +521,8 @@ public class UserQuery2GremlinTest {
         csv.get(0).field = "year";
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
-        csv.get(1).vertexType = "JournalFixed";
+        csv.get(1).vertexType = "Journal";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -526,6 +530,7 @@ public class UserQuery2GremlinTest {
         try {
             papers = UserQuery2Gremlin.getMAGProjectionForQuery(g, q);
         } catch (Exception e) {
+            System.out.println("********** THE EXCEPTION MESSAGE IS: " + e.getMessage());
             fail(e.getMessage());
         }
 
@@ -533,7 +538,7 @@ public class UserQuery2GremlinTest {
 
         assertEquals(1, actual.size());
         assertEquals(2001, (Integer) (actual.get(0).value("year")));
-        String actualJournal = (String)(actual.get(0).edges(Direction.OUT, "PublishedInFixed").next()
+        String actualJournal = (String)(actual.get(0).edges(Direction.OUT, "PublishedIn").next()
             .inVertex().value("normalizedName"));
         assertEquals("the open acoustics journal", actualJournal);
     }
@@ -542,17 +547,18 @@ public class UserQuery2GremlinTest {
     void getProjectionForQuery_handles_two_node_filters()
     {
         UserQuery q = mock(UserQuery.class);
-        List<Node> nodes = Arrays.asList(new Node("Paper"), new Node("JournalFixed"));
+        List<Node> nodes = Arrays.asList(new Node("Paper"), new Node("Journal"));
         nodes.get(0).filters.add(new Filter("year", "2001"));
         nodes.get(1).filters.add(new Filter("normalizedName", "acoustics"));
         List<CSVOutput> csv = Arrays.asList(new CSVOutput(), new CSVOutput());
         csv.get(0).field = "paperTitle";
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
-        csv.get(1).vertexType = "JournalFixed";
+        csv.get(1).vertexType = "Journal";
 
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
+        when(q.DataSet()).thenReturn("mag");
 
         List<List<Vertex>> papers = null;
 
@@ -581,6 +587,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "displayName";
         csv.get(1).vertexType = "Author";
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         List<List<Vertex>> papers = null;
@@ -612,6 +619,7 @@ public class UserQuery2GremlinTest {
         csv.get(0).field = "paperTitle";
         csv.get(0).vertexType = "Paper";
 
+        when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
 
@@ -651,6 +659,7 @@ public class UserQuery2GremlinTest {
         UserQuery q = mock(UserQuery.class);
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
+        when(q.DataSet()).thenReturn("mag");
 
         List<List<Vertex>> actual = null;
         try {
@@ -665,7 +674,7 @@ public class UserQuery2GremlinTest {
         assertEquals("Marla Schneider", actual.get(0).get(0).edges(Direction.IN, "AuthorOf").next()
                 .outVertex().value("displayName"));
         assertEquals("the open acoustics journal", actual.get(0).get(0)
-                .edges(Direction.OUT, "PublishedInFixed").next()
+                .edges(Direction.OUT, "PublishedIn").next()
                 .inVertex().value("normalizedName"));
 
     }

@@ -1,0 +1,53 @@
+{
+  "csv_output": [{
+    "field": "paperId",
+    "vertexType": "Paper"
+  }, {
+    "field": "year",
+    "vertexType": "Paper"
+  }, {
+    "field": "originalTitle",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "Paper"
+  }, {
+    "field": "displayName",
+    "vertexType": "JournalFixed"
+  }, {
+    "field": "displayName",
+    "vertexType": "ConferenceInstance"
+  }],
+  "dataset": "mag",
+  "graph": {
+    "edges": [],
+    "nodes": [{
+         "filters": [{
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "OR",
+            "value": "Fish"
+         }, {
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "Shrimp"
+         }, {
+            "field": "paperTitle",
+            "filterType": "is",
+            "operator": "",
+            "value": "salt"
+         }, {
+            "field": "year",
+            "filterType": "is",
+            "operator": "",
+            "value": "1985"
+         }],
+         "vertexType": "Paper"
+    }]
+  },
+  "job_id": "fish_and_shrimp",
+  "job_name": "fish_and_shrimp",
+  "user_id": 78,
+  "username": "test_bool"
+}

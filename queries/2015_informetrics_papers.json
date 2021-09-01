@@ -2,7 +2,7 @@
   "csv_output": [
     {
       "field": "displayName",
-      "vertexType": "JournalFixed"
+      "vertexType": "Journal"
     },
     {
     "field": "paperId",
@@ -21,20 +21,20 @@
   "dataset": "mag",
   "graph": {
     "edges": [{
-      "relation": "PublishedInFixed",
+      "relation": "PublishedIn",
       "source": "Paper",
-      "target": "JournalFixed"
+      "target": "Journal"
     }
     ],
     "nodes": [{
       "filters": [{
         "field": "name",
         "filterType": "is",
-        "operator": "AND",
+        "operator": "",
         "value": "Informetrics"
       }
       ],
-      "vertexType": "JournalFixed"
+      "vertexType": "Journal"
     }, {
       "filters": [{
         "field": "year",

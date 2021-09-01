@@ -152,12 +152,12 @@
                 "filters": [{
                         "field": "articleTitle",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "social"
                     }, {
                         "field": "publicationYear",
                         "filterType": "is",
-                        "operator": "AND",
+                        "operator": "",
                         "value": "2015"
                     }
                 ],

@@ -49,7 +49,7 @@
                         "filters": [{
                                 "field": "title",
                                 "filterType": "is",
-                                "operator": "And",
+                                "operator": "",
                                 "value": "hydraulic"
                         },{
                                 "field": "date",
@@ -62,7 +62,7 @@
                         "filters": [{
                                 "field": "country",
                                 "filterType": "is",
-                                "operator": "And",
+                                "operator": "",
                                 "value": "DE"
                         }],
                         "vertexType": "InventorLocation"

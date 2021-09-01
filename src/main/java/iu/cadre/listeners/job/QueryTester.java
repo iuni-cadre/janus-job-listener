@@ -57,7 +57,7 @@ public class QueryTester {
         for (Vertex journal : journals) {
             // loop over each journal node and run the following query
             GraphTraversal<Vertex, Vertex> t = traversal.V(journal);
-            t = t.both("PublishedInFixed");
+            t = t.both("PublishedIn");
             for (String filtername : filters.keySet()){
                 if (filtername.equals("year")) {
                     t = t.has("Paper", filtername, Integer.parseInt(filters.get(filtername)));
