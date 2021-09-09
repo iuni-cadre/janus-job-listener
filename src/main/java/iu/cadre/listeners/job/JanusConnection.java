@@ -58,7 +58,7 @@ public class JanusConnection {
         }
     }
 
-    public static GraphTraversalSource getJanusMAGTraversal() throws Exception{
+    public static GraphTraversalSource getJanusMAGTraversal() throws TraversalCreationException{
         try {
             String janusConfig = ConfigReader.getJanusMAGPropertiesFile();
             final JanusGraph graph = JanusGraphFactory.open(janusConfig);
@@ -71,11 +71,11 @@ public class JanusConnection {
             return graphTransaction.traversal();
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new Exception("Unable to create graph traversal object.", e);
+            throw new TraversalCreationException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusWOSTraversal() throws Exception{
+    public static GraphTraversalSource getJanusWOSTraversal() throws TraversalCreationException{
         try {
             String janusConfig = ConfigReader.getJanusWOSPropertiesFile();
             final JanusGraph graph = JanusGraphFactory.open(janusConfig);
@@ -88,11 +88,11 @@ public class JanusConnection {
             return graphTransaction.traversal();
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new Exception("Unable to create graph traversal object.", e);
+            throw new TraversalCreationException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusUSPTOTraversal() throws Exception{
+    public static GraphTraversalSource getJanusUSPTOTraversal() throws TraversalCreationException{
         try {
             String janusConfig = ConfigReader.getJanusUSPTOPropertiesFile();
             final JanusGraph graph = JanusGraphFactory.open(janusConfig);
@@ -105,7 +105,7 @@ public class JanusConnection {
             return graphTransaction.traversal();
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new Exception("Unable to create graph traversal object.", e);
+            throw new TraversalCreationException("Unable to create graph traversal object.", e);
         }
     }
 
