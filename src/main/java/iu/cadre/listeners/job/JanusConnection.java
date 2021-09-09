@@ -28,7 +28,6 @@ import java.util.Set;
 
 import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
 
-
 public class JanusConnection {
     protected static final Log LOG = LogFactory.getLog(JanusConnection.class);
 

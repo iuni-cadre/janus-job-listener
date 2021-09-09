@@ -199,11 +199,11 @@ public class UserQuery2Gremlin {
         }
 
         if (query.DataSet().equals("mag")) {
-            paperIdKey = "paperId";
+            paperIdKey = MAG_PAPER_ID;
         } else if (query.DataSet().equals("wos")) {
-            paperIdKey = "wosId";
+            paperIdKey = WOS_PAPER_ID;
         } else if (query.DataSet().equals("uspto")) {
-            paperIdKey = "patent_id";
+            paperIdKey = USPTO_PATENT_ID;
         }else {
             throw new Exception("Provided data set must be 'mag' or 'wos' or 'uspto'.");
         }

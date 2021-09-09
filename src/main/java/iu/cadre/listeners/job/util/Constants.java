@@ -74,4 +74,9 @@ public class Constants {
     public static final String CPC_CATEGORY_OF_FIELD = "CPC_Category_Of";
     public static final String ASSIGNEE_FIELD = "Assignee";
     public static final String ASSIGNED_TO_FIELD = "Assigned_To";
+
+    // Unique ID fields
+    public static final String MAG_PAPER_ID = "paperId";
+    public static final String WOS_PAPER_ID = "wosid";
+    public static final String USPTO_PATENT_ID = "patent_id";
 }

@@ -28,6 +28,7 @@ public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
+    private static long CLUSTER_STARTUP_TIME = 300000; // 5min in ms
     private static int listenerID;
 
     public static void main(String[] args) {
@@ -109,10 +110,22 @@ public class JobListener {
                         dataType = "USPTO";
                     }
 
-                    //listenerStatus.setStatus(dataType, ListenerStatus.STATUS_RUNNING);
                     listenerStatus.update(dataType, ListenerStatus.STATUS_RUNNING);
-                    JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
 
+                    try {
+                       JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
+                    } catch (TraversalCreationException e) {
+                       if (e.getMessage().contains("Unable to create graph traversal object")) {
+                          LOG.warn("Cluster not started.  Sleeping for " + CLUSTER_STARTUP_TIME/1000.0
+                              + " seconds: " + e.getMessage());
+                          Thread.sleep(CLUSTER_STARTUP_TIME);
+                       } else {
+                          throw e;
+                       }
+                    } catch (Exception e) {
+                       throw e;
+                    }
+       
                     if (new File(verticesCSVPath).exists()) {
                         String csvChecksum = ListenerUtils.getChecksum(verticesCSVPath);
                         jobStatus.AddQueryResult(query.JobId(), query.UserId(), verticesCSVPath, csvChecksum, dataType);
@@ -135,6 +148,7 @@ public class JobListener {
                     // the user's job failed. Exit the loop
                     throw e;
                 } catch(Exception e) {
+                    boolean rethrow = false;
                     String msg = null;
                     // Unknown error. We know it's not with the metadatabase as that
                     // would have been caught above, so mark the job failed and exit
@@ -144,12 +158,17 @@ public class JobListener {
                         e.getMessage().contains("No search context found")) {
                        msg = "The system is experiencing a high volume or the query may have exceeded capacity limitations.  Please form a more specific query or try again later.";
                     } else {
+                       rethrow = true;
                        msg = e.getMessage();
                     }
 
                     jobStatus.Update(query.JobId(), "FAILED", msg);
                     listenerStatus.update(dataType, ListenerStatus.STATUS_IDLE);
-                    throw e;
+
+                    // Rethrow serious exceptions
+                    if (rethrow) {
+                       throw e;
+                    }
                 }
            }
            jobStatus.Close();
