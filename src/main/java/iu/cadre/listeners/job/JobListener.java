@@ -28,7 +28,8 @@ public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
-    private static long CLUSTER_STARTUP_TIME = 300000; // 5min in ms
+    private static final long CLUSTER_STARTUP_TIME = 300000; // 5min in ms
+    private static final int MAX_REQUEST_ATTEMPTS = 3;
     private static int listenerID;
 
     public static void main(String[] args) {
@@ -112,20 +113,31 @@ public class JobListener {
 
                     listenerStatus.update(dataType, ListenerStatus.STATUS_RUNNING);
 
-                    try {
-                       JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
-                    } catch (TraversalCreationException e) {
-                       if (e.getMessage().contains("Unable to create graph traversal object")) {
-                          LOG.warn("Cluster not started.  Sleeping for " + CLUSTER_STARTUP_TIME/1000.0
-                              + " seconds: " + e.getMessage());
-                          Thread.sleep(CLUSTER_STARTUP_TIME);
-                       } else {
-                          throw e;
-                       }
-                    } catch (Exception e) {
-                       throw e;
+                    // If the listener fails to connect with a Janus cluster, it might be
+                    // becuase the cluster has not fully started up.  This loop attempts
+                    // to process the request until the Janus connection can be made or
+                    // the maximum limits on attempts is reached or an exeption occurs
+                    // that prevents processing of the query.
+                    for (int requestAttempt = 0; requestAttempt < MAX_REQUEST_ATTEMPTS; requestAttempt++) {
+                        try {
+                           JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
+                        } catch (TraversalCreationException e) {
+                            if (e.getMessage().contains("Unable to create graph traversal object")) {
+                                if (requestAttempt == MAX_REQUEST_ATTEMPTS - 1) {
+                                    throw e;
+                                }
+
+                                LOG.warn("Cluster not started.  Sleeping for " + CLUSTER_STARTUP_TIME/1000.0
+                                    + " seconds: " + e.getMessage());
+                                Thread.sleep(CLUSTER_STARTUP_TIME);
+                            } else {
+                                throw e;
+                            }
+                        } catch (Exception e) {
+                           throw e;
+                        }
                     }
-       
+ 
                     if (new File(verticesCSVPath).exists()) {
                         String csvChecksum = ListenerUtils.getChecksum(verticesCSVPath);
                         jobStatus.AddQueryResult(query.JobId(), query.UserId(), verticesCSVPath, csvChecksum, dataType);
@@ -137,6 +149,10 @@ public class JobListener {
                     }
 
                     jobStatus.Update(query.JobId(), "COMPLETED", "");
+                    listenerStatus.update(dataType, ListenerStatus.STATUS_IDLE);
+                } catch (TraversalCreationException e) {
+                    LOG.warn("Cluster not started: " + e.getMessage());
+                    jobStatus.Update(query.JobId(), "FAILED", e.getMessage());
                     listenerStatus.update(dataType, ListenerStatus.STATUS_IDLE);
                 } catch (CompletionException e) {
                     // Error with Janus. Log it, mark the job failed and keep going
