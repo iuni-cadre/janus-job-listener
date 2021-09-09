@@ -109,7 +109,7 @@ public class JanusConnection {
         }
     }
 
-    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws Exception {
+    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws TraversalCreationException, Exception {
         LOG.info("Connecting to Janus server");
         String server = ConfigReader.getJanusHost();
         int port = 8182;
