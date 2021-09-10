@@ -122,17 +122,13 @@ public class JobListener {
                         try {
                            JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
                         } catch (TraversalCreationException e) {
-                            if (e.getMessage().contains("Unable to create graph traversal object")) {
-                                if (requestAttempt == MAX_REQUEST_ATTEMPTS - 1) {
-                                    throw e;
-                                }
+                             if (requestAttempt == MAX_REQUEST_ATTEMPTS - 1) {
+                                 throw e;
+                             }
 
-                                LOG.warn("Cluster not started.  Sleeping for " + CLUSTER_STARTUP_TIME/1000.0
-                                    + " seconds: " + e.getMessage());
-                                Thread.sleep(CLUSTER_STARTUP_TIME);
-                            } else {
-                                throw e;
-                            }
+                             LOG.warn("Cluster not started.  Sleeping for " + CLUSTER_STARTUP_TIME/1000.0
+                                 + " seconds: " + e.getMessage());
+                             Thread.sleep(CLUSTER_STARTUP_TIME);
                         } catch (Exception e) {
                            throw e;
                         }
