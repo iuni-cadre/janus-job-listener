@@ -30,6 +30,8 @@ import static iu.cadre.listeners.job.UserQuery2Gremlin.record_limit;
 
 public class JanusConnection {
     protected static final Log LOG = LogFactory.getLog(JanusConnection.class);
+    protected static JanusGraph graph = null;
+    protected static JanusGraphTransaction graphTransaction = null;
 
     public static void main(String[] args) {
         if (null == args || args.length != 2) {
@@ -58,51 +60,54 @@ public class JanusConnection {
         }
     }
 
-    public static GraphTraversalSource getJanusMAGTraversal() throws TraversalCreationException{
+    private static GraphTraversalSource getTraversal(String janusConfig) throws TraversalCreationException {
         try {
-            String janusConfig = ConfigReader.getJanusMAGPropertiesFile();
-            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
-            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
-            // get graph management
-            JanusGraphManagement mgmt = standardGraph.openManagement();
-            // you code using 'mgmt' to perform any management related operations
-            // using graph to do traversal
-            JanusGraphTransaction graphTransaction = graph.newTransaction();
+            if (graph != null) {
+                if (graphTransaction.isOpen()) {
+                    graphTransaction.commit();
+                }
+
+                if (graph.isOpen()) {
+                    graph.close();
+                }
+            }
+
+            graph = JanusGraphFactory.open(janusConfig);
+            graphTransaction = graph.newTransaction();
             return graphTransaction.traversal();
+        } catch (Exception e) {
+            throw new TraversalCreationException(e.getMessage());
+        }
+    }
+           
+
+    public static GraphTraversalSource getJanusMAGTraversal() throws TraversalCreationException, Exception {
+        String janusConfig = ConfigReader.getJanusMAGPropertiesFile();
+
+        try {
+            return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
             throw new TraversalCreationException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusWOSTraversal() throws TraversalCreationException{
+    public static GraphTraversalSource getJanusWOSTraversal() throws TraversalCreationException, Exception {
+        String janusConfig = ConfigReader.getJanusWOSPropertiesFile();
+
         try {
-            String janusConfig = ConfigReader.getJanusWOSPropertiesFile();
-            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
-            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
-            // get graph management
-            JanusGraphManagement mgmt = standardGraph.openManagement();
-            // you code using 'mgmt' to perform any management related operations
-            // using graph to do traversal
-            JanusGraphTransaction graphTransaction = graph.newTransaction();
-            return graphTransaction.traversal();
+            return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
             throw new TraversalCreationException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusUSPTOTraversal() throws TraversalCreationException{
+    public static GraphTraversalSource getJanusUSPTOTraversal() throws TraversalCreationException, Exception {
+        String janusConfig = ConfigReader.getJanusUSPTOPropertiesFile();
+
         try {
-            String janusConfig = ConfigReader.getJanusUSPTOPropertiesFile();
-            final JanusGraph graph = JanusGraphFactory.open(janusConfig);
-            StandardJanusGraph standardGraph = (StandardJanusGraph) graph;
-            // get graph management
-            JanusGraphManagement mgmt = standardGraph.openManagement();
-            // you code using 'mgmt' to perform any management related operations
-            // using graph to do traversal
-            JanusGraphTransaction graphTransaction = graph.newTransaction();
-            return graphTransaction.traversal();
+            return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
             throw new TraversalCreationException("Unable to create graph traversal object.", e);
@@ -122,62 +127,87 @@ public class JanusConnection {
             janusTraversal = getJanusUSPTOTraversal();
         }
 
-        record_limit = ConfigReader.getJanusRecordLimit();
-        OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
+        try {
+            record_limit = ConfigReader.getJanusRecordLimit();
+            OutputStream verticesStream = new FileOutputStream(verticesCSVPath);
 
-        int batchSize = 100; // we need some test to figure out the best batchSize to use, I just make up a number here
-        List<Map> t1Elements = new ArrayList<>();
-        List<Map> t2Elements = new ArrayList<>();
-        List<Map> t3Elements = new ArrayList<>();
-        List<List<Vertex>> magVertices = null;
-        List<List<Vertex>> wosVertices = null;
-        List<List<Vertex>> usptoVertices = null;
-        Set<Object> uniqueVertexIds = new HashSet<Object>(Math.max(16, record_limit));
+            int batchSize = 100; // we need some test to figure out the best batchSize to use, I just make up a number here
+            List<Map> t1Elements = new ArrayList<>();
+            List<Map> t2Elements = new ArrayList<>();
+            List<Map> t3Elements = new ArrayList<>();
+            List<List<Vertex>> magVertices = null;
+            List<List<Vertex>> wosVertices = null;
+            List<List<Vertex>> usptoVertices = null;
+            Set<Object> uniqueVertexIds = new HashSet<Object>(Math.max(16, record_limit));
 
-        if (query.DataSet().equals("mag")){
-            magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
-            // For some reason some of the query papers are duplicated
-            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, magVertices);
-            if (query.RequiresGraph()) {
-                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, magVertices);
-                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
-                t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, magVertices);
-                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
-            } else {
-                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, magVertices);
-                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+            if (query.DataSet().equals("mag")){
+                magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
+                // For some reason some of the query papers are duplicated
+                UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, magVertices);
+                if (query.RequiresGraph()) {
+                    OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                    t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, magVertices);
+                    GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
+                    t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, magVertices);
+                    GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
+                } else {
+                    t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, magVertices);
+                    GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+                }
+            }else if(query.DataSet().equals("wos")){
+                wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
+                // For some reason some of the query papers are duplicated
+                UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, wosVertices);
+                if (query.RequiresGraph()) {
+                    OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                    t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, wosVertices);
+                    GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
+                    t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, wosVertices);
+                    GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
+                }else {
+                    t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, wosVertices);
+                    GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+                }
+            }else if(query.DataSet().equals("uspto")){
+                usptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
+                UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, usptoVertices);
+                if (query.RequiresGraph()) {
+                    OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
+                    t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, usptoVertices);
+                    GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
+                    t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
+                    GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
+                }else {
+                    t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
+                    GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+                }
             }
-        }else if(query.DataSet().equals("wos")){
-            wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
-            // For some reason some of the query papers are duplicated
-            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, wosVertices);
-            if (query.RequiresGraph()) {
-                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, wosVertices);
-                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
-                t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, wosVertices);
-                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
-            }else {
-                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, wosVertices);
-                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+
+            // Connections are maintained in some of these objects.
+            // Close them.
+            janusTraversal.close();
+            graphTransaction.commit();
+            graph.close();
+            graph = null;
+            graphTransaction = null;
+            LOG.info("Janus query complete");
+        } catch (Exception e) {
+            janusTraversal.close();
+
+            if (graphTransaction.isOpen()) {
+               graphTransaction.commit();
             }
-        }else if(query.DataSet().equals("uspto")){
-            usptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
-            UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, usptoVertices);
-            if (query.RequiresGraph()) {
-                OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
-                t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, usptoVertices);
-                GremlinGraphWriter.projection_to_csv(t1Elements, edgesStream);
-                t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
-                GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
-            }else {
-                t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
-                GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
+
+            if (graph.isOpen()) {
+               graph.close();
             }
-        }
-        janusTraversal.close();
-        LOG.info("Janus query complete");
+
+            // Try to get these garbage collected as soon as possible
+            graph = null;
+            graphTransaction = null;
+
+            throw e;
+       }
     }
 
 

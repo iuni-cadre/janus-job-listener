@@ -28,7 +28,8 @@ public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
-    private static final long CLUSTER_STARTUP_TIME = 300000; // 5min in ms
+    private static final long CLUSTER_STARTUP_TIME = 180000; // 3min in ms
+    private static final long POLL_QUEUE_SLEEP_TIME = 30000; // 30sec in ms
     private static final int MAX_REQUEST_ATTEMPTS = 3;
     private static int listenerID;
 
@@ -43,6 +44,8 @@ public class JobListener {
                new JobListenerInterruptHandler(listenerStatus)));
             listenerStatus.update(ListenerStatus.CLUSTER_NONE, ListenerStatus.STATUS_IDLE);
             poll_queue(listenerStatus);
+            listenerStatus.update(ListenerStatus.CLUSTER_NONE, ListenerStatus.STATUS_STOPPED);
+            System.exit(0);
         } catch (Exception e) {
             LOG.error("FATAL ERROR, exiting", e);
             System.exit(-1);
@@ -76,10 +79,17 @@ public class JobListener {
         LOG.info("SQS connection established and listening");
         while (true) {
             List<Message> messages = sqsClient.receiveMessage(receiveRequest).messages();
+
+            if (messages.size() == 0) {
+               Thread.sleep(POLL_QUEUE_SLEEP_TIME);
+               continue;
+            }
+
             JobStatus jobStatus = new JobStatus(ConfigReader.getMetaDBInMemory());
             // The DB could have dropped the connection
             listenerStatus.refreshConnection();
 
+            LOG.info("receiveMessages received " + messages.size() + " messages");
             // print out the messages
             for (Message m : messages) {
                 LOG.info(m.body());
@@ -121,6 +131,7 @@ public class JobListener {
                     for (int requestAttempt = 0; requestAttempt < MAX_REQUEST_ATTEMPTS; requestAttempt++) {
                         try {
                            JanusConnection.Request(query, edgesCSVPath, verticesCSVPath);
+                           break;
                         } catch (TraversalCreationException e) {
                              if (requestAttempt == MAX_REQUEST_ATTEMPTS - 1) {
                                  throw e;
@@ -182,8 +193,9 @@ public class JobListener {
                        throw e;
                     }
                 }
-           }
-           jobStatus.Close();
+            }
+            jobStatus.Close();
         }
+
     }
 }
