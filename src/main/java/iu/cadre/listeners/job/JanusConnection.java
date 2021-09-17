@@ -79,6 +79,24 @@ public class JanusConnection {
             throw new TraversalCreationException(e.getMessage());
         }
     }
+
+    private static void closeClusterConnections() {
+        try {
+            if (graphTransaction.isOpen()) {
+               graphTransaction.commit();
+            }
+
+            if (graph.isOpen()) {
+               graph.close();
+            }
+
+            // Try to get these garbage collected as soon as possible
+            graph = null;
+            graphTransaction = null;
+        } catch (Exception e) {
+            ;
+        }
+    }
            
 
     public static GraphTraversalSource getJanusMAGTraversal() throws TraversalCreationException, Exception {
@@ -119,12 +137,18 @@ public class JanusConnection {
         String server = ConfigReader.getJanusHost();
         int port = 8182;
         GraphTraversalSource janusTraversal = null;
-        if (query.DataSet().equals("mag")){
-            janusTraversal = getJanusMAGTraversal();
-        }else if(query.DataSet().equals("wos")){
-            janusTraversal = getJanusWOSTraversal();
-        }else {
-            janusTraversal = getJanusUSPTOTraversal();
+
+        try {
+            if (query.DataSet().equals("mag")){
+                janusTraversal = getJanusMAGTraversal();
+            }else if(query.DataSet().equals("wos")){
+                janusTraversal = getJanusWOSTraversal();
+            }else {
+                janusTraversal = getJanusUSPTOTraversal();
+            }
+        } catch (Exception e) {
+            closeClusterConnections();
+            throw e;
         }
 
         try {
@@ -186,26 +210,11 @@ public class JanusConnection {
             // Connections are maintained in some of these objects.
             // Close them.
             janusTraversal.close();
-            graphTransaction.commit();
-            graph.close();
-            graph = null;
-            graphTransaction = null;
+            closeClusterConnections();
             LOG.info("Janus query complete");
         } catch (Exception e) {
             janusTraversal.close();
-
-            if (graphTransaction.isOpen()) {
-               graphTransaction.commit();
-            }
-
-            if (graph.isOpen()) {
-               graph.close();
-            }
-
-            // Try to get these garbage collected as soon as possible
-            graph = null;
-            graphTransaction = null;
-
+            closeClusterConnections();
             throw e;
        }
     }
