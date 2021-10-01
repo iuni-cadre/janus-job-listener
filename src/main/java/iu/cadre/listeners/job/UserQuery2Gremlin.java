@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import static iu.cadre.listeners.job.util.Constants.*;
 import static org.janusgraph.core.attribute.Text.textContains;
 import static org.janusgraph.core.attribute.Text.textContainsFuzzy;
+import static org.janusgraph.core.attribute.Text.textRegex;
 
 public class UserQuery2Gremlin {
     public static final String PAPER_FIELD = "Paper";
@@ -1217,7 +1218,6 @@ public class UserQuery2Gremlin {
           }
 
           i = j-1;
-          //System.out.println("Generating traversal from filters");
           t = generateTraversalFromFilters(dataset, nodeType, filterBlock, t);
 
           if (!isPaperQuery) {
@@ -1242,6 +1242,9 @@ public class UserQuery2Gremlin {
                 values.add(f.value);
              } else if (f.field.contentEquals("publicationyear")) {
                 values.add(Integer.valueOf(f.value));
+             } else if (f.field.contentEquals("lc_standard_names")) {
+                String regexStr = ".*" + f.value + ".*";
+                values.add(textRegex(regexStr));
              } else {
                 values.add(textContains(f.value));
              }
