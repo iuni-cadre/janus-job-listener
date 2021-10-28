@@ -1035,9 +1035,7 @@ public class UserQuery2Gremlin {
 
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
-            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaliso"))){
+            if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaliso"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaliso", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("issn"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "issn", t);
@@ -1045,8 +1043,6 @@ public class UserQuery2Gremlin {
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "papertitle", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("journaltitle"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaltitle", t);
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("conferencetitle"))){
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "conferencetitle", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("lc_standard_names"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "lc_standard_names", t);
 /*
@@ -1059,6 +1055,14 @@ public class UserQuery2Gremlin {
 */
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationyear"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationyear", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("conferencetitle"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "conferencetitle", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("isopenaccess"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "isopenaccess", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("openaccesstype"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "openaccesstype", t);
             }
         }
 
@@ -1239,6 +1243,8 @@ public class UserQuery2Gremlin {
              } else if (f.field.contentEquals("journaliso")) {
                 values.add(f.value);
              } else if (f.field.contentEquals("issn")) {
+                values.add(f.value);
+             } else if (f.field.contentEquals("isopenaccess")) {
                 values.add(f.value);
              } else if (f.field.contentEquals("publicationyear")) {
                 values.add(Integer.valueOf(f.value));
