@@ -1059,10 +1059,10 @@ public class UserQuery2Gremlin {
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "conferencetitle", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
+            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("full_address"))){
+                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "full_address", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("isopenaccess"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "isopenaccess", t);
-            }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("openaccesstype"))){
-                t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "openaccesstype", t);
             }
         }
 
