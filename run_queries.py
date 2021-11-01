@@ -6,8 +6,8 @@ import sys
 
 target = "target/janus-job-listener-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
 className = "iu.cadre.listeners.job.JanusConnection"
-config = "./uspto_queries/cadre_config.properties"
-testDir = "uspto_queries"
+config = "./test_queries/cadre_config.properties"
+testDir = "test_queries"
 
 if len(sys.argv) > 1:
     config = sys.argv[1]

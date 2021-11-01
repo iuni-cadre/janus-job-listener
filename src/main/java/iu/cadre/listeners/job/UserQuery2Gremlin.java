@@ -110,39 +110,76 @@ public class UserQuery2Gremlin {
                 }
             }
         } else {
-            String[] projections = query.CSV().stream().map(v -> v.vertexType + "_" + v.field).toArray(String[]::new);
+            HashMap<String, ArrayList<String>> fieldMap = new HashMap<String, ArrayList<String>>();
 
+            // Assemble all fields by vertex type
+            for (CSVOutput c : query.CSV()) {
+               ArrayList<String> fieldsList = fieldMap.get(c.vertexType);
+               if (fieldsList == null) {
+                  ArrayList<String> newFields = new ArrayList<String>();
+                  newFields.add(c.field);
+                  fieldMap.put(c.vertexType, newFields);
+               } else {
+                  fieldsList.add(c.field);
+               }
+            }
+
+            Set<String> vertexTypeSet = new HashSet<String>(fieldMap.keySet());
+            ArrayList<String> uniqueVertexTypes = new ArrayList<String>();
+            ArrayList<String> projectionList = new ArrayList<String>();
+            String[] allVertexTypes = query.CSV().stream().map(v -> v.vertexType).toArray(String[]::new);
+
+            // Develop an ordering of vertex types similar to the ordering of the CSV
+            // fields in the JSON.
+            for (String vt : allVertexTypes) {
+               if (vertexTypeSet.contains(vt)) {
+                  ArrayList<String> fields = fieldMap.get(vt);
+                  for (String f : fields) {
+                     projectionList.add(vt + "_" + f);
+                  }
+                  vertexTypeSet.remove(vt);
+                  uniqueVertexTypes.add(vt);
+               }
+            }
+
+            String[] projections = projectionList.toArray(new String[projectionList.size()]);
             for (List<Vertex> verticesList : levels) {
                 for (Vertex v : verticesList) {
                     t = traversal.V(v).project(projections[0], ArrayUtils.subarray(projections, 1, projections.length));
-                    for (CSVOutput c : query.CSV()) {
+                    for (String vertexType : uniqueVertexTypes) {
+                        ArrayList<String> fieldsList = fieldMap.get(vertexType);
+                        int numFields = fieldsList.size();
+                        String[] fields = fieldsList.toArray(new String[numFields]);
                         if (!query.DataSet().equals("uspto")) {
-                            if (c.vertexType.equals(PAPER_FIELD)) {
-                                t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                            } else if (c.vertexType.equals(AFFILIATION_FIELD)) {
+                            if (vertexType.equals(PAPER_FIELD)) {
+                                for (String f : fields) {
+                                   t = t.by(__.coalesce(__.values(f), __.constant("")));
+                                }
+                                //t = t.by(__.coalesce(__.values(fields), __.constant("")));
+                            } else if (vertexType.equals(AFFILIATION_FIELD)) {
 //                              g.V(97581334600).project('Affiliation_displayName').by(both('AuthorOf').hasLabel('Author').bothE().bothV().hasLabel('Affiliation').properties('displayName').value()).fold()
                                 //t = t.by(__.both(AUTHOR_OF_FIELD).hasLabel(AUTHOR_FIELD).bothE().bothV().hasLabel(AFFILIATION_FIELD).values(c.field).fold());
-                                t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(c.field).fold());
-                            } else if (c.vertexType.equals(AUTHOR_FIELD)) {
-                                t = t.by(__.inE(edgeLabel(PAPER_FIELD, c.vertexType)).outV().values(c.field).fold());
+                                t = t.by(__.inE(AUTHOR_OF_FIELD).outV().outE(AFFILIATED__WITH_FIELD).inV().values(fields).fold());
+                            } else if (vertexType.equals(AUTHOR_FIELD)) {
+                                t = t.by(__.inE(edgeLabel(PAPER_FIELD, vertexType)).outV().values(fields).fold());
                             } else {
                                 //t = t.by(__.both(edgeLabel(PAPER_FIELD, c.vertexType)).values(c.field).fold());
-                                t = t.by(__.outE(edgeLabel(PAPER_FIELD, c.vertexType)).inV().values(c.field).fold());
-                            }
+                                t = t.by(__.outE(edgeLabel(PAPER_FIELD, vertexType)).inV().values(fields).fold());
+                            } 
                         }else {
-                            if (c.vertexType.equals(PATENT_FIELD)) {
-                                t = t.by(__.coalesce(__.values(c.field), __.constant("")));
-                            } else if (c.vertexType.equals(INVENTOR_LOCATION_FIELD)) {
+                            if (vertexType.equals(PATENT_FIELD)) {
+                                t = t.by(__.coalesce(__.values(fields), __.constant("")));
+                            } else if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
                                 //t = t.by(__.both(INVENTOR_OF_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
-                                t = t.by(__.inE(INVENTOR_OF_FIELD).outV().outE(INVENTOR_LOCATED_IN_FIELD).inV().values(c.field).fold());
-                            } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
+                                t = t.by(__.inE(INVENTOR_OF_FIELD).outV().outE(INVENTOR_LOCATED_IN_FIELD).inV().values(fields).fold());
+                            } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
                                 //t = t.by(__.both(ASSIGNED_TO_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(LOCATION_FIELD).values(c.field).fold());
-                                t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(c.field).fold());
-                            } else if (c.vertexType.equals(ASSIGNEE_FIELD)) {
-                                t = t.by(__.outE(edgeLabel(PATENT_FIELD, c.vertexType)).inV().values(c.field).fold());
+                                t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(fields).fold());
+                            } else if (vertexType.equals(ASSIGNEE_FIELD)) {
+                                t = t.by(__.outE(edgeLabel(PATENT_FIELD, vertexType)).inV().values(fields).fold());
                             } else {
                                 //t = t.by(__.both(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
-                                t = t.by(__.inE(edgeLabel(PATENT_FIELD, c.vertexType)).outV().values(c.field).fold());
+                                t = t.by(__.inE(edgeLabel(PATENT_FIELD, vertexType)).outV().values(fields).fold());
                             }
                         }
 
@@ -178,7 +215,7 @@ public class UserQuery2Gremlin {
 //        }
 
         return gtList;
-    }
+    } 
 
     public static List getPaperProjectionForNetwork(GraphTraversalSource traversal, UserQuery query,
                                                     Set<Object> uniqueVertexIds,
