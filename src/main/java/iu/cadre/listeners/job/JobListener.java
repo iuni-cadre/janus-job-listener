@@ -28,9 +28,9 @@ public class JobListener {
     private static final String QUEUE_NAME = "cadre-janus-queue.fifo";
     private static final JsonParser jsonParser = new JsonParser();
     private static final Logger LOG = LoggerFactory.getLogger(JobListener.class);
-    private static final long CLUSTER_STARTUP_TIME = 60000; // 1min in ms
+    private static final long CLUSTER_STARTUP_TIME = 120000; // 120 sec
     private static final long POLL_QUEUE_SLEEP_TIME = 30000; // 30sec in ms
-    private static final int MAX_REQUEST_ATTEMPTS = 10;
+    private static final int MAX_REQUEST_ATTEMPTS = 6;
     private static int listenerID;
 
     public static void main(String[] args) {
