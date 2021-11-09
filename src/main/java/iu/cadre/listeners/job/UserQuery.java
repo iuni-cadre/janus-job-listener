@@ -83,8 +83,8 @@ public class UserQuery {
                     if (DataSet().equals("mag")) {
                         if (f.field.equals("title"))
                             f.field = "paperTitle"; // hopefully temporary hack
-                        if (n.type.equals("Paper") && f.field.equals("name"))
-                            f.field = "displayName"; // hopefully temporary hack
+                        //if (n.type.equals("Paper") && f.field.equals("name"))
+                        //    f.field = "displayName"; // hopefully temporary hack
                         if (n.type.equals("Author") && f.field.equals("name"))
                             f.field = "normalizedName"; // hopefully temporary hack
                         if (n.type.equals("Journal") && f.field.equals("name"))
