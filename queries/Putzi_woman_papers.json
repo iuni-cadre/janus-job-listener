@@ -26,7 +26,7 @@
     ],
     "nodes": [{
       "filters": [{
-        "field": "name",
+        "field": "normalizedName",
         "filterType": "is",
         "operator": "",
         "value": "Putzi"
@@ -35,7 +35,7 @@
       "vertexType": "Author"
     }, {
       "filters": [{
-        "field": "title",
+        "field": "paperTitle",
         "filterType": "is",
         "operator": "",
         "value": "Woman"

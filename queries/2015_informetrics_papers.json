@@ -28,7 +28,7 @@
     ],
     "nodes": [{
       "filters": [{
-        "field": "name",
+        "field": "normalizedName",
         "filterType": "is",
         "operator": "",
         "value": "Informetrics"

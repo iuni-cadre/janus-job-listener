@@ -32,7 +32,7 @@
         "operator": "",
         "value": "big data"
       }, {
-        "field": "title",
+        "field": "paperTitle",
         "filterType": "is",
         "operator": "",
         "value": "big data"

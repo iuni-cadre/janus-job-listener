@@ -81,18 +81,9 @@ public class UserQuery {
                     JsonObject filterField = filters.get(j).getAsJsonObject();
                     f.field = filterField.get("field").getAsString();
                     if (DataSet().equals("mag")) {
-                        if (f.field.equals("title"))
-                            f.field = "paperTitle"; // hopefully temporary hack
-                        //if (n.type.equals("Paper") && f.field.equals("name"))
-                        //    f.field = "displayName"; // hopefully temporary hack
-                        if (n.type.equals("Author") && f.field.equals("name"))
-                            f.field = "normalizedName"; // hopefully temporary hack
-                        if (n.type.equals("Journal") && f.field.equals("name"))
-                            f.field = "normalizedName"; // hopefully temporary hack
-                        if (n.type.equals("ConferenceInstance") && f.field.equals("name"))
-                            f.field = "normalizedName"; // hopefully temporary hack
                         f.value = filterField.get("value").getAsString();
                         f.operator = filterField.get("operator").getAsString();
+                        f.field = filterField.get("field").getAsString();
                         n.filters.add(f);
                     }else if(DataSet().equals("wos")) { // WOS
                         f.value = filterField.get("value").getAsString();

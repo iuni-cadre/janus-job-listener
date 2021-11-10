@@ -30,7 +30,7 @@
         ],
         "nodes": [{
                 "filters": [{
-                        "field": "name",
+                        "field": "normalizedName",
                         "filterType": "is",
                         "operator": "",
                         "value": "Informetrics"
@@ -48,7 +48,7 @@
                 "vertexType": "Paper"
             }, {
                 "filters": [{
-                        "field": "name",
+                        "field": "normalizedName",
                         "filterType": "is",
                         "operator": "",
                         "value": "Abramo"

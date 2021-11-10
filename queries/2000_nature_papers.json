@@ -35,7 +35,7 @@
                     "vertexType": "Paper"
                 }, {
                     "filters": [{
-                            "field": "name",
+                            "field": "normalizedName",
                             "filterType": "is",
                             "operator": "",
                             "value": "nature"

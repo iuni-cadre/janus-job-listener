@@ -21,7 +21,7 @@
     "edges": [],
     "nodes": [{
       "filters": [{
-        "field": "title",
+        "field": "paperTitle",
         "filterType": "is",
         "operator": "",
         "value": "Unicorns"

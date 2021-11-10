@@ -21,7 +21,7 @@
     "edges": [],
     "nodes": [{
       "filters": [{
-        "field": "name",
+        "field": "normalizedName",
         "filterType": "is",
         "operator": "",
         "value": "science"
@@ -30,7 +30,7 @@
       "vertexType": "Journal"
     }, {
       "filters": [{
-        "field": "name",
+        "field": "normalizedName",
         "filterType": "is",
         "operator": "",
         "value": "smith"
