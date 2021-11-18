@@ -305,7 +305,7 @@ public class UserQuery2Gremlin {
     private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
         List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
 
-        if (!paperNodes.isEmpty()) {
+        if (!paperNodes.isEmpty() || query.DataSet().equals("mag")) {
             if (query.DataSet().equals("mag")) {
                 if (edgeType.equals(AUTHOR_FIELD)) {
                     t = t.outE(AUTHOR_OF_FIELD).inV();
@@ -734,7 +734,7 @@ public class UserQuery2Gremlin {
         for (Vertex nonPaperVertex : nonPaperNodesList4){
             GraphTraversal gt  = getPaperFilter(traversal.V(nonPaperVertex), query, AFFILIATION_FIELD);
             while (gt.hasNext()) {
-                paperFiltersWithConfInst.addAll(gt.next(batchSize));
+                paperFiltersWithAffiliation.addAll(gt.next(batchSize));
             }
         }
 
@@ -1295,7 +1295,7 @@ public class UserQuery2Gremlin {
           }
      
        } else {
-          throw new Exception("Only WoS and MAG datasets are supported by traversal generation");
+          throw new Exception("Only WoS, MAG, and USPTO datasets are supported by traversal generation");
        }
 
        if (filterBlock.size() == 1) {
