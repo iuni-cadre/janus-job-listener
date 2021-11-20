@@ -610,11 +610,26 @@ public class UserQuery2Gremlin {
         LOG.info("Size cpcPatentFilters " + patentFiltersWithCPC.size());
         LOG.info("Size uspcPatentFilters " + patentFiltersWithUSPC.size());
 
-        Set<Vertex> intersection1 = intersection(patentFiltersWithInventor, patentFiltersWithInventorLocation);
-        Set<Vertex> intersection2 = intersection(patentFiltersWithAssigneeLocation, new ArrayList<>(intersection1));
-        Set<Vertex> intersection3 = intersection(patentFiltersWithAssignee, new ArrayList<>(intersection2));
-        Set<Vertex> intersection4 = intersection(patentFiltersWithCPC, new ArrayList<>(intersection3));
-        Set<Vertex> patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection4));
+        Set<Vertex> patentFilters = new HashSet<>();
+
+        // If all the sets of nodes are not empty or some of them are empty because
+        // no filters were specified, then proceed to intersect the sets to form the
+        // final list of papers.  If some of the sets are empty, but filters were
+        // specified on them, then the intersection will be the empty set, so do
+        // nothing.
+        if ((!patentFiltersWithInventor.isEmpty() || inventorNodes.isEmpty()) &&
+            (!patentFiltersWithInventorLocation.isEmpty() || inventorLocationNodes.isEmpty()) &&
+            (!patentFiltersWithAssigneeLocation.isEmpty() || assigneeLocationNodes.isEmpty()) &&
+            (!patentFiltersWithAssignee.isEmpty() || assigneeNodes.isEmpty()) &&
+            (!patentFiltersWithCPC.isEmpty() || cpcNodes.isEmpty()) &&
+            (!patentFiltersWithUSPC.isEmpty() || uspcNodes.isEmpty()))
+        {
+           Set<Vertex> intersection1 = intersection(patentFiltersWithInventor, patentFiltersWithInventorLocation);
+           Set<Vertex> intersection2 = intersection(patentFiltersWithAssigneeLocation, new ArrayList<>(intersection1));
+           Set<Vertex> intersection3 = intersection(patentFiltersWithAssignee, new ArrayList<>(intersection2));
+           Set<Vertex> intersection4 = intersection(patentFiltersWithCPC, new ArrayList<>(intersection3));
+           patentFilters = intersection(patentFiltersWithUSPC, new ArrayList<>(intersection4));
+        }
 
         LOG.info("size " + patentFilters.size());
         patents.add(new ArrayList<Vertex>(patentFilters));
@@ -751,10 +766,22 @@ public class UserQuery2Gremlin {
         LOG.info("Size affiliationFilters " + paperFiltersWithAffiliation.size());
         LOG.info("Size fieldOfStudyFilters " + paperFiltersWithFieldOfStudy.size());
 
-        Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
-        Set<Vertex> intersection2 = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
-        Set<Vertex> intersection3 = intersection(paperFiltersWithAffiliation, new ArrayList<>(intersection2));
-        filteredPapers = intersection(paperFiltersWithFieldOfStudy, new ArrayList<>(intersection3));
+        // If all the sets of nodes are not empty or some of them are empty because
+        // no filters were specified, then proceed to intersect the sets to form the
+        // final list of papers.  If some of the sets are empty, but filters were
+        // specified on them, then the intersection will be the empty set, so do
+        // nothing.
+        if ((!paperFiltersWithAuthor.isEmpty() || authorNodes.isEmpty()) &&
+            (!paperFiltersWithJournal.isEmpty() || journalNodes.isEmpty()) &&
+            (!paperFiltersWithConfInst.isEmpty() || confInstanceNodes.isEmpty()) &&
+            (!paperFiltersWithAffiliation.isEmpty() || affiliationNodes.isEmpty()) &&
+            (!paperFiltersWithFieldOfStudy.isEmpty() || fieldOfStudyNodes.isEmpty()))
+        {
+           Set<Vertex> intersection1 = intersection(paperFiltersWithAuthor, paperFiltersWithJournal);
+           Set<Vertex> intersection2 = intersection(paperFiltersWithConfInst, new ArrayList<>(intersection1));
+           Set<Vertex> intersection3 = intersection(paperFiltersWithAffiliation, new ArrayList<>(intersection2));
+           filteredPapers = intersection(paperFiltersWithFieldOfStudy, new ArrayList<>(intersection3));
+        }
 
         LOG.info("size " + filteredPapers.size());
 
