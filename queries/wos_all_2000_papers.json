@@ -1,12 +1,12 @@
 {
     "csv_output": [{
-            "field": "wosId",
+            "field": "wosid",
             "vertexType": "Paper"
         }, {
-            "field": "publicationYear",
+            "field": "publicationyear",
             "vertexType": "Paper"
         }, {
-            "field": "authorFullNames",
+            "field": "authors",
             "vertexType": "Paper"
         }
     ],
@@ -15,7 +15,7 @@
         "edges": [],
         "nodes": [{
                 "filters": [{
-                        "field": "publicationYear",
+                        "field": "publicationyear",
                         "filterType": "is",
                         "operator": "",
                         "value": "2000"

@@ -1276,7 +1276,7 @@ public class UserQuery2Gremlin {
              } else if (f.field.contentEquals("publicationyear")) {
                 values.add(Integer.valueOf(f.value));
              } else if (f.field.contentEquals("lc_standard_names")) {
-                String regexStr = ".*" + f.value + ".*";
+                String regexStr = ".*" + f.value.toLowerCase() + ".*";
                 values.add(textRegex(regexStr));
              } else {
                 values.add(textContains(f.value));

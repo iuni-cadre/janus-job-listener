@@ -1,18 +1,18 @@
 {
   "csv_output": [{
-    "field": "wosId",
+    "field": "wosid",
     "vertexType": "Paper"
   }, {
-    "field": "publicationYear",
+    "field": "publicationyear",
     "vertexType": "Paper"
   }, {
-    "field": "articleTitle",
+    "field": "papertitle",
     "vertexType": "Paper"
   }, {
-    "field": "authorFullNames",
+    "field": "authors",
     "vertexType": "Paper"
   }, {
-    "field": "conferenceTitle",
+    "field": "conferencetitle",
     "vertexType": "Paper"
   }
   ],
@@ -21,7 +21,7 @@
     "edges": [],
     "nodes": [{
       "filters": [{
-        "field": "articleTitle",
+        "field": "papertitle",
         "filterType": "is",
         "operator": "",
         "value": "Unicorns"

@@ -1,51 +1,48 @@
 {
     "csv_output": [{
-            "field": "wosId",
+            "field": "wosid",
             "vertexType": "Paper"
         }, {
-            "field": "publicationYear",
+            "field": "publicationyear",
             "vertexType": "Paper"
         }, {
-            "field": "authorFullNames",
+            "field": "authors",
             "vertexType": "Paper"
         }, {
-            "field": "sourceTitle",
+            "field": "journaltitle",
             "vertexType": "Paper"
         }, {
-            "field": "articleTitle",
+            "field": "papertitle",
             "vertexType": "Paper"
         }, {
-            "field": "ISBN",
+            "field": "isbn",
             "vertexType": "Paper"
         }, {
-            "field": "groupAuthors",
+            "field": "conferencelocation",
             "vertexType": "Paper"
         }, {
-            "field": "conferenceLocation",
+            "field": "reprintaddress",
             "vertexType": "Paper"
         }, {
-            "field": "reprintAddresses",
+            "field": "fundingorgs",
             "vertexType": "Paper"
         }, {
-            "field": "fundingOrgs",
+            "field": "journaliso",
             "vertexType": "Paper"
         }, {
-            "field": "journalISOAbbreviation",
+            "field": "partnumber",
             "vertexType": "Paper"
         }, {
-            "field": "partNumber",
+            "field": "endpage",
             "vertexType": "Paper"
         }, {
-            "field": "endPage",
+            "field": "numberofpages",
             "vertexType": "Paper"
         }, {
-            "field": "numberOfPages",
+            "field": "conferencetitle",
             "vertexType": "Paper"
         }, {
-            "field": "conferenceTitle",
-            "vertexType": "Paper"
-        }, {
-            "field": "citedReferenceCount",
+            "field": "citedreferencecount",
             "vertexType": "Paper"
         }, {
             "field": "publisher",
@@ -54,94 +51,82 @@
             "field": "abstract",
             "vertexType": "Paper"
         }, {
-            "field": "articleNumber",
+            "field": "articlenumber",
             "vertexType": "Paper"
         }, {
             "field": "supplement",
             "vertexType": "Paper"
         }, {
-            "field": "publicationDate",
+            "field": "publicationdate",
             "vertexType": "Paper"
         }, {
-            "field": "publisherCity",
+            "field": "publishercity",
             "vertexType": "Paper"
         }, {
-            "field": "emailAddresses",
+            "field": "emailaddresses",
             "vertexType": "Paper"
         }, {
-            "field": "conferenceSponsor",
+            "field": "conferencesponsor",
             "vertexType": "Paper"
         }, {
-            "field": "bookSeriesTitle",
+            "field": "doi",
             "vertexType": "Paper"
         }, {
-            "field": "DOI",
+            "field": "pmid",
             "vertexType": "Paper"
         }, {
-            "field": "pubmedId",
+            "field": "conferencehost",
             "vertexType": "Paper"
         }, {
-            "field": "bookSeriesSubtitle",
+            "field": "rids",
             "vertexType": "Paper"
         }, {
-            "field": "conferenceHost",
-            "vertexType": "Paper"
-        }, {
-            "field": "RIDs",
-            "vertexType": "Paper"
-        }, {
-            "field": "publisherAddress",
+            "field": "publisheraddress",
             "vertexType": "Paper"
         }, {
             "field": "volume",
             "vertexType": "Paper"
         }, {
-            "field": "specialIssue",
+            "field": "specialissue",
             "vertexType": "Paper"
         }, {
-            "field": "bookDOI",
+            "field": "full_address",
             "vertexType": "Paper"
         }, {
-            "field": "addresses",
+            "field": "issn",
             "vertexType": "Paper"
         }, {
-            "field": "ISSN",
+            "field": "eissn",
             "vertexType": "Paper"
         }, {
-            "field": "eISSN",
+            "field": "fundingtext",
             "vertexType": "Paper"
         }, {
-            "field": "fundingText",
+            "field": "documenttype",
             "vertexType": "Paper"
         }, {
-            "field": "documentType",
+            "field": "lc_standard_names",
             "vertexType": "Paper"
         }, {
-            "field": "standardNames",
+            "field": "earlyaccessdate",
             "vertexType": "Paper"
         }, {
-            "field": "earlyAccessDate",
-            "vertexType": "Paper"
-        }, {
-            "field": "startPage",
+            "field": "startpage",
             "vertexType": "Paper"
         }, {
             "field": "issue",
             "vertexType": "Paper"
         }, {
-            "field": "journalAbbreviation",
+            "field": "journalabbrev",
             "vertexType": "Paper"
         }, {
-            "field": "ORCIDs",
+            "field": "orcid",
             "vertexType": "Paper"
         }, {
-            "field": "keywordsPlus",
+            "field": "keywordsplus",
             "vertexType": "Paper"
         }, {
-            "field": "conferenceDate",
-            "vertexType": "Paper"
-        }, {
-            "field": "bookEditors",
+            "field": "conferencedate",
             "vertexType": "Paper"
         }
     ],
@@ -150,12 +135,12 @@
         "edges": [],
         "nodes": [{
                 "filters": [{
-                        "field": "articleTitle",
+                        "field": "papertitle",
                         "filterType": "is",
                         "operator": "",
                         "value": "social"
                     }, {
-                        "field": "publicationYear",
+                        "field": "publicationyear",
                         "filterType": "is",
                         "operator": "",
                         "value": "2015"

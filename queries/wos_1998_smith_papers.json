@@ -1,18 +1,18 @@
 {
     "csv_output": [{
-            "field": "wosId",
+            "field": "wosid",
             "vertexType": "Paper"
         }, {
-            "field": "publicationYear",
+            "field": "publicationyear",
             "vertexType": "Paper"
         }, {
-            "field": "authorFullNames",
+            "field": "standardnames",
             "vertexType": "Paper"
         }, {
-            "field": "sourceTitle",
+            "field": "journaltitle",
             "vertexType": "Paper"
         }, {
-            "field": "articleTitle",
+            "field": "papertitle",
             "vertexType": "Paper"
         }
     ],
@@ -26,12 +26,12 @@
         ],
         "nodes": [{
                 "filters": [{
-                        "field": "publicationYear",
+                        "field": "publicationyear",
                         "filterType": "is",
                         "operator": "",
                         "value": "1998"
                     }, {
-                        "field": "authorFullNames",
+                        "field": "lc_standard_names",
                         "filterType": "is",
                         "operator": "",
                         "value": "smith"
