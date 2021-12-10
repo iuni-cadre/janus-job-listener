@@ -60,7 +60,7 @@ public class JanusConnection {
         }
     }
 
-    private static GraphTraversalSource getTraversal(String janusConfig) throws TraversalCreationException {
+    private static GraphTraversalSource getTraversal(String janusConfig) throws ClusterNotInitializedException {
         try {
             if (graph != null) {
                 if (graphTransaction.isOpen()) {
@@ -76,7 +76,7 @@ public class JanusConnection {
             graphTransaction = graph.newTransaction();
             return graphTransaction.traversal();
         } catch (Exception e) {
-            throw new TraversalCreationException(e.getMessage());
+            throw new ClusterNotInitializedException(e.getMessage());
         }
     }
 
@@ -99,40 +99,40 @@ public class JanusConnection {
     }
            
 
-    public static GraphTraversalSource getJanusMAGTraversal() throws TraversalCreationException, Exception {
+    public static GraphTraversalSource getJanusMAGTraversal() throws ClusterNotInitializedException, Exception {
         String janusConfig = ConfigReader.getJanusMAGPropertiesFile();
 
         try {
             return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new TraversalCreationException("Unable to create graph traversal object.", e);
+            throw new ClusterNotInitializedException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusWOSTraversal() throws TraversalCreationException, Exception {
+    public static GraphTraversalSource getJanusWOSTraversal() throws ClusterNotInitializedException, Exception {
         String janusConfig = ConfigReader.getJanusWOSPropertiesFile();
 
         try {
             return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new TraversalCreationException("Unable to create graph traversal object.", e);
+            throw new ClusterNotInitializedException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static GraphTraversalSource getJanusUSPTOTraversal() throws TraversalCreationException, Exception {
+    public static GraphTraversalSource getJanusUSPTOTraversal() throws ClusterNotInitializedException, Exception {
         String janusConfig = ConfigReader.getJanusUSPTOPropertiesFile();
 
         try {
             return getTraversal(janusConfig);
         }catch (Exception e){
             LOG.error( "Unable to create graph traversal object. Error : " +e.getMessage());
-            throw new TraversalCreationException("Unable to create graph traversal object.", e);
+            throw new ClusterNotInitializedException("Unable to create graph traversal object.", e);
         }
     }
 
-    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws TraversalCreationException, Exception {
+    public static void Request(UserQuery query, String edgesCSVPath, String verticesCSVPath) throws ClusterNotInitializedException, Exception {
         LOG.info("Connecting to Janus server");
         String server = ConfigReader.getJanusHost();
         int port = 8182;
@@ -215,8 +215,14 @@ public class JanusConnection {
         } catch (Exception e) {
             janusTraversal.close();
             closeClusterConnections();
-            throw e;
-       }
+
+            // This is an error that can occur when the cluster is first starting up.
+            if (e.getMessage().contains("Could not call index")) {
+                throw new ClusterNotInitializedException(e.getMessage());
+            } else {
+                throw e;
+            }
+        }
     }
 
 
