@@ -162,7 +162,7 @@ public class JobListener {
                     jobStatus.Update(query.JobId(), "COMPLETED", "");
                     listenerStatus.update(dataType, ListenerStatus.STATUS_IDLE);
                 } catch (ClusterNotInitializedException e) {
-                    LOG.warn("Cluster not full started and initialized: " + e.getMessage());
+                    LOG.warn("Cluster not fully started and initialized: " + e.getMessage());
                     jobStatus.Update(query.JobId(), "FAILED", e.getMessage());
                     listenerStatus.update(dataType, ListenerStatus.STATUS_IDLE);
                 } catch (CompletionException e) {
