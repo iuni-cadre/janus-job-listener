@@ -36,6 +36,7 @@ public class Constants {
     public static final String EFS_SUBPATH_QUERY_RESULTS_DIR = "efs.subpath.query.results.listener";
     public static final String EFS_ROOT_GRAPH_IMPORT_DIR = "efs.root.graph.import.listener";
     //public static final String USPTO_DATE_FORMAT = "EEE LLL dd HH:mm:ss zzz yyyy";
+    public static final String USPTO_DATE_FORMAT = "yyyy-MM-dd";
     public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String USPTO_TIME_ZONE = "UTC";
     public static final String MAG_TIME_ZONE = "UTC";
@@ -61,19 +62,32 @@ public class Constants {
 
     // Vertices and Edges for USPTO
     public static final String PATENT_FIELD = "Patent";
+    public static final String CITATION_FIELD = "Citation";
+    public static final String APPLICATION_FIELD = "Application";
+    public static final String CITES_FIELD = "Cites";
+    public static final String BECOMES_FIELD = "Becomes";
+    public static final String GOVERNMENT_ORGANIZATION_FIELD = "Government_Organization";
+    public static final String INTERESTED_IN_FIELD = "Interested_In";
     public static final String INVENTOR_FIELD = "Inventor";
     public static final String INVENTOR_OF_FIELD = "Inventor_Of";
+    public static final String COINVENTOR_FIELD = "Coinventor";
     public static final String LOCATION_FIELD = "Location";
-    public static final String INVENTOR_LOCATION_FIELD = "InventorLocation";
-    public static final String ASSIGNEE_LOCATION_FIELD = "AssigneeLocation";
+    public static final String INVENTOR_LOCATION_FIELD = "Inventor_Location";
+    public static final String ASSIGNEE_LOCATION_FIELD = "Assignee_Location";
     public static final String INVENTOR_LOCATED_IN_FIELD = "Inventor_Located_In"; // Alias for special case of Location
     public static final String ASSIGNEE_LOCATED_IN_FIELD = "Assignee_Located_In"; // Alias for special case of Location
+    public static final String ASSIGNEE_FIELD = "Assignee";
+    public static final String ASSIGNED_TO_FIELD = "Assigned_To";
+    public static final String ATTORNEY_FIELD = "Attorney";
+    public static final String ATTORNEY_OF_FIELD = "Attorney_Of";
     public static final String USPC_FIELD = "USPC";
     public static final String USPC_CATEGORY_OF_FIELD = "USPC_Category_Of";
     public static final String CPC_FIELD = "CPC";
     public static final String CPC_CATEGORY_OF_FIELD = "CPC_Category_Of";
-    public static final String ASSIGNEE_FIELD = "Assignee";
-    public static final String ASSIGNED_TO_FIELD = "Assigned_To";
+    public static final String WIPO_FIELD = "WIPO";
+    public static final String WIPO_CATEGORY_OF_FIELD = "WIPO_Category_Of";
+    public static final String IPC_FIELD = "IPC";
+    public static final String IPC_CATEGORY_OF_FIELD = "IPC_Category_Of";
 
     // Unique ID fields
     public static final String MAG_PAPER_ID = "paperId";
