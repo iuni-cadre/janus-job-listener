@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 class CSVOutput {
     String field;
@@ -51,8 +52,11 @@ class Filter {
 
 public class UserQuery {
     private JsonObject _json;
+    private List<Node> _nodeList;
+
     public UserQuery(JsonObject json) {
         _json = json;
+        _nodeList = Nodes();
     }
 
     public String JobId() { return _json.get("job_id").getAsString(); }
@@ -65,6 +69,22 @@ public class UserQuery {
     }
     public JsonObject Graph() { return _json.get("graph").getAsJsonObject(); }
     public String UserId() { return _json.get("user_id").getAsString(); }
+
+    public List<Node> NodeList() {
+        return _nodeList;
+    }
+
+    public boolean NodesAnyMatch(String typeField) {
+       return _nodeList.stream().anyMatch(n -> n.type.equals(typeField));
+    } 
+
+    public boolean NodesNotAnyMatch(String typeField) {
+       return _nodeList.stream().anyMatch(n -> !n.type.equals(typeField));
+    } 
+
+    public List<Node> NodesFilterBy(String typeField) {
+       return _nodeList.stream().filter(n -> n.type.equals(typeField)).collect(Collectors.toList());
+    }
 
     public List<Node> Nodes()
     {
@@ -107,6 +127,7 @@ public class UserQuery {
         }
         return result;
     }
+
     public List<Edge> Edges()
     {
         JsonArray edges = _json.get("graph").getAsJsonObject().get("edges").getAsJsonArray();

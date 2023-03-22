@@ -303,7 +303,7 @@ public class UserQuery2Gremlin {
     }
 
     private static GraphTraversal getPaperFilter(GraphTraversal t, UserQuery query, String edgeType) throws Exception {
-        List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+        List<Node> paperNodes = query.NodesFilterBy(PAPER_FIELD);
 
         if (!paperNodes.isEmpty() || query.DataSet().equals("mag")) {
             if (query.DataSet().equals("mag")) {
@@ -330,17 +330,6 @@ public class UserQuery2Gremlin {
         if (!paperNodes.isEmpty()) {
             for (Node paperNode : paperNodes) {
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, true, t);
-/*
-                for (Filter f : paperNode.filters) {
-                    if (f.field.equals("year")) {
-                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    } else if (f.field.equals("doi")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    } else {
-                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
-                    }
-                }
-*/
             }
         }
 
@@ -348,7 +337,7 @@ public class UserQuery2Gremlin {
     }
 
     private static GraphTraversal getPatentsByNodeTypeAndFilter(GraphTraversal t, UserQuery query, String vertexType) throws Exception {
-        List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
+        List<Node> patentNodes = query.NodesFilterBy(PATENT_FIELD);
 
         if (vertexType.equals(APPLICATION_CITES_FIELD)) {
             t = t.out(CITES_FIELD);
@@ -381,15 +370,15 @@ public class UserQuery2Gremlin {
         if (query.HasAbstractSearch())
             throw new UnsupportedOperationException("Search by abstract is not supported");
 
-        if (query.Nodes().stream().anyMatch(n -> n.type.equals(JOURNAL_FIELD))) {
+        if (query.NodesAnyMatch(JOURNAL_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD))) {
+        }else if (query.NodesAnyMatch(CONFERENCE_INSTANCE_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, CONFERENCE_INSTANCE_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AUTHOR_FIELD))) {
+        }else if (query.NodesAnyMatch(AUTHOR_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, AUTHOR_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(AFFILIATION_FIELD))) {
+        }else if (query.NodesAnyMatch(AFFILIATION_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, AFFILIATION_FIELD);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(FIELD_OF_STUDY_FIELD))) {
+        }else if (query.NodesAnyMatch(FIELD_OF_STUDY_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, FIELD_OF_STUDY_FIELD);
         }else {
             magVertices = getProjectionForPaperQueryMAG(traversal, query);
@@ -407,20 +396,20 @@ public class UserQuery2Gremlin {
     public static List<List<Vertex>> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         List <List<Vertex>> projection = null;
 
-        if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(ATTORNEY_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(APPLICATION_CITES_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(APPLICATION_BECOMES_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_LOCATION_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_LOCATION_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(GOVERNMENT_ORGANIZATION_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(WIPO_FIELD)) ||
-            query.Nodes().stream().anyMatch(n -> n.type.equals(IPC_FIELD))) {
+        if (query.NodesAnyMatch(INVENTOR_FIELD) ||
+            query.NodesAnyMatch(ASSIGNEE_FIELD) ||
+            query.NodesAnyMatch(ATTORNEY_FIELD) ||
+            query.NodesAnyMatch(APPLICATION_CITES_FIELD) ||
+            query.NodesAnyMatch(APPLICATION_BECOMES_FIELD) ||
+            query.NodesAnyMatch(INVENTOR_LOCATION_FIELD) ||
+            query.NodesAnyMatch(ASSIGNEE_LOCATION_FIELD) ||
+            query.NodesAnyMatch(GOVERNMENT_ORGANIZATION_FIELD) ||
+            query.NodesAnyMatch(USPC_FIELD) ||
+            query.NodesAnyMatch(CPC_FIELD) ||
+            query.NodesAnyMatch(WIPO_FIELD) ||
+            query.NodesAnyMatch(IPC_FIELD)) {
             projection = getProjectionForNonPatentQuery(query, traversal);
-        } else if (query.Nodes().stream().anyMatch(n -> n.type.equals(PATENT_FIELD))) {
+        } else if (query.NodesAnyMatch(PATENT_FIELD)) {
             projection = getProjectionForPatentQuery(query, traversal);
         }
 
@@ -521,11 +510,11 @@ public class UserQuery2Gremlin {
 
     public static List<List<Vertex>> getProjectionForNonPaperQuery(GraphTraversalSource traversal, UserQuery query, String nodeType) throws Exception {
         // Apply other filters
-        List<Node> authorNodes = query.Nodes().stream().filter(n -> n.type.equals(AUTHOR_FIELD)).collect(Collectors.toList());
-        List<Node> journalNodes = query.Nodes().stream().filter(n -> n.type.equals(JOURNAL_FIELD)).collect(Collectors.toList());
-        List<Node> confInstanceNodes = query.Nodes().stream().filter(n -> n.type.equals(CONFERENCE_INSTANCE_FIELD)).collect(Collectors.toList());
-        List<Node> affiliationNodes = query.Nodes().stream().filter(n -> n.type.equals(AFFILIATION_FIELD)).collect(Collectors.toList());
-        List<Node> fieldOfStudyNodes = query.Nodes().stream().filter(n -> n.type.equals(FIELD_OF_STUDY_FIELD)).collect(Collectors.toList());
+        List<Node> authorNodes = query.NodesFilterBy(AUTHOR_FIELD);
+        List<Node> journalNodes = query.NodesFilterBy(JOURNAL_FIELD);
+        List<Node> confInstanceNodes = query.NodesFilterBy(CONFERENCE_INSTANCE_FIELD);
+        List<Node> affiliationNodes = query.NodesFilterBy(AFFILIATION_FIELD);
+        List<Node> fieldOfStudyNodes = query.NodesFilterBy(FIELD_OF_STUDY_FIELD);
 
         GraphTraversal t1 = traversal.V();
         GraphTraversal t2 = traversal.V();
@@ -541,40 +530,18 @@ public class UserQuery2Gremlin {
             for (Node n : authorNodes) {
                 t1 = applyFilters(query.DataSet(), n.type, n.filters, false, t1);
                 nonPaperNodesList1 = t1.toList();
-/*
-                for (Filter f : n.filters) {
-                    t1 = t1.has(n.type, f.field, textContains(f.value));
-                    if (nodeType.equals(AUTHOR_FIELD)){
-                        nonPaperNodesList1 = t1.limit(record_limit*2).toList();
-                    }else {
-                        nonPaperNodesList1 = t1.toList();
-                    }
-                }
-*/
             }
         }
         if (!journalNodes.isEmpty()){
             for (Node n : journalNodes) {
                 t2 = applyFilters(query.DataSet(), n.type, n.filters, false, t2);
                 nonPaperNodesList2 = t2.toList();
-/*
-                for (Filter f : n.filters) {
-                    t2 = t2.has(n.type, f.field, textContains(f.value));
-                    nonPaperNodesList2 = t2.limit(record_limit*2).toList();
-                }
-*/
             }
         }
         if (!confInstanceNodes.isEmpty()){
             for (Node n : confInstanceNodes) {
                 t3 = applyFilters(query.DataSet(), n.type, n.filters, false, t3);
                 nonPaperNodesList3 = t3.toList();
-/*
-                for (Filter f : n.filters) {
-                    t3 = t3.has(n.type, f.field, textContains(f.value));
-                    nonPaperNodesList3 = t3.limit(record_limit*2).toList();
-                }
-*/
             }
         }
         if (!affiliationNodes.isEmpty()){
@@ -759,7 +726,7 @@ public class UserQuery2Gremlin {
     }
 
     private static List<List<Vertex>> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
+        if (query.NodesAnyMatch(PAPER_FIELD))
             throw new UnexpectedException("Can't filter non-paper nodes");
 
         GraphTraversal t = traversal.V();
@@ -769,48 +736,15 @@ public class UserQuery2Gremlin {
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
                 //System.out.println("Calling single-filter applyFilter on doi");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    if (f.field.equals("doi")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    }
-                }
-*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
                 //System.out.println("Calling single-filter applyFilter on paperTitle");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "paperTitle", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("paperTitle")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("date"))){
                 //System.out.println("Calling single-filter applyFilter on year");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "date", t);
-
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("year")) {
-                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    }
-                }
-*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
                 //System.out.println("Calling single-filter applyFilter on year");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "year", t);
-
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("year")) {
-                        t = t.has(paperNode.type, f.field, Integer.parseInt(f.value));
-                    }
-                }
-*/
             }
         }
 
@@ -826,7 +760,7 @@ public class UserQuery2Gremlin {
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
-            List<Node> paperNodes = query.Nodes().stream().filter(n -> n.type.equals(PAPER_FIELD)).collect(Collectors.toList());
+            List<Node> paperNodes = query.NodesFilterBy(PAPER_FIELD);
 
             //System.out.println("Applying all paper node filters to next vertex");
             for (Node paperNode : paperNodes) {
@@ -854,8 +788,9 @@ public class UserQuery2Gremlin {
     }
 
     private static List<List<Vertex>> getProjectionForPatentQuery(UserQuery query, GraphTraversalSource traversal) throws Exception {
-        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PATENT_FIELD)))
+        if (query.NodesNotAnyMatch(PATENT_FIELD))
             throw new UnexpectedException("Can't filter non-patent nodes");
+
         GraphTraversal t = traversal.V();
         for (Node patentNode : query.Nodes()) {
             // Get all the papers with one filters first, this can reduce search time
@@ -885,7 +820,7 @@ public class UserQuery2Gremlin {
         while (t.hasNext()) {
             Vertex next = (Vertex) t.next();
             GraphTraversal gt = traversal.V(next);
-            List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
+            List<Node> patentNodes = query.NodesFilterBy(PATENT_FIELD);
 
             for (Node patentNode : patentNodes) {
                 gt = applyFilters(query.DataSet(), patentNode.type, patentNode.filters, true, gt);
@@ -911,43 +846,10 @@ public class UserQuery2Gremlin {
     }
 
 
-    /*
-    private static List<Vertex> getProjectionForPaperQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
-            throw new UnexpectedException("Can't filter non-paper nodes here");
-        GraphTraversal t = traversal.V();
-        for (Node paperNode : query.Nodes()) {
-            for (Filter f : paperNode.filters) {
-                LOG.info("******** " + paperNode.filters.size());
-                if (query.DataSet().equals("mag")){
-                    if (f.field.equals("year") || f.field.equals("doi")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    } else {
-                        t = t.has(paperNode.type, f.field, support_fuzzy_queries ? textContainsFuzzy(f.value) : textContains(f.value));
-                    }
-                }else {
-                    LOG.info(f.field);
-                    if (f.field.equals("publicationYear") || f.field.equals("DOI")) {
-                        t = t.has(paperNode.type, f.field, f.value);
-                    } else {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-
-                if (query.RequiresGraph()){
-                    t = t.outE("References").bothV().dedup();
-                }
-            }
-        }
-        t = t.limit(record_limit);
-        LOG.info("Query: " + t);
-        return t.toList();
-    }
-     */
-
     private static List<List<Vertex>> getProjectionForPaperQueryWOS(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (query.Nodes().stream().anyMatch(n -> !n.type.equals(PAPER_FIELD)))
+        if (query.NodesNotAnyMatch(PAPER_FIELD))
             throw new UnexpectedException("Can't filter non-paper nodes");
+
         GraphTraversal t = traversal.V();
 
         for (Node paperNode : query.Nodes()) {
@@ -962,14 +864,6 @@ public class UserQuery2Gremlin {
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "journaltitle", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("lc_standard_names"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "lc_standard_names", t);
-/*
-                for (Filter f : paperNode.filters) {
-                    LOG.info(f.field);
-                    if (f.field.equals("lc_standard_names")) {
-                        t = t.has(paperNode.type, f.field, textContains(f.value));
-                    }
-                }
-*/
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("publicationyear"))){
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "publicationyear", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("conferencetitle"))){
@@ -1393,7 +1287,7 @@ public class UserQuery2Gremlin {
           
 
     private static Set<Vertex> applyFiltersByNodeType(UserQuery query, GraphTraversalSource traversal, String nodeLabel, String vertexLabel, boolean isDocumentQuery) throws Exception {
-       List<Node> nodeList = query.Nodes().stream().filter(n -> n.type.equals(nodeLabel)).collect(Collectors.toList());
+       List<Node> nodeList = query.NodesFilterBy(nodeLabel);
        GraphTraversal t = traversal.V();
        Set<Vertex> vertexSet = null;
 
