@@ -1,7 +1,6 @@
 package iu.cadre.listeners.job;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -165,15 +164,18 @@ public class UserQuery2Gremlin {
                         }else {
                             if (c.vertexType.equals(PATENT_FIELD)) {
                                 t = t.by(__.coalesce(__.values(c.field), __.constant("")));
+                            } else if (c.vertexType.equals(APPLICATION_CITES_FIELD)) {
+                                t = t.by(__.in(CITES_FIELD).values(c.field).fold());
+                            } else if (c.vertexType.equals(APPLICATION_BECOMES_FIELD)) {
+                                t = t.by(__.in(BECOMES_FIELD).values(c.field).fold());
                             } else if (c.vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-                                t = t.by(__.inE(INVENTOR_OF_FIELD).outV().outE(INVENTOR_LOCATED_IN_FIELD).inV().values(c.field).fold());
+                                t = t.by(__.in(INVENTOR_OF_FIELD).out(INVENTOR_LOCATED_IN_FIELD).values(c.field).fold());
                             } else if (c.vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-                                t = t.by(__.outE(ASSIGNED_TO_FIELD).inV().outE(ASSIGNEE_LOCATED_IN_FIELD).inV().values(c.field).fold());
+                                t = t.by(__.in(ASSIGNED_TO_FIELD).out(ASSIGNEE_LOCATED_IN_FIELD).values(c.field).fold());
                             } else {
-                                t = t.by(__.inE(edgeLabel(PATENT_FIELD, c.vertexType)).outV().values(c.field).fold());
+                                t = t.by(__.in(edgeLabel(PATENT_FIELD, c.vertexType)).values(c.field).fold());
                             }
                         }
-
                     }
                     gtList.addAll(t.toList());
                 }
@@ -348,19 +350,19 @@ public class UserQuery2Gremlin {
     private static GraphTraversal getPatentsByNodeTypeAndFilter(GraphTraversal t, UserQuery query, String vertexType) throws Exception {
         List<Node> patentNodes = query.Nodes().stream().filter(n -> n.type.equals(PATENT_FIELD)).collect(Collectors.toList());
 
-        if (vertexType.equals(APPLICATION_FIELD)) {
-            t = t.outE(CITES_FIELD, BECOMES_FIELD).outV();
+        if (vertexType.equals(APPLICATION_CITES_FIELD)) {
+            t = t.out(CITES_FIELD);
+        } else if (vertexType.equals(APPLICATION_BECOMES_FIELD)) {
+            t = t.out(BECOMES_FIELD);
         } else if (vertexType.equals(INVENTOR_LOCATION_FIELD)) {
-            //t = t.both(INVENTOR_LOCATED_IN_FIELD).hasLabel(INVENTOR_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-            t = t.inE(INVENTOR_LOCATED_IN_FIELD).outV().outE(INVENTOR_OF_FIELD).inV();
+            t = t.in(INVENTOR_LOCATED_IN_FIELD).out(INVENTOR_OF_FIELD);
         } else if (vertexType.equals(ASSIGNEE_LOCATION_FIELD)) {
-            //t = t.both(ASSIGNEE_LOCATED_IN_FIELD).hasLabel(ASSIGNEE_FIELD).bothE().bothV().hasLabel(PATENT_FIELD);
-            t = t.inE(ASSIGNEE_LOCATED_IN_FIELD).outV().inE(ASSIGNED_TO_FIELD).outV();
+            t = t.in(ASSIGNEE_LOCATED_IN_FIELD).out(ASSIGNED_TO_FIELD);
         } else {
             //Edges from all other vertex types to patent vertices are outgoing edges from
             //the non-patent vertex to the patent vertex
             //t = t.both(edgeLabel(vertexType, PATENT_FIELD));
-            t = t.outE(edgeLabel(vertexType, PATENT_FIELD)).inV();
+            t = t.out(edgeLabel(vertexType, PATENT_FIELD));
         }
 
         // Apply any patent filters
@@ -403,62 +405,47 @@ public class UserQuery2Gremlin {
     }
 
     public static List<List<Vertex>> getUSPTOProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
-        if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ATTORNEY_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(APPLICATION_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_LOCATION_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_LOCATION_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(GOVERNMENT_ORGANIZATION_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(WIPO_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        }else if (query.Nodes().stream().anyMatch(n -> n.type.equals(IPC_FIELD))) {
-            return getProjectionForNonPatentQuery(query, traversal);
-        } else {
-            return getProjectionForPatentQuery(query, traversal);
+        List <List<Vertex>> projection = null;
+
+        if (query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(ATTORNEY_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(APPLICATION_CITES_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(APPLICATION_BECOMES_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(INVENTOR_LOCATION_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(ASSIGNEE_LOCATION_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(GOVERNMENT_ORGANIZATION_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(USPC_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(CPC_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(WIPO_FIELD)) ||
+            query.Nodes().stream().anyMatch(n -> n.type.equals(IPC_FIELD))) {
+            projection = getProjectionForNonPatentQuery(query, traversal);
+        } else if (query.Nodes().stream().anyMatch(n -> n.type.equals(PATENT_FIELD))) {
+            projection = getProjectionForPatentQuery(query, traversal);
         }
+
+        return projection;
     }
 
 
     public static List<List<Vertex>> getProjectionForNonPatentQuery(UserQuery query, GraphTraversalSource traversal) throws Exception {
-        MutableBoolean applicationNodesEmpty = new MutableBoolean();
-        MutableBoolean govOrganizationNodesEmpty = new MutableBoolean();
-        MutableBoolean inventorNodesEmpty = new MutableBoolean();
-        MutableBoolean inventorLocationNodesEmpty = new MutableBoolean();
-        MutableBoolean assigneeLocationNodesEmpty = new MutableBoolean();
-        MutableBoolean assigneeNodesEmpty = new MutableBoolean();
-        MutableBoolean attorneyNodesEmpty = new MutableBoolean();
-        MutableBoolean uspcNodesEmpty = new MutableBoolean();
-        MutableBoolean cpcNodesEmpty = new MutableBoolean();
-        MutableBoolean wipoNodesEmpty = new MutableBoolean();
-        MutableBoolean ipcNodesEmpty = new MutableBoolean();
-
         // Apply non-patent node filters
-        List<Vertex> applicationVertices = applyFiltersByNodeType(query, traversal, APPLICATION_FIELD, APPLICATION_FIELD, false, applicationNodesEmpty);
-        List<Vertex> govOrganizationVertices = applyFiltersByNodeType(query, traversal, GOVERNMENT_ORGANIZATION_FIELD, GOVERNMENT_ORGANIZATION_FIELD, false, govOrganizationNodesEmpty);
-        List<Vertex> inventorVertices = applyFiltersByNodeType(query, traversal, INVENTOR_FIELD, INVENTOR_FIELD, false, inventorNodesEmpty);
-        List<Vertex> inventorLocationVertices = applyFiltersByNodeType(query, traversal, INVENTOR_LOCATION_FIELD, LOCATION_FIELD, false, inventorLocationNodesEmpty);
-        List<Vertex> assigneeLocationVertices = applyFiltersByNodeType(query, traversal, ASSIGNEE_LOCATION_FIELD, LOCATION_FIELD, false, assigneeLocationNodesEmpty);
-        List<Vertex> assigneeVertices = applyFiltersByNodeType(query, traversal, ASSIGNEE_FIELD, ASSIGNEE_FIELD, false, assigneeNodesEmpty);
-        List<Vertex> attorneyVertices = applyFiltersByNodeType(query, traversal, ATTORNEY_FIELD, ATTORNEY_FIELD, false, attorneyNodesEmpty);
-        List<Vertex> uspcVertices = applyFiltersByNodeType(query, traversal, USPC_FIELD, USPC_FIELD, false, uspcNodesEmpty);
-        List<Vertex> cpcVertices = applyFiltersByNodeType(query, traversal, CPC_FIELD, CPC_FIELD, false, cpcNodesEmpty);
-        List<Vertex> wipoVertices = applyFiltersByNodeType(query, traversal, WIPO_FIELD, WIPO_FIELD, false, wipoNodesEmpty);
-        List<Vertex> ipcVertices = applyFiltersByNodeType(query, traversal, IPC_FIELD, IPC_FIELD, false, ipcNodesEmpty);
+        Set<Vertex> applicationCitesVertices = applyFiltersByNodeType(query, traversal, APPLICATION_CITES_FIELD, APPLICATION_CITES_FIELD, false);
+        Set<Vertex> applicationBecomesVertices = applyFiltersByNodeType(query, traversal, APPLICATION_BECOMES_FIELD, APPLICATION_BECOMES_FIELD, false);
+        Set<Vertex> govOrganizationVertices = applyFiltersByNodeType(query, traversal, GOVERNMENT_ORGANIZATION_FIELD, GOVERNMENT_ORGANIZATION_FIELD, false);
+        Set<Vertex> inventorVertices = applyFiltersByNodeType(query, traversal, INVENTOR_FIELD, INVENTOR_FIELD, false);
+        Set<Vertex> inventorLocationVertices = applyFiltersByNodeType(query, traversal, INVENTOR_LOCATION_FIELD, LOCATION_FIELD, false);
+        Set<Vertex> assigneeLocationVertices = applyFiltersByNodeType(query, traversal, ASSIGNEE_LOCATION_FIELD, LOCATION_FIELD, false);
+        Set<Vertex> assigneeVertices = applyFiltersByNodeType(query, traversal, ASSIGNEE_FIELD, ASSIGNEE_FIELD, false);
+        Set<Vertex> attorneyVertices = applyFiltersByNodeType(query, traversal, ATTORNEY_FIELD, ATTORNEY_FIELD, false);
+        Set<Vertex> uspcVertices = applyFiltersByNodeType(query, traversal, USPC_FIELD, USPC_FIELD, false);
+        Set<Vertex> cpcVertices = applyFiltersByNodeType(query, traversal, CPC_FIELD, CPC_FIELD, false);
+        Set<Vertex> wipoVertices = applyFiltersByNodeType(query, traversal, WIPO_FIELD, WIPO_FIELD, false);
+        Set<Vertex> ipcVertices = applyFiltersByNodeType(query, traversal, IPC_FIELD, IPC_FIELD, false);
 
         LOG.info("********* Non-patent vertices returned *******************");
-        LOG.info("********* size application vertices            : " + applicationVertices.size());
+        LOG.info("********* size application cites vertices      : " + applicationCitesVertices.size());
+        LOG.info("********* size application becomes vertices    : " + applicationBecomesVertices.size());
         LOG.info("********* size government organization vertices: " + govOrganizationVertices.size());
         LOG.info("********* size inventor vertices               : " + inventorVertices.size());
         LOG.info("********* size inventor location vertices      : " + inventorLocationVertices.size());
@@ -470,74 +457,60 @@ public class UserQuery2Gremlin {
         LOG.info("********* size wipo vertices                   : " + wipoVertices.size());
         LOG.info("********* size ipc vertices                    : " + ipcVertices.size());
 
-        List<Vertex> patentsWithApplication = getPatentsByNodeTypeAndFilter(query, traversal, APPLICATION_FIELD, applicationVertices);
-        List<Vertex> patentsWithGovOrganization = getPatentsByNodeTypeAndFilter(query, traversal, GOVERNMENT_ORGANIZATION_FIELD, govOrganizationVertices);
-        List<Vertex> patentsWithInventor = getPatentsByNodeTypeAndFilter(query, traversal, INVENTOR_FIELD, inventorVertices);
-        List<Vertex> patentsWithInventorLocation = getPatentsByNodeTypeAndFilter(query, traversal, INVENTOR_LOCATION_FIELD, inventorLocationVertices);
-        List<Vertex> patentsWithAssigneeLocation = getPatentsByNodeTypeAndFilter(query, traversal, ASSIGNEE_LOCATION_FIELD, assigneeLocationVertices);
-        List<Vertex> patentsWithAssignee = getPatentsByNodeTypeAndFilter(query, traversal, ASSIGNEE_FIELD, assigneeVertices);
-        List<Vertex> patentsWithAttorney = getPatentsByNodeTypeAndFilter(query, traversal, ATTORNEY_FIELD, attorneyVertices);
-        List<Vertex> patentsWithUspc = getPatentsByNodeTypeAndFilter(query, traversal, USPC_FIELD, uspcVertices);
-        List<Vertex> patentsWithCpc = getPatentsByNodeTypeAndFilter(query, traversal, CPC_FIELD, cpcVertices);
-        List<Vertex> patentsWithWipo = getPatentsByNodeTypeAndFilter(query, traversal, WIPO_FIELD, wipoVertices);
-        List<Vertex> patentsWithIpc = getPatentsByNodeTypeAndFilter(query, traversal, IPC_FIELD, ipcVertices);
+        Set<Vertex> patentsWithApplicationCites = getPatentsByNodeTypeAndFilter(query, traversal, APPLICATION_CITES_FIELD, applicationCitesVertices);
+        Set<Vertex> patentsWithApplicationBecomes = getPatentsByNodeTypeAndFilter(query, traversal, APPLICATION_BECOMES_FIELD, applicationBecomesVertices);
+        Set<Vertex> patentsWithGovOrganization = getPatentsByNodeTypeAndFilter(query, traversal, GOVERNMENT_ORGANIZATION_FIELD, govOrganizationVertices);
+        Set<Vertex> patentsWithInventor = getPatentsByNodeTypeAndFilter(query, traversal, INVENTOR_FIELD, inventorVertices);
+        Set<Vertex> patentsWithInventorLocation = getPatentsByNodeTypeAndFilter(query, traversal, INVENTOR_LOCATION_FIELD, inventorLocationVertices);
+        Set<Vertex> patentsWithAssigneeLocation = getPatentsByNodeTypeAndFilter(query, traversal, ASSIGNEE_LOCATION_FIELD, assigneeLocationVertices);
+        Set<Vertex> patentsWithAssignee = getPatentsByNodeTypeAndFilter(query, traversal, ASSIGNEE_FIELD, assigneeVertices);
+        Set<Vertex> patentsWithAttorney = getPatentsByNodeTypeAndFilter(query, traversal, ATTORNEY_FIELD, attorneyVertices);
+        Set<Vertex> patentsWithUspc = getPatentsByNodeTypeAndFilter(query, traversal, USPC_FIELD, uspcVertices);
+        Set<Vertex> patentsWithCpc = getPatentsByNodeTypeAndFilter(query, traversal, CPC_FIELD, cpcVertices);
+        Set<Vertex> patentsWithWipo = getPatentsByNodeTypeAndFilter(query, traversal, WIPO_FIELD, wipoVertices);
+        Set<Vertex> patentsWithIpc = getPatentsByNodeTypeAndFilter(query, traversal, IPC_FIELD, ipcVertices);
 
         List<List<Vertex>> patents = new ArrayList<>();
         LOG.info("********* Patent nodes returned ***********");
-        LOG.info("********* size patentsWithApplication     : " + patentsWithApplication.size());
-        LOG.info("********* size patentsWithGovOrganization : " + patentsWithGovOrganization.size());
-        LOG.info("********* size patentsWithInventor        : " + patentsWithInventor.size());
-        LOG.info("********* size patentsWithInventorLocation: " + patentsWithInventorLocation.size());
-        LOG.info("********* size patentsWithAssigneeLocation: " + patentsWithAssigneeLocation.size());
-        LOG.info("********* size patentsWithAssignee        : " + patentsWithAssignee.size());
-        LOG.info("********* size patentsWithAttorney        : " + patentsWithAttorney.size());
-        LOG.info("********* size patentsWithUspc            : " + patentsWithUspc.size());
-        LOG.info("********* size patentsWithCpc             : " + patentsWithCpc.size());
-        LOG.info("********* size patentsWithWipo            : " + patentsWithWipo.size());
-        LOG.info("********* size patentsWithIpc             : " + patentsWithIpc.size());
-
+        LOG.info("********* size patentsWithApplicationCites   : " + patentsWithApplicationCites.size());
+        LOG.info("********* size patentsWithApplicationBecomes : " + patentsWithApplicationBecomes.size());
+        LOG.info("********* size patentsWithGovOrganization    : " + patentsWithGovOrganization.size());
+        LOG.info("********* size patentsWithInventor           : " + patentsWithInventor.size());
+        LOG.info("********* size patentsWithInventorLocation   : " + patentsWithInventorLocation.size());
+        LOG.info("********* size patentsWithAssigneeLocation   : " + patentsWithAssigneeLocation.size());
+        LOG.info("********* size patentsWithAssignee           : " + patentsWithAssignee.size());
+        LOG.info("********* size patentsWithAttorney           : " + patentsWithAttorney.size());
+        LOG.info("********* size patentsWithUspc               : " + patentsWithUspc.size());
+        LOG.info("********* size patentsWithCpc                : " + patentsWithCpc.size());
+        LOG.info("********* size patentsWithWipo               : " + patentsWithWipo.size());
+        LOG.info("********* size patentsWithIpc                : " + patentsWithIpc.size());
 
         Set<Vertex> patentFilters = new HashSet<>();
 
-        // If all the sets of nodes are not empty or some of them are empty because
-        // no filters were specified, then proceed to intersect the sets to form the
-        // final list of papers.  If some of the sets are empty, but filters were
-        // specified on them, then the intersection will be the empty set, so do
-        // nothing.
-        if ((!patentsWithApplication.isEmpty() || applicationNodesEmpty.booleanValue()) &&
-            (!patentsWithGovOrganization.isEmpty() || govOrganizationNodesEmpty.booleanValue()) &&
-            (!patentsWithInventor.isEmpty() || inventorNodesEmpty.booleanValue()) &&
-            (!patentsWithInventorLocation.isEmpty() || inventorLocationNodesEmpty.booleanValue()) &&
-            (!patentsWithAssigneeLocation.isEmpty() || assigneeLocationNodesEmpty.booleanValue()) &&
-            (!patentsWithAssignee.isEmpty() || assigneeNodesEmpty.booleanValue()) &&
-            (!patentsWithAttorney.isEmpty() || attorneyNodesEmpty.booleanValue()) &&
-            (!patentsWithUspc.isEmpty() || uspcNodesEmpty.booleanValue()) &&
-            (!patentsWithCpc.isEmpty() || cpcNodesEmpty.booleanValue()) &&
-            (!patentsWithWipo.isEmpty() || wipoNodesEmpty.booleanValue()) &&
-            (!patentsWithIpc.isEmpty() || ipcNodesEmpty.booleanValue())) { 
-           // The array lists and sets can be large, set them to null
-           // to facilitate garbage collection when no longer needed.
-           Set<Vertex> intersection1 = intersection(patentsWithApplication, patentsWithGovOrganization);
-           patentsWithApplication = null; patentsWithGovOrganization = null;
-           Set<Vertex> intersection2 = intersection(patentsWithInventor, new ArrayList<>(intersection1));
-           patentsWithInventor = null; intersection1 = null;
-           Set<Vertex> intersection3 = intersection(patentsWithInventorLocation, new ArrayList<>(intersection2));
-           patentsWithInventorLocation = null; intersection2 = null;
-           Set<Vertex> intersection4 = intersection(patentsWithAssigneeLocation, new ArrayList<>(intersection3));
-           patentsWithAssigneeLocation = null; intersection3 = null;
-           Set<Vertex> intersection5 = intersection(patentsWithAssignee, new ArrayList<>(intersection4));
-           patentsWithAssignee = null; intersection4 = null;
-           Set<Vertex> intersection6 = intersection(patentsWithAttorney, new ArrayList<>(intersection5));
-           patentsWithAttorney = null; intersection5 = null;
-           Set<Vertex> intersection7 = intersection(patentsWithUspc, new ArrayList<>(intersection6));
-           patentsWithUspc = null; intersection6 = null;
-           Set<Vertex> intersection8 = intersection(patentsWithCpc, new ArrayList<>(intersection7));
-           patentsWithCpc = null; intersection7 = null;
-           Set<Vertex> intersection9 = intersection(patentsWithWipo, new ArrayList<>(intersection8));
-           patentsWithWipo = null; intersection8 = null;
-           patentFilters = intersection(patentsWithIpc, new ArrayList<>(intersection9));
-           patentsWithIpc = null; intersection9 = null;
-        }
+        // The sets can be large, set them to null
+        // to facilitate garbage collection when no longer needed.
+        Set<Vertex> union1 = union(patentsWithApplicationCites, patentsWithApplicationBecomes);
+        patentsWithApplicationCites = null; patentsWithApplicationBecomes = null;
+        Set<Vertex> intersection1 = intersection(patentsWithGovOrganization, union1);
+        patentsWithGovOrganization = null; union1 = null;
+        Set<Vertex> intersection2 = intersection(patentsWithInventor, intersection1);
+        patentsWithInventor = null; intersection1 = null;
+        Set<Vertex> intersection3 = intersection(patentsWithInventorLocation, intersection2);
+        patentsWithInventorLocation = null; intersection2 = null;
+        Set<Vertex> intersection4 = intersection(patentsWithAssigneeLocation, intersection3);
+        patentsWithAssigneeLocation = null; intersection3 = null;
+        Set<Vertex> intersection5 = intersection(patentsWithAssignee, intersection4);
+        patentsWithAssignee = null; intersection4 = null;
+        Set<Vertex> intersection6 = intersection(patentsWithAttorney, intersection5);
+        patentsWithAttorney = null; intersection5 = null;
+        Set<Vertex> intersection7 = intersection(patentsWithUspc, intersection6);
+        patentsWithUspc = null; intersection6 = null;
+        Set<Vertex> intersection8 = intersection(patentsWithCpc, intersection7);
+        patentsWithCpc = null; intersection7 = null;
+        Set<Vertex> intersection9 = intersection(patentsWithWipo, intersection8);
+        patentsWithWipo = null; intersection8 = null;
+        patentFilters = intersection(patentsWithIpc, intersection9);
+        patentsWithIpc = null; intersection9 = null;
 
         patents.add(new ArrayList<Vertex>(patentFilters));
         LOG.info("********* Intersected patent nodes: " + patentFilters.size());
@@ -735,6 +708,54 @@ public class UserQuery2Gremlin {
             }
         }
         return list;
+    }
+
+    private static <T> Set<T> intersection(Set<T> set1, Set<T> cumulativeIntersection) {
+        Set<T> intersectionSet = cumulativeIntersection;
+
+        if (set1 != null) {
+           if (cumulativeIntersection == null) {
+              // The cumulative intersection has yet to be initialized
+              intersectionSet = set1;
+           } else {
+              // If either set is empty, the intersection is empty
+              if (set1.isEmpty()) {
+                 intersectionSet = set1;
+              } else if (cumulativeIntersection.isEmpty()) {
+                 intersectionSet = cumulativeIntersection;
+              } else {
+                 intersectionSet = set1;
+                 intersectionSet.retainAll(cumulativeIntersection);
+              }
+           }
+        }
+
+        return intersectionSet;
+    }
+
+    private static <T> Set<T> union(Set<T> set1, Set<T> set2) {
+        Set<T> unionSet = null;
+
+        // WARNING: The return reference can be aliased to an
+        // input reference.  This is fine for our purposes and
+        // it improves code performance.
+
+        if (set1 != null) {
+           if (set2 == null) {
+              unionSet = set1;
+           } else {
+              if (set1.isEmpty()) {
+                 unionSet = set2;
+              } else if (set2.isEmpty()) {
+                 unionSet = set1;
+              } else {
+                 unionSet = set1;
+                 unionSet.addAll(set2);
+              }
+           }
+        }
+
+        return unionSet;
     }
 
     private static List<List<Vertex>> getProjectionForPaperQueryMAG(GraphTraversalSource traversal, UserQuery query) throws Exception {
@@ -1371,27 +1392,34 @@ public class UserQuery2Gremlin {
     }
           
 
-    private static List<Vertex> applyFiltersByNodeType(UserQuery query, GraphTraversalSource traversal, String nodeLabel, String vertexLabel, boolean isDocumentQuery, MutableBoolean nodeListIsEmpty) throws Exception {
+    private static Set<Vertex> applyFiltersByNodeType(UserQuery query, GraphTraversalSource traversal, String nodeLabel, String vertexLabel, boolean isDocumentQuery) throws Exception {
        List<Node> nodeList = query.Nodes().stream().filter(n -> n.type.equals(nodeLabel)).collect(Collectors.toList());
        GraphTraversal t = traversal.V();
-       List<Vertex> vertexList = new ArrayList<>();
+       Set<Vertex> vertexSet = null;
 
-       for (Node n : nodeList) {
-          t = applyFilters(query.DataSet(), vertexLabel, n.filters, isDocumentQuery, t);
-          vertexList.addAll(t.toList());
+       if (!nodeList.isEmpty()) {
+          vertexSet = new HashSet<>();
+
+          for (Node n : nodeList) {
+             t = applyFilters(query.DataSet(), vertexLabel, n.filters, isDocumentQuery, t);
+             vertexSet.addAll(t.toList());
+          }
        }
 
-       nodeListIsEmpty.setValue(nodeList.isEmpty());
-       return vertexList;
+       return vertexSet;
     }
 
-    private static List<Vertex> getPatentsByNodeTypeAndFilter(UserQuery query, GraphTraversalSource traversal, String nodeLabel, List<Vertex> nonPatentNodesList) throws Exception {
-       List<Vertex> filteredPatents = new ArrayList<>();
+    private static Set<Vertex> getPatentsByNodeTypeAndFilter(UserQuery query, GraphTraversalSource traversal, String nodeLabel, Set<Vertex> nonPatentNodesSet) throws Exception {
+       Set<Vertex> filteredPatents = null;
 
-       for (Vertex nonPatentVertex : nonPatentNodesList) {
-          GraphTraversal gt = getPatentsByNodeTypeAndFilter(traversal.V(nonPatentVertex), query, nodeLabel);
-          while (gt.hasNext()) {
-             filteredPatents.addAll(gt.next(maxBatchSize));
+       if (nonPatentNodesSet == null) {
+          filteredPatents = new HashSet<Vertex>();
+
+          for (Vertex nonPatentVertex : nonPatentNodesSet) {
+             GraphTraversal gt = getPatentsByNodeTypeAndFilter(traversal.V(nonPatentVertex), query, nodeLabel);
+             while (gt.hasNext()) {
+                filteredPatents.addAll(gt.next(maxBatchSize));
+             }
           }
        }
 

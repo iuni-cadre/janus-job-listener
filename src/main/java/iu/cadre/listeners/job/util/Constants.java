@@ -64,6 +64,8 @@ public class Constants {
     public static final String PATENT_FIELD = "Patent";
     public static final String CITATION_FIELD = "Citation";
     public static final String APPLICATION_FIELD = "Application";
+    public static final String APPLICATION_CITES_FIELD = "Application_Cites";
+    public static final String APPLICATION_BECOMES_FIELD = "Application_Becomes";
     public static final String CITES_FIELD = "Cites";
     public static final String BECOMES_FIELD = "Becomes";
     public static final String GOVERNMENT_ORGANIZATION_FIELD = "Government_Organization";
