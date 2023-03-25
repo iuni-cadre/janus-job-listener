@@ -512,7 +512,7 @@ public class UserQuery2GremlinTest {
     @Test
     void getProjectionForQuery_returns_journal_if_csv()
     {
-        UserQuery2Gremlin.support_fuzzy_queries = false;
+        // UserQuery2Gremlin.support_fuzzy_queries = false;
 
         UserQuery q = mock(UserQuery.class);
         List<Node> nodes = Collections.singletonList(new Node("Paper"));
@@ -555,8 +555,14 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "normalizedName";
         csv.get(1).vertexType = "Journal";
-
+        List<Node> papersList = Arrays.asList(nodes.get(0));
+        List<Node> journalsList = Arrays.asList(nodes.get(1));
+ 
         when(q.Nodes()).thenReturn(nodes);
+        when(q.NodesAnyMatch(PAPER_FIELD)).thenReturn(true);
+        when(q.NodesAnyMatch(JOURNAL_FIELD)).thenReturn(true);
+        when(q.NodesFilterBy(PAPER_FIELD)).thenReturn(papersList);
+        when(q.NodesFilterBy(JOURNAL_FIELD)).thenReturn(journalsList);
         when(q.CSV()).thenReturn(csv);
         when(q.DataSet()).thenReturn("mag");
 
@@ -587,9 +593,15 @@ public class UserQuery2GremlinTest {
         csv.get(0).vertexType = "Paper";
         csv.get(1).field = "displayName";
         csv.get(1).vertexType = "Author";
+
+        List<Node> authorsList = Arrays.asList(nodes.get(0));
+
         when(q.DataSet()).thenReturn("mag");
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
+        when(q.NodesAnyMatch(AUTHOR_FIELD)).thenReturn(true);
+        when(q.NodesFilterBy(AUTHOR_FIELD)).thenReturn(authorsList);
+
         List<List<Vertex>> papers = null;
 
         try {
@@ -609,7 +621,7 @@ public class UserQuery2GremlinTest {
     @Test
     void getProjectionForQuery_handles_two_paper_filters()
     {
-        UserQuery2Gremlin.support_fuzzy_queries = false;
+        // UserQuery2Gremlin.support_fuzzy_queries = false;
 
         UserQuery q = mock(UserQuery.class);
         List<Node> nodes = Arrays.asList(new Node("Paper"));
@@ -639,7 +651,7 @@ public class UserQuery2GremlinTest {
 
     @Test
     void getProjectionForNonPaperQuery() {
-        UserQuery2Gremlin.support_fuzzy_queries = false;
+        // UserQuery2Gremlin.support_fuzzy_queries = false;
 
         List<Node> nodes = Arrays.asList(
                 new Node( JOURNAL_FIELD),
@@ -656,10 +668,20 @@ public class UserQuery2GremlinTest {
         csv.get(2).field = "normalizedName";
         csv.get(2).vertexType = JOURNAL_FIELD;
 
+        List<Node> journalsList = Arrays.asList(nodes.get(0));
+        List<Node> papersList = Arrays.asList(nodes.get(1));
+        List<Node> authorsList = Arrays.asList(nodes.get(2));
+
         UserQuery q = mock(UserQuery.class);
         when(q.Nodes()).thenReturn(nodes);
         when(q.CSV()).thenReturn(csv);
         when(q.DataSet()).thenReturn("mag");
+        when(q.NodesAnyMatch(JOURNAL_FIELD)).thenReturn(true);
+        when(q.NodesFilterBy(JOURNAL_FIELD)).thenReturn(journalsList);
+        when(q.NodesAnyMatch(PAPER_FIELD)).thenReturn(true);
+        when(q.NodesFilterBy(PAPER_FIELD)).thenReturn(papersList);
+        when(q.NodesAnyMatch(AUTHOR_FIELD)).thenReturn(true);
+        when(q.NodesFilterBy(AUTHOR_FIELD)).thenReturn(authorsList);
 
         List<List<Vertex>> actual = null;
         try {

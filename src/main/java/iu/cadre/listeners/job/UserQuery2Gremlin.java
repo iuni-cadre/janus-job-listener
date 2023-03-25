@@ -24,7 +24,7 @@ import static org.janusgraph.core.attribute.Text.textRegex;
 
 public class UserQuery2Gremlin {
     //public static final String PAPER_FIELD = "Paper";
-    public static Integer record_limit;
+    public static Integer record_limit = 100;
     private static final Logger LOG = LoggerFactory.getLogger(UserQuery2Gremlin.class);
     private static final String QUERY_PAPER_HEADER = "isQueryPaper";
     private static final int maxBatchSize = 100;
@@ -367,8 +367,9 @@ public class UserQuery2Gremlin {
     public static List<List<Vertex>> getMAGProjectionForQuery(GraphTraversalSource traversal, UserQuery query) throws Exception {
         List<List<Vertex>> magVertices = null;
 
-        if (query.HasAbstractSearch())
+        if (query.HasAbstractSearch()) {
             throw new UnsupportedOperationException("Search by abstract is not supported");
+        }
 
         if (query.NodesAnyMatch(JOURNAL_FIELD)) {
             magVertices = getProjectionForNonPaperQuery(traversal, query, JOURNAL_FIELD);
@@ -557,6 +558,7 @@ public class UserQuery2Gremlin {
             }
         }
 
+
         LOG.info("********* Non paper nodes returned ***********");
         LOG.info("********* size authornodes ***********" + nonPaperNodesList1.size());
         LOG.info("********* size journalnodes *********** " + nonPaperNodesList2.size());
@@ -734,16 +736,12 @@ public class UserQuery2Gremlin {
         for (Node paperNode : query.Nodes()) {
 //          Get all the papers with one filters first
             if (paperNode.filters.stream().anyMatch(f -> f.field.equals("doi"))){
-                //System.out.println("Calling single-filter applyFilter on doi");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "doi", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("paperTitle"))){
-                //System.out.println("Calling single-filter applyFilter on paperTitle");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "paperTitle", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("date"))){
-                //System.out.println("Calling single-filter applyFilter on year");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "date", t);
             }else if (paperNode.filters.stream().anyMatch(f -> f.field.equals("year"))){
-                //System.out.println("Calling single-filter applyFilter on year");
                 t = applyFilters(query.DataSet(), paperNode.type, paperNode.filters, "year", t);
             }
         }

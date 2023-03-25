@@ -3,6 +3,7 @@ package iu.cadre.listeners.job;
 import com.google.gson.JsonParser;
 import iu.cadre.listeners.job.UserQuery;
 import org.junit.jupiter.api.Test;
+import com.google.gson.JsonObject;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,7 +71,12 @@ public class UserQueryTest {
                    "    \"vertexType\": \"JournalFixed\"\n" +
                    "  }\n" +
                    "  ],\n" +
-                   "  \"dataset\": \"mag\"}";
+                   "  \"dataset\": \"mag\",\n" +
+                   "  \"graph\": {\n" +
+                   "    \"edges\": [],\n" +
+                   "    \"nodes\": []\n" +
+                   "  }\n" +
+                   "}";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
         assertEquals(5, q.CSV().size());
@@ -79,12 +85,15 @@ public class UserQueryTest {
 
     @Test
     void UserQuery_requires_graph_if_references_edge_found() {
-        String s = "  {\"graph\": {\n" +
+        String s = " {\"graph\": {\n" +
                    "    \"edges\": [{\n" +
                    "      \"relation\": \"References\",\n" +
                    "      \"source\": \"Paper\",\n" +
                    "      \"target\": \"Paper\"\n" +
-                   "    }]}}";
+                   "    }]," +
+                   "    \"nodes\": []\n" +
+                   "  }\n" +
+                   " }";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
         assertTrue(q.RequiresGraph());
@@ -97,7 +106,10 @@ public class UserQueryTest {
                    "      \"relation\": \"AuthorOf\",\n" +
                    "      \"source\": \"Author\",\n" +
                    "      \"target\": \"Paper\"\n" +
-                   "    }]}}";
+                   "     }],\n" +
+                   "     \"nodes\": []\n" +
+                   "    }\n" + 
+                   "  }";
         JsonParser jsonParser = new JsonParser();
         UserQuery q = new UserQuery(jsonParser.parse(s).getAsJsonObject());
         assertFalse(q.RequiresGraph());
