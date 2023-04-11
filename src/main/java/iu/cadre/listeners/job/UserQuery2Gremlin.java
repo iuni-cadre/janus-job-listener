@@ -409,9 +409,13 @@ public class UserQuery2Gremlin {
             query.NodesAnyMatch(CPC_FIELD) ||
             query.NodesAnyMatch(WIPO_FIELD) ||
             query.NodesAnyMatch(IPC_FIELD)) {
+            LOG.info("Calling getProjectionForNonPatentQuery");
             projection = getProjectionForNonPatentQuery(query, traversal);
         } else if (query.NodesAnyMatch(PATENT_FIELD)) {
+            LOG.info("Calling getProjectionForPatentQuery");
             projection = getProjectionForPatentQuery(query, traversal);
+        } else {
+            throw new UnsupportedOperationException("Search has not been implemented for one or more given node types");
         }
 
         return projection;
@@ -434,18 +438,18 @@ public class UserQuery2Gremlin {
         Set<Vertex> ipcVertices = applyFiltersByNodeType(query, traversal, IPC_FIELD, IPC_FIELD, false);
 
         LOG.info("********* Non-patent vertices returned *******************");
-        LOG.info("********* size application cites vertices      : " + applicationCitesVertices.size());
-        LOG.info("********* size application becomes vertices    : " + applicationBecomesVertices.size());
-        LOG.info("********* size government organization vertices: " + govOrganizationVertices.size());
-        LOG.info("********* size inventor vertices               : " + inventorVertices.size());
-        LOG.info("********* size inventor location vertices      : " + inventorLocationVertices.size());
-        LOG.info("********* size assignee location vertices      : " + assigneeLocationVertices.size());
-        LOG.info("********* size assignee vertices               : " + assigneeVertices.size());
-        LOG.info("********* size attorney vertices               : " + attorneyVertices.size());
-        LOG.info("********* size uspc vertices                   : " + uspcVertices.size());
-        LOG.info("********* size cpc vertices                    : " + cpcVertices.size());
-        LOG.info("********* size wipo vertices                   : " + wipoVertices.size());
-        LOG.info("********* size ipc vertices                    : " + ipcVertices.size());
+        LOG.info("********* size application cites vertices      : " + ((applicationCitesVertices != null) ? applicationCitesVertices.size() : 0));
+        LOG.info("********* size application becomes vertices    : " + ((applicationBecomesVertices != null) ? applicationBecomesVertices.size() : 0));
+        LOG.info("********* size government organization vertices: " + ((govOrganizationVertices != null) ? govOrganizationVertices.size() : 0));
+        LOG.info("********* size inventor vertices               : " + ((inventorVertices != null) ? inventorVertices.size() : 0));
+        LOG.info("********* size inventor location vertices      : " + ((inventorLocationVertices != null) ? inventorLocationVertices.size() : 0));
+        LOG.info("********* size assignee location vertices      : " + ((assigneeLocationVertices != null) ? assigneeLocationVertices.size() : 0));
+        LOG.info("********* size assignee vertices               : " + ((assigneeVertices != null) ? assigneeVertices.size() : 0));
+        LOG.info("********* size attorney vertices               : " + ((attorneyVertices != null) ? attorneyVertices.size() : 0));
+        LOG.info("********* size uspc vertices                   : " + ((uspcVertices != null) ? uspcVertices.size() : 0));
+        LOG.info("********* size cpc vertices                    : " + ((cpcVertices != null) ? cpcVertices.size() : 0));
+        LOG.info("********* size wipo vertices                   : " + ((wipoVertices != null) ? wipoVertices.size() : 0));
+        LOG.info("********* size ipc vertices                    : " + ((ipcVertices != null) ? ipcVertices.size() : 0));
 
         Set<Vertex> patentsWithApplicationCites = getPatentsByNodeTypeAndFilter(query, traversal, APPLICATION_CITES_FIELD, applicationCitesVertices);
         Set<Vertex> patentsWithApplicationBecomes = getPatentsByNodeTypeAndFilter(query, traversal, APPLICATION_BECOMES_FIELD, applicationBecomesVertices);
@@ -461,19 +465,19 @@ public class UserQuery2Gremlin {
         Set<Vertex> patentsWithIpc = getPatentsByNodeTypeAndFilter(query, traversal, IPC_FIELD, ipcVertices);
 
         List<List<Vertex>> patents = new ArrayList<>();
-        LOG.info("********* Patent nodes returned ***********");
-        LOG.info("********* size patentsWithApplicationCites   : " + patentsWithApplicationCites.size());
-        LOG.info("********* size patentsWithApplicationBecomes : " + patentsWithApplicationBecomes.size());
-        LOG.info("********* size patentsWithGovOrganization    : " + patentsWithGovOrganization.size());
-        LOG.info("********* size patentsWithInventor           : " + patentsWithInventor.size());
-        LOG.info("********* size patentsWithInventorLocation   : " + patentsWithInventorLocation.size());
-        LOG.info("********* size patentsWithAssigneeLocation   : " + patentsWithAssigneeLocation.size());
-        LOG.info("********* size patentsWithAssignee           : " + patentsWithAssignee.size());
-        LOG.info("********* size patentsWithAttorney           : " + patentsWithAttorney.size());
-        LOG.info("********* size patentsWithUspc               : " + patentsWithUspc.size());
-        LOG.info("********* size patentsWithCpc                : " + patentsWithCpc.size());
-        LOG.info("********* size patentsWithWipo               : " + patentsWithWipo.size());
-        LOG.info("********* size patentsWithIpc                : " + patentsWithIpc.size());
+        LOG.info("********* Patent vertices returned ***********");
+        LOG.info("********* size patentsWithApplicationCites   : " + ((patentsWithApplicationCites != null) ? patentsWithApplicationCites.size() : 0));
+        LOG.info("********* size patentsWithApplicationBecomes : " + ((patentsWithApplicationBecomes != null) ? patentsWithApplicationBecomes.size() : 0));
+        LOG.info("********* size patentsWithGovOrganization    : " + ((patentsWithGovOrganization != null) ? patentsWithGovOrganization.size() : 0));
+        LOG.info("********* size patentsWithInventor           : " + ((patentsWithInventor != null) ? patentsWithInventor.size() : 0));
+        LOG.info("********* size patentsWithInventorLocation   : " + ((patentsWithInventorLocation != null) ? patentsWithInventorLocation.size() : 0));
+        LOG.info("********* size patentsWithAssigneeLocation   : " + ((patentsWithAssigneeLocation != null) ? patentsWithAssigneeLocation.size() : 0));
+        LOG.info("********* size patentsWithAssignee           : " + ((patentsWithAssignee != null) ? patentsWithAssignee.size() : 0));
+        LOG.info("********* size patentsWithAttorney           : " + ((patentsWithAttorney != null) ? patentsWithAttorney.size() : 0));
+        LOG.info("********* size patentsWithUspc               : " + ((patentsWithUspc != null) ? patentsWithUspc.size() : 0));
+        LOG.info("********* size patentsWithCpc                : " + ((patentsWithCpc != null) ? patentsWithCpc.size() : 0));
+        LOG.info("********* size patentsWithWipo               : " + ((patentsWithWipo != null) ? patentsWithWipo.size() : 0));
+        LOG.info("********* size patentsWithIpc                : " + ((patentsWithIpc != null) ? patentsWithIpc.size() : 0));
 
         Set<Vertex> patentFilters = new HashSet<>();
 
@@ -1301,13 +1305,13 @@ public class UserQuery2Gremlin {
        return vertexSet;
     }
 
-    private static Set<Vertex> getPatentsByNodeTypeAndFilter(UserQuery query, GraphTraversalSource traversal, String nodeLabel, Set<Vertex> nonPatentNodesSet) throws Exception {
+    private static Set<Vertex> getPatentsByNodeTypeAndFilter(UserQuery query, GraphTraversalSource traversal, String nodeLabel, Set<Vertex> nonPatentVerticesSet) throws Exception {
        Set<Vertex> filteredPatents = null;
 
-       if (nonPatentNodesSet == null) {
+       if (nonPatentVerticesSet != null) {
           filteredPatents = new HashSet<Vertex>();
 
-          for (Vertex nonPatentVertex : nonPatentNodesSet) {
+          for (Vertex nonPatentVertex : nonPatentVerticesSet) {
              GraphTraversal gt = getPatentsByNodeTypeAndFilter(traversal.V(nonPatentVertex), query, nodeLabel);
              while (gt.hasNext()) {
                 filteredPatents.addAll(gt.next(maxBatchSize));
@@ -1356,6 +1360,12 @@ public class UserQuery2Gremlin {
     }
 
     public static void removeDuplicateVertices(Set<Object> uniqueIds, List<List<Vertex>> levels) throws Exception {
+        if (uniqueIds == null) {
+           LOG.error("uniqueIds is null");
+        }
+        if (levels == null) {
+           LOG.error("levels is null");
+        }
         for (List<Vertex> verticesList : levels) {
             for (int i = 0; i < verticesList.size(); i++) {
                 if (!uniqueIds.add(verticesList.get(i).id())) {

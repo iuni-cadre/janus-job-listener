@@ -1,20 +1,18 @@
 {
   "csv_output":[
     {
-      "field":"title",
+      "field":"patent_id",
       "vertexType":"Patent"
     },{
-      "field":"number",
+      "field":"patent_title",
       "vertexType":"Patent"
     },{
-      "field":"date",
+      "field":"patent_date",
       "vertexType":"Patent"
     },{
-      "field":"name_first",
+      "field":"inventor_display_name",
       "vertexType":"Inventor"
-    },{
-      "field":"name_last",
-      "vertexType":"Inventor"}
+    }
     ],
   "dataset":"uspto",
   "graph":
@@ -27,7 +25,12 @@
           "field":"city",
           "filterType":"is",
           "operator":"",
-          "value":"colombo"
+          "value":"Colombo"
+         },{
+          "field":"country",
+          "filterType":"is",
+          "operator":"",
+          "value":"LK"
          }
         ],
         "vertexType":"InventorLocation"

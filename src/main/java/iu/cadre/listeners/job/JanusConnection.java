@@ -55,6 +55,7 @@ public class JanusConnection {
             e.printStackTrace();
             System.exit(-1);
         } catch (Exception e) {
+            LOG.error("Encountered exception thrown by Request(): " + e.getMessage());
             e.printStackTrace();
             System.exit(-1);
         }
@@ -165,6 +166,7 @@ public class JanusConnection {
             Set<Object> uniqueVertexIds = new HashSet<Object>(Math.max(16, record_limit));
 
             if (query.DataSet().equals("mag")){
+                LOG.info("Processing MAG query");
                 magVertices = UserQuery2Gremlin.getMAGProjectionForQuery(janusTraversal, query);
                 // For some reason some of the query papers are duplicated
                 UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, magVertices);
@@ -179,6 +181,7 @@ public class JanusConnection {
                     GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
                 }
             }else if(query.DataSet().equals("wos")){
+                LOG.info("Processing WOS query");
                 wosVertices = UserQuery2Gremlin.getWOSProjectionForQuery(janusTraversal, query);
                 // For some reason some of the query papers are duplicated
                 UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, wosVertices);
@@ -193,8 +196,12 @@ public class JanusConnection {
                     GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
                 }
             }else if(query.DataSet().equals("uspto")){
+                LOG.info("Processing USPTO query");
                 usptoVertices = UserQuery2Gremlin.getUSPTOProjectionForQuery(janusTraversal, query);
+                LOG.info("Calling removeDuplicateVertices");
                 UserQuery2Gremlin.removeDuplicateVertices(uniqueVertexIds, usptoVertices);
+                LOG.info("Returned from removeDuplicateVertices");
+
                 if (query.RequiresGraph()) {
                     OutputStream edgesStream = new FileOutputStream(edgesCSVPath);
                     t1Elements = UserQuery2Gremlin.getPaperProjectionForNetwork(janusTraversal, query, uniqueVertexIds, usptoVertices);
@@ -202,7 +209,9 @@ public class JanusConnection {
                     t2Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
                     GremlinGraphWriter.projection_to_csv(t2Elements, verticesStream);
                 }else {
+                    LOG.info("Calling getPaperProjection");
                     t3Elements = UserQuery2Gremlin.getPaperProjection(janusTraversal, query, usptoVertices);
+                    LOG.info("Returned from getPaperProjection");
                     GremlinGraphWriter.projection_to_csv(t3Elements, verticesStream);
                 }
             }
@@ -217,6 +226,10 @@ public class JanusConnection {
             closeClusterConnections();
 
             // This is an error that can occur when the cluster is first starting up.
+            if (e.getMessage() == null) {
+               LOG.error("Exception message is null");
+            }
+
             if (e.getMessage().contains("Could not call index")) {
                 throw new ClusterNotInitializedException(e.getMessage());
             } else {
