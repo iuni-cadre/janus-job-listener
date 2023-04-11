@@ -1,55 +1,47 @@
 {
-        "csv_output": [{
-                "field": "number",
-                "vertexType": "Patent"
-        }, {
+        "csv_output": [
+        {
                 "field": "patent_id",
                 "vertexType": "Patent"
         }, {
-                "field": "title",
+                "field": "patent_type",
                 "vertexType": "Patent"
         }, {
-                "field": "date",
+                "field": "patent_date",
                 "vertexType": "Patent"
         }, {
-                "field": "year",
+                "field": "patent_year",
                 "vertexType": "Patent"
         }, {
-                "field": "country",
+                "field": "patent_title",
                 "vertexType": "Patent"
         }, {
-                "field": "name_first",
+                "field": "inventor_display_name",
                 "vertexType": "Inventor"
         }, {
-                "field": "name_last",
-                "vertexType": "Inventor"
-        }, {
-                "field": "name_first",
-                "vertexType": "Assignee"
-        }, {
-                "field": "name_last",
+                "field": "assignee_display_name",
                 "vertexType": "Assignee"
         }, {
                 "field": "city",
-                "vertexType": "InventorLocation"
+                "vertexType": "Inventor_Location"
         }, {
                 "field": "state",
-                "vertexType": "InventorLocation"
+                "vertexType": "Inventor_Location"
         }, {
                 "field": "country",
-                "vertexType": "InventorLocation"
+                "vertexType": "Inventor_Location"
         }],
                 "dataset": "uspto",
         "graph": {
                 "edges": [],
                 "nodes": [{
                         "filters": [{
-                                "field": "title",
+                                "field": "patent_title",
                                 "filterType": "is",
                                 "operator": "",
                                 "value": "hydraulic"
                         }, {
-                                "field": "date",
+                                "field": "patent_date",
                                 "filterType": "is",
                                 "operator": "",
                                 "value": "2017-01-01T00:10:00/2018-01-01T00:10:00"
