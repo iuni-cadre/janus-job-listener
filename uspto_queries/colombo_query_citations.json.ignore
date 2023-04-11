@@ -1,0 +1,48 @@
+{
+  "csv_output":[
+    {
+      "field":"patent_id",
+      "vertexType":"Patent"
+    },{
+      "field":"patent_title",
+      "vertexType":"Patent"
+    },{
+      "field":"patent_date",
+      "vertexType":"Patent"
+    },{
+      "field":"inventor_display_name",
+      "vertexType":"Inventor"
+    }
+    ],
+  "dataset":"uspto",
+  "graph":
+    {
+     "edges": [{
+      "relation": "Citations",
+      "source": "Patent",
+      "target": "Patent"
+    }],
+     "nodes":[
+       {
+        "filters":[
+         {
+          "field":"city",
+          "filterType":"is",
+          "operator":"",
+          "value":"Colombo"
+         },{
+          "field":"country",
+          "filterType":"is",
+          "operator":"",
+          "value":"LK"
+         }
+        ],
+        "vertexType":"InventorLocation"
+       }
+     ]
+    },
+  "job_id":"573f441d-300f-4101-b225-c7a397d3319a",
+  "job_name":"colombo_query",
+  "user_id":158,
+  "username":"njwwgy3pnvrhg"
+}
