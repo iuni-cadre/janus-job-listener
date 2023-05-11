@@ -1,0 +1,46 @@
+{
+        "csv_output": [
+        {
+                "field": "patent_id",
+                "vertexType": "Patent"
+        }, {
+                "field": "patent_type",
+                "vertexType": "Patent"
+        }, {
+                "field": "patent_date",
+                "vertexType": "Patent"
+        }, {
+                "field": "patent_year",
+                "vertexType": "Patent"
+        }, {
+                "field": "patent_title",
+                "vertexType": "Patent"
+        }],
+                "dataset": "uspto",
+        "graph": {
+                "edges": [],
+                "nodes": [{
+                        "filters": [{
+                                "field": "patent_title",
+                                "filterType": "is",
+                                "operator": "OR",
+                                "value": "gear"
+                        }, {
+                                "field": "patent_title",
+                                "filterType": "is",
+                                "operator": "",
+                                "value": "brake"
+                        }, {
+                                "field": "patent_title",
+                                "filterType": "is",
+                                "operator": "",
+                                "value": "hydraulic"
+                        }],
+                        "vertexType": "Patent"
+                }]
+        },
+        "job_id": "4cb6d4bd-eaf5-42dc-9a1d-0e74dd6dd05c",
+        "job_name": "hydraulic_with_OR",
+        "user_id": 158,
+        "username": "njwwgy3pnvrhg"
+}
