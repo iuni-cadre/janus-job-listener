@@ -6,8 +6,8 @@ import sys
 
 target = "target/janus-job-listener-0.0.1-SNAPSHOT-jar-with-dependencies.jar"
 className = "iu.cadre.listeners.job.JanusConnection"
-config = "./test_queries/cadre_config.properties"
-testDir = "test_queries"
+config = "/home/ubuntu/lib/cadre_config.properties"
+testDir = "uspto_queries"
 
 if len(sys.argv) > 1:
     config = sys.argv[1]
@@ -24,7 +24,7 @@ for entry in os.scandir(testDir):
 
         if test_process.returncode != 0:
             print("Failure at %s" % entry.name)
-            print(test_error)
+            print('%s' % test_error)
 
         vertexFile = testDir + "/" + str(pathlib.PurePath(entry.name).with_suffix('')) + ".csv"
 
